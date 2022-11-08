@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>翰青HanQi&#39;s Blog</title>
+  
+  <subtitle>Pwned by 翰青HanQi</subtitle>
+  <link href="https://jamorant12138.github.io/atom.xml" rel="self"/>
+  
+  <link href="https://jamorant12138.github.io/"/>
+  <updated>2022-11-08T17:05:03.400Z</updated>
+  <id>https://jamorant12138.github.io/</id>
+  
+  <author>
+    <name>翰青HanQi</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>2022TSCTF-J</title>
+    <link href="https://jamorant12138.github.io/2022/11/09/2022tsctf-j-writeup-2022.10.17/"/>
+    <id>https://jamorant12138.github.io/2022/11/09/2022tsctf-j-writeup-2022.10.17/</id>
+    <published>2022-11-08T16:21:28.000Z</published>
+    <updated>2022-11-08T17:05:03.400Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;ul&gt;
+&lt;li&gt;&lt;h3 id=&quot;–writeby-HanQi&quot;&gt;&lt;a href=&quot;#–writeby-HanQi&quot; class=&quot;headerlink&quot; title=&quot;–writeby__HanQi&quot;&gt;&lt;/a&gt;–writeby__HanQi&lt;/h3&gt;&lt;/li&gt;
+&lt;li&gt;&lt;h1</summary>
+        
+      
+    
+    
+    
+    <category term="WriteUP" scheme="https://jamorant12138.github.io/categories/WriteUP/"/>
+    
+    
+    <category term="Pwn" scheme="https://jamorant12138.github.io/tags/Pwn/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>2022.11.03-星期四</title>
+    <link href="https://jamorant12138.github.io/2022/11/09/2022.11.03-xing-qi-si/"/>
+    <id>https://jamorant12138.github.io/2022/11/09/2022.11.03-xing-qi-si/</id>
+    <published>2022-11-08T16:21:28.000Z</published>
+    <updated>2022-11-08T17:10:30.698Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;Heap–Unlink&quot;&gt;&lt;a href=&quot;#Heap–Unlink&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="日记" scheme="https://jamorant12138.github.io/categories/%E6%97%A5%E8%AE%B0/"/>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>堆利用</title>
+    <link href="https://jamorant12138.github.io/2022/11/09/heap/"/>
+    <id>https://jamorant12138.github.io/2022/11/09/heap/</id>
+    <published>2022-11-08T16:21:28.000Z</published>
+    <updated>2022-11-08T17:07:55.083Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;[[PWN ？！]]&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;h1 id=&quot;前置知识&quot;&gt;&lt;a href=&quot;#前置知识&quot; class=&quot;headerlink&quot; title=&quot;前置知识&quot;&gt;&lt;/a&gt;前置知识&lt;/h1&gt;[[Ptmalloc2 源码及解读]]&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2</summary>
+        
+      
+    
+    
+    
+    <category term="堆" scheme="https://jamorant12138.github.io/categories/%E5%A0%86/"/>
+    
+    
+    <category term="Pwn" scheme="https://jamorant12138.github.io/tags/Pwn/"/>
+    
+  </entry>
+  
+</feed>

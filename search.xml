@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search> 
+  
+  
+    
+    <entry>
+      <title>2022TSCTF-J</title>
+      <link href="/2022/11/09/2022tsctf-j-writeup-2022.10.17/"/>
+      <url>/2022/11/09/2022tsctf-j-writeup-2022.10.17/</url>
+      
+        <content type="html"><![CDATA[<ul><li><h3 id="–writeby-HanQi"><a href="#–writeby-HanQi" class="headerlink" title="–writeby__HanQi"></a>–writeby__HanQi</h3></li><li><h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1>算是正式做的第一次比赛吧，啥也不会坐牢四天（悲<br>题目难度感觉还好(不会做都是我太菜)（比moe或hn难一点？至少pwn题是这样<br>也是第一次写wp，认真写一下留个纪念</li><li><h1 id="PWN"><a href="#PWN" class="headerlink" title="PWN"></a>PWN</h1><ul><li><h2 id="checkin-stackoverflow"><a href="#checkin-stackoverflow" class="headerlink" title="checkin(stackoverflow)"></a>checkin(stackoverflow)</h2><ul><li><h3 id="checksec-IDA"><a href="#checksec-IDA" class="headerlink" title="checksec+IDA"></a>checksec+IDA</h3>栈溢出覆盖ch_0的值就好了</li><li><img src="https://i.niupic.com/images/2022/10/17/a9tq.png"></li><li><h3 id="exp"><a href="#exp" class="headerlink" title="exp"></a>exp</h3><img src="https://i.niupic.com/images/2022/10/17/a9tr.png"></li></ul></li><li><h2 id="ヰ世界転生-int-overflow-ret2text"><a href="#ヰ世界転生-int-overflow-ret2text" class="headerlink" title="ヰ世界転生(int overflow+ret2text)"></a>ヰ世界転生(int overflow+ret2text)</h2><ul><li><h3 id="checksec-IDA-1"><a href="#checksec-IDA-1" class="headerlink" title="checksec+IDA"></a>checksec+IDA</h3>循环lose累积分数<br><img src="https://i.niupic.com/images/2022/10/17/a9tG.png">{:height 992, :width 776}<br>末尾有一个point_checker的函数，进去看一眼，给points设了上限，盲猜是整型溢出<br><img src="https://i.niupic.com/images/2022/10/17/a9ts.png"><br>然后是用分数换技能，前面花里胡哨没啥用（命名竟然比技能贵…<br><img src="https://i.niupic.com/images/2022/10/17/a9tt.png"><br>从有输入的地方开始看，第一次先输入长度nbytes，再第二次输入内容存到buf，对nbytes有长度限制，估计还是整型溢出<br><img src="https://i.niupic.com/images/2022/10/17/a9tH.png"><br>大概逻辑理清后来找一找后门函数或’/bin/sh’（其实一来就该找？<br><img src="https://i.niupic.com/images/2022/10/17/a9ty.png"><br>再关注一下刚刚发现的两个整形溢出点，看一下有无类型转换之类的，还真有<br><img src="https://i.niupic.com/images/2022/10/17/a9tz.png"><br><img src="https://i.niupic.com/images/2022/10/17/a9tM.png"></li><li><h3 id="exp-1"><a href="#exp-1" class="headerlink" title="exp"></a>exp</h3><img src="https://i.niupic.com/images/2022/10/17/a9tv.png"></li></ul></li><li><h2 id="ret2shellcode-orw"><a href="#ret2shellcode-orw" class="headerlink" title="ret2shellcode(orw)"></a>ret2shellcode(orw)</h2><ul><li><h3 id="checksec-IDA-gdb"><a href="#checksec-IDA-gdb" class="headerlink" title="checksec+IDA+gdb"></a>checksec+IDA+gdb</h3>大概流程就是mmap分配一个可写可执行的空间，让你写入code并执行<br><img src="https://i.niupic.com/images/2022/10/17/a9tw.png"><br>尝试shellcraft.sh()后未成功，gdb调试发现系统调用时进程崩溃,显示“bad syscall” 搜索后发现有沙盒<br>第一次见 并在init函数里发现函数prctl 禁止了execve调用，仅允许open、read、write读取flag<br><img src="https://i.niupic.com/images/2022/10/17/a9tN.png"></li><li><h3 id="exp-2"><a href="#exp-2" class="headerlink" title="exp"></a>exp</h3>利用pwntools写orw的汇编，发现长度过长，只能手写<br><img src="https://i.niupic.com/images/2022/10/17/a9tx.png"><br>换成如下(其实还是网上找的code,原code还是长了,在出题人提示下删掉了重复的参数布置过程)<br><img src="https://i.niupic.com/images/2022/10/17/a9tO.png"></li></ul></li><li><h2 id="ASCII-ART-partial-overwrite"><a href="#ASCII-ART-partial-overwrite" class="headerlink" title="ASCII_ART(partial overwrite)"></a>ASCII_ART(partial overwrite)</h2><ul><li><h3 id="checksec-IDA-2"><a href="#checksec-IDA-2" class="headerlink" title="checksec+IDA"></a>checksec+IDA</h3>简洁的main函数（并不影响我看不懂<br><img src="https://i.niupic.com/images/2022/10/17/a9tw.png"><br>找找后门，有好东西<br><img src="https://i.niupic.com/images/2022/10/17/a9tQ.png"><br>gdb发现输入是可以覆盖返回地址的，再加上开了pie，那就是partial overwrite<br><img src="https://i.niupic.com/images/2022/10/17/a9tE.png"></li><li><h3 id="exp-3"><a href="#exp-3" class="headerlink" title="exp"></a>exp</h3><img src="https://i.niupic.com/images/2022/10/17/a9tA.png"></li></ul></li><li><h2 id="Another-Checkin-Pwn-blind-fmtstr"><a href="#Another-Checkin-Pwn-blind-fmtstr" class="headerlink" title="Another_Checkin_Pwn(blind fmtstr)"></a>Another_Checkin_Pwn(blind fmtstr)</h2>没做出来，还是写一下（也不知道binary为啥没dump下来<br>没文件IDA不了了，输入字符发现回显，那就是格式化字符串盲打了，换了好多种写法，最终还是没<br>dump下来，(记住有循环…不用每次都remote)<br>还有两个没删的脚本放一放，以后再回来看为啥不行<br><img src="https://i.niupic.com/images/2022/10/17/a9tR.png"><br><img src="https://i.niupic.com/images/2022/10/17/a9tX.png"></li><li><h2 id="Easy-shellcode"><a href="#Easy-shellcode" class="headerlink" title="Easy shellcode"></a>Easy shellcode</h2>没有写出来，不过确实学到很多<ul><li><h3 id="checksec-IDA-seccomp-tools"><a href="#checksec-IDA-seccomp-tools" class="headerlink" title="checksec+IDA+seccomp-tools"></a>checksec+IDA+seccomp-tools</h3>mmap开了一块空间存入flag.txt，再mmap了一段可执行的空间写code，空间内开头的一段code是清空寄存器(还傻乎乎的asm反汇编，gdb就能看啊),后面的空间就交给我们操作。<br><img src="https://i.niupic.com/images/2022/10/17/a9tC.png"><br>重要的一点就是寄存器并没有完全清空，r15里还存有初始地址，可以通过找到text段的地址<br><img src="https://i.niupic.com/images/2022/10/17/a9tD.png"><br>找到了prctl，看一下沙盒规则,发现见过的调用全部ban掉 （其实经测试read，open，write是可以用的，但可能是参数布置的问题读到了但是没有打印出来，错失白给的机会呜呜，反馈后更新了附件）<br><img src="https://i.niupic.com/images/2022/10/17/a9tB.png"><br><img src="https://i.niupic.com/images/2022/10/17/a9tS.png"></li><li><h3 id="exp-4"><a href="#exp-4" class="headerlink" title="exp"></a>exp</h3>最开始的想法是既然能控制程序回到text段，那就可以重新控制参数并调用prtcl函数更改沙盒规则，多次尝试均失败（求问这个操作能实现吗？感觉理论上是可以的啊？求指点一下）<br><img src="https://i.niupic.com/images/2022/10/17/a9tF.png"><br>还有关键问题找不到buf段的位置，磨了一整天也没搞出来</li><li><h3 id="question"><a href="#question" class="headerlink" title="question"></a>question</h3>学长说这个输出不了是文件描述符和参数布置的问题，查阅man手册等后修改多次也未成功，求指点<br><img src="https://i.niupic.com/images/2022/10/17/a9tu.png"></li><li><h2 id="堆相关"><a href="#堆相关" class="headerlink" title="堆相关"></a>堆相关</h2>其实之前有花时间看过堆的内容，可是太多而且不好理解，看了啥也没记住，下去得好好学一下</li></ul></li></ul></li><li><h1 id="MISC"><a href="#MISC" class="headerlink" title="MISC"></a>MISC</h1><ul><li><h2 id="Just-Play"><a href="#Just-Play" class="headerlink" title="Just_Play"></a>Just_Play</h2>先是纯玩儿,后来觉得刷钱太慢了，RPG MAKER改了下存档数据，鼠鼠的英语口音很好我很喜欢( part2找半天找不到，以为在高塔中间，硬爬10分钟啥也没有</li></ul></li><li><h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1>光搁pwn坐牢了，其实web学的时间比pwn更长，结果一题没出<br>感觉pwn找资料好难，有没有啥blog分享一下<br>最后引一段从0到1的话，好好去学pwn的基础<br><img src="https://i.niupic.com/images/2022/10/17/a9tT.png"></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> WriteUP </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Pwn </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>2022.11.03-星期四</title>
+      <link href="/2022/11/09/2022.11.03-xing-qi-si/"/>
+      <url>/2022/11/09/2022.11.03-xing-qi-si/</url>
+      
+        <content type="html"><![CDATA[<h1 id="Heap–Unlink"><a href="#Heap–Unlink" class="headerlink" title="Heap–Unlink"></a>Heap–Unlink</h1><p>除fastbin之外，堆块释放后会先向上再向下寻找物理相邻的free chunk进行合并后加入unsorted bin(top chunk除外)，堆溢出修改fd、bk再进行脱链即可触发漏洞.<br>unlink函数源码如下：<br>![[Ptmalloc2 源码及解读#Unlink:]]</p><h1 id="C语言函数"><a href="#C语言函数" class="headerlink" title="[[C语言函数]]"></a>[[C语言函数]]</h1><h2 id="fgets"><a href="#fgets" class="headerlink" title="fgets"></a>fgets</h2><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/fgets.png"></p><h2 id="atoi、atoll"><a href="#atoi、atoll" class="headerlink" title="atoi、atoll"></a>atoi、atoll</h2><p>将字符串转化为数字，会被字符截断</p><h2 id="fread"><a href="#fread" class="headerlink" title="fread"></a>fread</h2><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/fread%E5%87%BD%E6%95%B0.png"></p><h1 id="日记"><a href="#日记" class="headerlink" title="日记"></a>日记</h1><p>[[中国为维护全球和平作出了哪些贡献？]]<br>[[青年马克思观后感]]</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 日记 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>堆利用</title>
+      <link href="/2022/11/09/heap/"/>
+      <url>/2022/11/09/heap/</url>
+      
+        <content type="html"><![CDATA[<p>[[PWN ？！]]</p><ul><li><h1 id="前置知识"><a href="#前置知识" class="headerlink" title="前置知识"></a>前置知识</h1>[[Ptmalloc2 源码及解读]]</li></ul><h2 id="堆结构"><a href="#堆结构" class="headerlink" title="堆结构"></a>堆结构</h2><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/%E5%A0%86%E7%BB%93%E6%9E%84.png"></p><pre><code>- 下面两种申请空间的方式等效，(缺少的0x8字节用下一个堆块的prev_size代替)  ?图片待补</code></pre><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/fastbin_molloc.png"></p><h1 id="漏洞利用"><a href="#漏洞利用" class="headerlink" title="漏洞利用"></a>漏洞利用</h1><p>![[2022.11.03-星期四#Heap–Unlink]]<br>![[2022.11.04-星期五#Heap-Unlink]]<br>![[2022.11.05-星期六#Heap-Offbyone]]<br>![[2022.11.06-星期日#Heap-Extend]]<br>![[2022.11.07-星期一#Heap-Fastbin attack]]</p><ul><li><h1 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h1><ul><li>为啥末三位一定是0？</li><li><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/chunk%E5%A4%B4.png"></li></ul></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 堆 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Pwn </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+  
+  
+</search>
