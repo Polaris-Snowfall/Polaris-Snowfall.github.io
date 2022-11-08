@@ -27,50 +27,6 @@
     </entry>
     
     
-    
-    <entry>
-      <title>2022.11.03-星期四</title>
-      <link href="/2022/11/09/2022.11.03-xing-qi-si/"/>
-      <url>/2022/11/09/2022.11.03-xing-qi-si/</url>
-      
-        <content type="html"><![CDATA[<h1 id="Heap–Unlink"><a href="#Heap–Unlink" class="headerlink" title="Heap–Unlink"></a>Heap–Unlink</h1><p>除fastbin之外，堆块释放后会先向上再向下寻找物理相邻的free chunk进行合并后加入unsorted bin(top chunk除外)，堆溢出修改fd、bk再进行脱链即可触发漏洞.<br>unlink函数源码如下：<br>![[Ptmalloc2 源码及解读#Unlink:]]</p><h1 id="C语言函数"><a href="#C语言函数" class="headerlink" title="[[C语言函数]]"></a>[[C语言函数]]</h1><h2 id="fgets"><a href="#fgets" class="headerlink" title="fgets"></a>fgets</h2><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/fgets.png"></p><h2 id="atoi、atoll"><a href="#atoi、atoll" class="headerlink" title="atoi、atoll"></a>atoi、atoll</h2><p>将字符串转化为数字，会被字符截断</p><h2 id="fread"><a href="#fread" class="headerlink" title="fread"></a>fread</h2><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/fread%E5%87%BD%E6%95%B0.png"></p><h1 id="日记"><a href="#日记" class="headerlink" title="日记"></a>日记</h1><p>[[中国为维护全球和平作出了哪些贡献？]]<br>[[青年马克思观后感]]</p>]]></content>
-      
-      
-      <categories>
-          
-          <category> 日记 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>堆利用</title>
-      <link href="/2022/11/09/heap/"/>
-      <url>/2022/11/09/heap/</url>
-      
-        <content type="html"><![CDATA[<p>[[PWN ？！]]</p><ul><li><h1 id="前置知识"><a href="#前置知识" class="headerlink" title="前置知识"></a>前置知识</h1>[[Ptmalloc2 源码及解读]]</li></ul><h2 id="堆结构"><a href="#堆结构" class="headerlink" title="堆结构"></a>堆结构</h2><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/%E5%A0%86%E7%BB%93%E6%9E%84.png"></p><pre><code>- 下面两种申请空间的方式等效，(缺少的0x8字节用下一个堆块的prev_size代替)  ?图片待补</code></pre><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/fastbin_molloc.png"></p><h1 id="漏洞利用"><a href="#漏洞利用" class="headerlink" title="漏洞利用"></a>漏洞利用</h1><p>![[2022.11.03-星期四#Heap–Unlink]]<br>![[2022.11.04-星期五#Heap-Unlink]]<br>![[2022.11.05-星期六#Heap-Offbyone]]<br>![[2022.11.06-星期日#Heap-Extend]]<br>![[2022.11.07-星期一#Heap-Fastbin attack]]</p><ul><li><h1 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h1><ul><li>为啥末三位一定是0？</li><li><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/chunk%E5%A4%B4.png"></li></ul></li></ul>]]></content>
-      
-      
-      <categories>
-          
-          <category> 堆 </category>
-          
-      </categories>
-      
-      
-        <tags>
-            
-            <tag> Pwn </tag>
-            
-        </tags>
-      
-    </entry>
-    
-    
   
   
 </search>
