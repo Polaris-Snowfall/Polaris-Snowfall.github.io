@@ -431,7 +431,7 @@
                 <h1 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h1><p>Tcache 是 glibc 2.26 (ubuntu 17.10) 之后引入的一种技术，目的是提升堆管理的性能。<br>对攻击者而言,Tcache的不安全机制为攻击者带来了大量新的漏洞利用方式，但同时也使先前的一些利用方法(如Unsortedbin Attak)等漏洞利用减弱甚至失效，并且在一些题中Tcache的利用会相当麻烦。故本文探究Tcache机制的绕过方法(glibc2.26-2.27)</p>
 <h1 id="绕过方法"><a href="#绕过方法" class="headerlink" title="绕过方法"></a>绕过方法</h1><h2 id="1-分配大小不在Tcache范围内的堆块"><a href="#1-分配大小不在Tcache范围内的堆块" class="headerlink" title="1.分配大小不在Tcache范围内的堆块"></a>1.分配大小不在Tcache范围内的堆块</h2><p>好像说了句废话，不过在某些题中还是有用的.<br>Tcache的chunk范围在0x410(1032)字节以内</p>
 <h2 id="2-填满Tcache"><a href="#2-填满Tcache" class="headerlink" title="2.填满Tcache"></a>2.填满Tcache</h2><p>好像也是句废话<br>free某个tcache超过7次，也就是将存放在tcache结构体中的该范围bins的数量占满，后续free的堆块就会放到相应的bin中</p>
-<h2 id="修改Tcache结构体中的counts域"><a href="#修改Tcache结构体中的counts域" class="headerlink" title="修改Tcache结构体中的counts域"></a>修改Tcache结构体中的counts域</h2><p>所谓的绕过Tcache机制，无非就是使释放的堆块不进入Tcache中，分配的堆块不从Tcache中取出.</p>
+<h2 id="3-修改Tcache结构体中的counts域"><a href="#3-修改Tcache结构体中的counts域" class="headerlink" title="3.修改Tcache结构体中的counts域"></a>3.修改Tcache结构体中的counts域</h2><p>所谓的绕过Tcache机制，无非就是使释放的堆块不进入Tcache中，分配的堆块不从Tcache中取出.</p>
 <h3 id="矛盾"><a href="#矛盾" class="headerlink" title="矛盾"></a>矛盾</h3><p>如果我们想让释放的堆块不进入Tcache中，就需要对应Tcache bin的counts域不小于tcache_count(默认为7)，即Tcache已满.但如过counts域不为0，在分配堆块时就一定会从Tcache中取出,前后两个发生冲突.</p>
 <h3 id="分析源码"><a href="#分析源码" class="headerlink" title="分析源码"></a>分析源码</h3><p>下面是tcache_put的调用过程</p>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c"><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">if</span> <span class="token expression">USE_TCACHE</span></span>
