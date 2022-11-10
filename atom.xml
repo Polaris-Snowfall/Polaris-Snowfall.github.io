@@ -6,7 +6,7 @@
   <link href="https://jamorant12138.github.io/atom.xml" rel="self"/>
   
   <link href="https://jamorant12138.github.io/"/>
-  <updated>2022-11-09T05:24:49.383Z</updated>
+  <updated>2022-11-10T03:05:45.953Z</updated>
   <id>https://jamorant12138.github.io/</id>
   
   <author>
@@ -15,6 +15,31 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Tcache机制绕过</title>
+    <link href="https://jamorant12138.github.io/2022/11/10/tcache-ji-zhi-rao-guo/"/>
+    <id>https://jamorant12138.github.io/2022/11/10/tcache-ji-zhi-rao-guo/</id>
+    <published>2022-11-10T01:56:09.000Z</published>
+    <updated>2022-11-10T03:05:45.953Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;引言&quot;&gt;&lt;a href=&quot;#引言&quot; class=&quot;headerlink&quot; title=&quot;引言&quot;&gt;&lt;/a&gt;引言&lt;/h1&gt;&lt;p&gt;Tcache 是 glibc 2.26 (ubuntu 17.10)</summary>
+        
+      
+    
+    
+    
+    <category term="探究" scheme="https://jamorant12138.github.io/categories/%E6%8E%A2%E7%A9%B6/"/>
+    
+    
+    <category term="Pwn" scheme="https://jamorant12138.github.io/tags/Pwn/"/>
+    
+  </entry>
   
   <entry>
     <title>2022TSCTF-J</title>
