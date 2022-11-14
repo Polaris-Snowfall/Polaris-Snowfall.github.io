@@ -6,7 +6,7 @@
   <link href="https://jamorant12138.github.io/atom.xml" rel="self"/>
   
   <link href="https://jamorant12138.github.io/"/>
-  <updated>2022-11-10T03:14:29.491Z</updated>
+  <updated>2022-11-14T14:22:21.320Z</updated>
   <id>https://jamorant12138.github.io/</id>
   
   <author>
@@ -15,6 +15,31 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>ret2dl-resolve(1)：原理及基础利用</title>
+    <link href="https://jamorant12138.github.io/2022/11/14/ret2dl-resolve-1-yuan-li-ji-ji-chu-li-yong/"/>
+    <id>https://jamorant12138.github.io/2022/11/14/ret2dl-resolve-1-yuan-li-ji-ji-chu-li-yong/</id>
+    <published>2022-11-14T14:18:02.000Z</published>
+    <updated>2022-11-14T14:22:21.320Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;介绍&quot;&gt;&lt;a href=&quot;#介绍&quot; class=&quot;headerlink&quot; title=&quot;介绍&quot;&gt;&lt;/a&gt;介绍&lt;/h1&gt;&lt;p&gt;ret2dl-resolve于2015年在论文_How the ELF Ruined</summary>
+        
+      
+    
+    
+    
+    <category term="Stack Overflow" scheme="https://jamorant12138.github.io/categories/Stack-Overflow/"/>
+    
+    
+    <category term="Pwn" scheme="https://jamorant12138.github.io/tags/Pwn/"/>
+    
+  </entry>
   
   <entry>
     <title>Tcache机制绕过</title>
