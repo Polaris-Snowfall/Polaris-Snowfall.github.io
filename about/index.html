@@ -359,7 +359,7 @@
                             
                                 "翰青HanQi&#39;s Blog",
                             
-                                "Welcome!!!",
+                                "遗憾的话，总会有的...",
                             
                         ],
                         startDelay: 300,
@@ -377,9 +377,7 @@
 
 
 <script>
-    // 每天切换 banner 图.  Switch banner image every day.
-    var bannerUrl = "/medias/banner/" + new Date().getDay() + '.jpg';
-    $('.bg-cover').css('background-image', 'url(' + bannerUrl + ')');
+    $('.bg-cover').css('background-image', 'url(/medias/banner/0.jpg)');
 </script>
 
 
@@ -565,7 +563,7 @@
         },
         xAxis: {
             type: 'category',
-            data: ["2021-11","2021-12","2022-01","2022-02","2022-03","2022-04","2022-05","2022-06","2022-07","2022-08","2022-09","2022-10","2022-11"]
+            data: ["2021-12","2022-01","2022-02","2022-03","2022-04","2022-05","2022-06","2022-07","2022-08","2022-09","2022-10","2022-11","2022-12"]
         },
         yAxis: {
             type: 'value',
@@ -575,7 +573,7 @@
                 name: '文章篇数',
                 type: 'line',
                 color: ['#6772e5'],
-                data: [0,0,0,0,0,0,0,0,0,0,0,0,5],
+                data: [0,0,0,0,0,0,0,0,0,0,0,5,0],
                 markPoint: {
                     symbolSize: 45,
                     color: ['#fa755a','#3ecf8e','#82d3f4'],
@@ -617,7 +615,7 @@
                 type: 'pie',
                 radius: '50%',
                 color: ['#6772e5', '#ff9e0f', '#fa755a', '#3ecf8e', '#82d3f4', '#ab47bc', '#525f7f', '#f51c47', '#26A69A'],
-                data: [{"name":"探究","value":2},{"name":"WriteUP","value":1},{"name":"Stack Overflow","value":2}],
+                data: [{"name":"WriteUP","value":1},{"name":"探究","value":2},{"name":"Stack Overflow","value":2}],
                 itemStyle: {
                     emphasis: {
                         shadowBlur: 10,
