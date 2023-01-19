@@ -6,7 +6,7 @@
   <link href="https://jamorant12138.github.io/atom.xml" rel="self"/>
   
   <link href="https://jamorant12138.github.io/"/>
-  <updated>2022-11-22T15:58:50.816Z</updated>
+  <updated>2023-01-19T12:58:37.914Z</updated>
   <id>https://jamorant12138.github.io/</id>
   
   <author>
@@ -15,6 +15,23 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>C++(1)</title>
+    <link href="https://jamorant12138.github.io/2023/01/19/c-1/"/>
+    <id>https://jamorant12138.github.io/2023/01/19/c-1/</id>
+    <published>2023-01-19T15:40:09.000Z</published>
+    <updated>2023-01-19T12:58:37.914Z</updated>
+    
+    
+    <summary type="html">Here&#39;s something encrypted, password is required to continue reading.</summary>
+    
+    
+    
+    <category term="C++" scheme="https://jamorant12138.github.io/categories/C/"/>
+    
+    
+  </entry>
   
   <entry>
     <title>free_hook劫持(glibc2.26之前)</title>
