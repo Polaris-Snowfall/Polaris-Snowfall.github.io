@@ -6,7 +6,7 @@
   <link href="https://jamorant12138.github.io/atom.xml" rel="self"/>
   
   <link href="https://jamorant12138.github.io/"/>
-  <updated>2023-02-22T16:01:58.494Z</updated>
+  <updated>2023-03-03T08:38:45.123Z</updated>
   <id>https://jamorant12138.github.io/</id>
   
   <author>
@@ -15,6 +15,31 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>IO任意地址读写</title>
+    <link href="https://jamorant12138.github.io/2023/03/03/io-ren-yi-di-zhi-du-xie/"/>
+    <id>https://jamorant12138.github.io/2023/03/03/io-ren-yi-di-zhi-du-xie/</id>
+    <published>2023-03-03T15:40:09.000Z</published>
+    <updated>2023-03-03T08:38:45.123Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;stdout任意地址读&quot;&gt;&lt;a href=&quot;#stdout任意地址读&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="IO_FILE" scheme="https://jamorant12138.github.io/categories/IO-FILE/"/>
+    
+    
+    <category term="Pwn" scheme="https://jamorant12138.github.io/tags/Pwn/"/>
+    
+  </entry>
   
   <entry>
     <title>C(2) 条件判断</title>
