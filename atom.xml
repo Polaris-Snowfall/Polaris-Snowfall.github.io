@@ -6,7 +6,7 @@
   <link href="https://jamorant12138.github.io/atom.xml" rel="self"/>
   
   <link href="https://jamorant12138.github.io/"/>
-  <updated>2023-03-03T08:38:45.123Z</updated>
+  <updated>2023-05-23T13:15:14.563Z</updated>
   <id>https://jamorant12138.github.io/</id>
   
   <author>
@@ -17,154 +17,25 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>IO任意地址读写</title>
-    <link href="https://jamorant12138.github.io/2023/03/03/io-ren-yi-di-zhi-du-xie/"/>
-    <id>https://jamorant12138.github.io/2023/03/03/io-ren-yi-di-zhi-du-xie/</id>
-    <published>2023-03-03T15:40:09.000Z</published>
-    <updated>2023-03-03T08:38:45.123Z</updated>
+    <title>CVE-2021-3156 分析复现</title>
+    <link href="https://jamorant12138.github.io/2023/05/22/cve-2021-3156-fen-xi-fu-xian/"/>
+    <id>https://jamorant12138.github.io/2023/05/22/cve-2021-3156-fen-xi-fu-xian/</id>
+    <published>2023-05-22T15:40:09.000Z</published>
+    <updated>2023-05-23T13:15:14.563Z</updated>
     
     
       
       
         
         
-    <summary type="html">&lt;h2 id=&quot;stdout任意地址读&quot;&gt;&lt;a href=&quot;#stdout任意地址读&quot; class=&quot;headerlink&quot;</summary>
+    <summary type="html">&lt;h2 id=&quot;简介&quot;&gt;&lt;a href=&quot;#简介&quot; class=&quot;headerlink&quot; title=&quot;简介&quot;&gt;&lt;/a&gt;简介&lt;/h2&gt;&lt;p&gt;sudo是Linux中一个非常重要的管理权限的软件，它允许用户使用 root</summary>
         
       
     
     
     
-    <category term="IO_FILE" scheme="https://jamorant12138.github.io/categories/IO-FILE/"/>
+    <category term="CVE复现" scheme="https://jamorant12138.github.io/categories/CVE%E5%A4%8D%E7%8E%B0/"/>
     
-    
-    <category term="Pwn" scheme="https://jamorant12138.github.io/tags/Pwn/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>free_hook劫持(glibc2.26之前)</title>
-    <link href="https://jamorant12138.github.io/2022/11/22/free-hook-jie-chi-glibc2.26-zhi-qian/"/>
-    <id>https://jamorant12138.github.io/2022/11/22/free-hook-jie-chi-glibc2.26-zhi-qian/</id>
-    <published>2022-11-22T15:40:09.000Z</published>
-    <updated>2022-11-22T15:58:50.816Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h1 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h1&gt;&lt;p&gt;做Full</summary>
-        
-      
-    
-    
-    
-    <category term="探究" scheme="https://jamorant12138.github.io/categories/%E6%8E%A2%E7%A9%B6/"/>
-    
-    
-    <category term="Pwn" scheme="https://jamorant12138.github.io/tags/Pwn/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>ret2dl-resolve(2)：64位利用及Full RELRO</title>
-    <link href="https://jamorant12138.github.io/2022/11/18/ret2dl-resolve-2-64-wei-li-yong-ji-full-relro/"/>
-    <id>https://jamorant12138.github.io/2022/11/18/ret2dl-resolve-2-64-wei-li-yong-ji-full-relro/</id>
-    <published>2022-11-18T15:44:02.000Z</published>
-    <updated>2022-11-22T15:40:31.816Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h1 id=&quot;64位ret2dl-resolve&quot;&gt;&lt;a href=&quot;#64位ret2dl-resolve&quot; class=&quot;headerlink&quot; title=&quot;64位ret2dl-resolve&quot;&gt;&lt;/a&gt;64位ret2dl-resolve&lt;/h1&gt;&lt;h2</summary>
-        
-      
-    
-    
-    
-    <category term="Stack Overflow" scheme="https://jamorant12138.github.io/categories/Stack-Overflow/"/>
-    
-    
-    <category term="Pwn" scheme="https://jamorant12138.github.io/tags/Pwn/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>ret2dl-resolve(1)：原理及基础利用</title>
-    <link href="https://jamorant12138.github.io/2022/11/14/ret2dl-resolve-1-yuan-li-ji-32-wei-ji-chu-li-yong/"/>
-    <id>https://jamorant12138.github.io/2022/11/14/ret2dl-resolve-1-yuan-li-ji-32-wei-ji-chu-li-yong/</id>
-    <published>2022-11-14T14:18:02.000Z</published>
-    <updated>2022-11-19T03:13:15.982Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h1 id=&quot;介绍&quot;&gt;&lt;a href=&quot;#介绍&quot; class=&quot;headerlink&quot; title=&quot;介绍&quot;&gt;&lt;/a&gt;介绍&lt;/h1&gt;&lt;p&gt;ret2dl-resolve于2015年在论文_How the ELF Ruined</summary>
-        
-      
-    
-    
-    
-    <category term="Stack Overflow" scheme="https://jamorant12138.github.io/categories/Stack-Overflow/"/>
-    
-    
-    <category term="Pwn" scheme="https://jamorant12138.github.io/tags/Pwn/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Tcache机制绕过</title>
-    <link href="https://jamorant12138.github.io/2022/11/10/tcache-ji-zhi-rao-guo/"/>
-    <id>https://jamorant12138.github.io/2022/11/10/tcache-ji-zhi-rao-guo/</id>
-    <published>2022-11-10T01:56:09.000Z</published>
-    <updated>2022-11-10T03:14:29.491Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h1 id=&quot;引言&quot;&gt;&lt;a href=&quot;#引言&quot; class=&quot;headerlink&quot; title=&quot;引言&quot;&gt;&lt;/a&gt;引言&lt;/h1&gt;&lt;p&gt;Tcache 是 glibc 2.26 (ubuntu 17.10)</summary>
-        
-      
-    
-    
-    
-    <category term="探究" scheme="https://jamorant12138.github.io/categories/%E6%8E%A2%E7%A9%B6/"/>
-    
-    
-    <category term="Pwn" scheme="https://jamorant12138.github.io/tags/Pwn/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>2022TSCTF-J</title>
-    <link href="https://jamorant12138.github.io/2022/11/09/2022tsctf-j-writeup-2022.10.17/"/>
-    <id>https://jamorant12138.github.io/2022/11/09/2022tsctf-j-writeup-2022.10.17/</id>
-    <published>2022-11-08T16:21:28.000Z</published>
-    <updated>2022-11-13T14:08:46.705Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;[[PWN ？！]]&lt;br&gt;[[PWN生涯]]&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;h3 id=&quot;–writeby-HanQi&quot;&gt;&lt;a href=&quot;#–writeby-HanQi&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="WriteUP" scheme="https://jamorant12138.github.io/categories/WriteUP/"/>
-    
-    
-    <category term="Pwn" scheme="https://jamorant12138.github.io/tags/Pwn/"/>
     
   </entry>
   
