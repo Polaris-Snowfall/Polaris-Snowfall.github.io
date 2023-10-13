@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>CSAPP--Notes |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-CSAPP--Notes"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  CSAPP--Notes
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/06/25/CSAPP--Notes/" class="article-date">
+  <time datetime="2023-06-24T16:00:00.000Z" itemprop="datePublished">2023-06-25</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%9D%82%E9%A1%B9/">杂项</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">7.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">25 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>CSAPP阅读笔记</p>
+<span id="more"></span>
+<p>文章仅作为笔者复习参考,其中内容仅为笔者当前阶段学习CSAPP的理解,不保证正确性.</p>
+<h1 id="第三章-程序的机器级表示"><a href="#第三章-程序的机器级表示" class="headerlink" title="第三章 程序的机器级表示"></a>第三章 程序的机器级表示</h1><h3 id="3-6-1条件码"><a href="#3-6-1条件码" class="headerlink" title="3.6.1条件码:"></a>3.6.1条件码:</h3><p>CF:进位标志.最近的操作使最高位产生了进位.<br>ZF:零标志.最近操作的结果为0.<br>SF:符号标志.最近的操作得到负数.<br>OF:溢出标志.最近的操作导致一个补码溢出<br>PF:奇偶标志位.最近操作的结果所有bit中1为偶数<br>AF:辅助进位标志位 运算过程中看最后四位,不论长度为多少 最后四位向前有进位或者借位,AF=1,否则AF=0<br>TF:调试标志位 当TF=1时,处理器每次只执行一条指令,即单步执行<br>IF:中断允许标志位 它用来控制8086是否允许接收外部中断请求 若IF=1,8086能响应外部中断,反之则屏蔽外部中断<br>DF:方向标志位 在串处理指令中,每次操作后,如果DF=0,si di递增,如果DF=1,si di递减;注意此处DF的值是由程序员进行设定的 cld命令是将DF设置为0,std命令是将DF设置为1<br>进位标志表示无符号数运算结果是否超出范围，运算结果仍然正确；<br>溢出标志表示有符号数运算结果是否超出范围，运算结果已经不正确。<br>leaq指令不改变任何条件码.对于逻辑操作,进位标志和溢出标志会设置成0.对于移作,进位标志将设置为最后一个被移出的位,溢出标志设置为0.INC和DEC指令仅设出和零标志.</p>
+<h1 id="第七章-链接"><a href="#第七章-链接" class="headerlink" title="第七章 链接"></a>第七章 链接</h1><h2 id="7-3目标文件"><a href="#7-3目标文件" class="headerlink" title="7.3目标文件"></a>7.3目标文件</h2><ol>
+<li>可重定位目标文件:由编译器和汇编器产生,包含从地址0开始的代码和数据节</li>
+<li>可执行目标文件:可直接复制到内存并执行</li>
+<li>共享目标文件:特殊类型的可重定位目标文件,可以在加载或者运行时被动态地加载进内存并链接.</li>
+</ol>
+<h2 id="7-5-符号和符号表"><a href="#7-5-符号和符号表" class="headerlink" title="7.5 符号和符号表"></a>7.5 符号和符号表</h2><p>static属性的C函数和全局变量为局部符号,仅为定义该符号的模块(源文件)所私有,其他模块无法通过extern声明使用.用static来保护变量和函数是良好的编程习惯.</p>
+<h3 id="符号表条目"><a href="#符号表条目" class="headerlink" title="符号表条目"></a>符号表条目</h3><pre class=" language-c"><code class="language-c"><span class="token keyword">typedef</span> <span class="token keyword">struct</span><span class="token punctuation">{</span>
+    <span class="token keyword">int</span> name<span class="token punctuation">;</span>
+    <span class="token keyword">char</span> type<span class="token punctuation">:</span><span class="token number">4</span><span class="token punctuation">,</span>
+            binding<span class="token punctuation">:</span><span class="token number">4</span><span class="token punctuation">;</span>
+    <span class="token keyword">char</span> reserved<span class="token punctuation">;</span>
+    <span class="token keyword">short</span> section<span class="token punctuation">;</span>
+    <span class="token keyword">long</span> value<span class="token punctuation">;</span>
+    <span class="token keyword">long</span> size<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>Elf64_Symbol<span class="token punctuation">;</span>
+</code></pre>
+<p>name是字符串表(.strtab)中对应符号的字节偏移,type是数据或函数.binding指示符号是本地还是全局.value是距定义目标的节的起始位置的偏移(相对地址,<code>对于可执行目标文件来说,该值是一个绝对运行时地址</code>.<del>不是很理解呢?</del>)<br>每个符号被分配到目标文件的某个节,由section表示.<br>有三个特殊的伪节(仅存在于可重定位目标文件中):<br>    1.ABS 不该被重定位的符号<br>    2.UNDEF 未定义的符号<br>    3.COMMON 未初始化的全局变量<br>区别于COMMON节,bss分配未初始化的静态变量,以及初始化为0的全局或静态变量.</p>
+<h2 id="7-6符号解析"><a href="#7-6符号解析" class="headerlink" title="7.6符号解析"></a>7.6符号解析</h2><p>将每个引用于它输入的可重定位目标文件的符号表中的一个确定符号定义关联</p>
+<h3 id="7-6-1-多重定义的全局符号"><a href="#7-6-1-多重定义的全局符号" class="headerlink" title="7.6.1 多重定义的全局符号"></a>7.6.1 多重定义的全局符号</h3><p>函数和已初始化的全局变量是强符号,未初始化的全局变量是弱符号.<br>规则1:不允许多个同名的强符号<br>规则2:如果一个强符号和多个弱符号同名,选强符号<br>规则3:如果多个弱符号同名,则任意选择一个</p>
+<p>该规则下会造成一些不易察觉的运行时错误.使用GCC-fno_common标志指示链接器不允许多重定义全局符号.</p>
+<h3 id="7-6-2-与静态库链接"><a href="#7-6-2-与静态库链接" class="headerlink" title="7.6.2 与静态库链接"></a>7.6.2 与静态库链接</h3><h4 id="为什么要支持库的概念"><a href="#为什么要支持库的概念" class="headerlink" title="为什么要支持库的概念"></a>为什么要支持库的概念</h4><p>方案一:让编译器辨认出对标准函数的调用,并生成相应代码.<br>缺点:编译器过于复杂,每次增删改一个标准函数,就需要一个新版本编译器<br>方案二:将所有标准函数放在一个可重定位目标文件libc.o中<br>缺点:内存占用大,更新编译时间长<br>方案三:相关函数编译为独立的目标模块(静态库),链接时只复制被程序引用的目标模块.</p>
+<h4 id="静态库实现"><a href="#静态库实现" class="headerlink" title="静态库实现"></a>静态库实现</h4><p>Linux以存档(archive)的特殊文件格式存储静态库.存档文件时一组连接起来的可重定位目标文件的集合,有一个头部用来描述每个成员目标文件的大小和位置(.a)</p>
+<h3 id="7-6-3-链接器解析引用"><a href="#7-6-3-链接器解析引用" class="headerlink" title="7.6.3 链接器解析引用"></a>7.6.3 链接器解析引用</h3><p>在符号解析阶段,链接器从左到右按照静态库在命令行中出现的顺序扫描可重定位目标文件和存档文件(自动将.c翻译为.o).在这次扫描中,链接器维护一个可重定位文件的集合E(这个集合中的文件会被合并起来形成可执行文件),一个未解析的符号(引用了但未定义)集合U,一个在前面输入文件中已定义的符号集合D.初始时EUD均为空。<br>对于命令行中每一个输入文件f,若为目标文件,则把f添加到E,修改U和D反应f中的符号定义和引用.若为存档文件,遍历目录尝试寻找可重定位目标文件m匹配U中的未定义符号,将m添加到E中,修改U和D反应f中的符号定义和引用,直到U和D不再发生变化.此时不在E中的目标文件都被简单的丢弃.<br>若完成所有f的扫描后,U是非空的,则报错.否则就合并和重定位E中的目标文件,构建输出的可执行文件.<br>这样的算法决定了链接时文件需要排序.</p>
+<h2 id="7-7-重定位"><a href="#7-7-重定位" class="headerlink" title="7.7 重定位"></a>7.7 重定位</h2><p>重定位将合并输入模块,为每个符号分配运行时地址.<br>重定位由两步组成:<br>    1.重定位节和符号定义.链接器将所有相同类型的节合并为同一类型的聚合节.然后将运行时的内存地址赋给新的聚合节,赋给输入模块定义的每个节,赋给输入模块定义的每个符号<br>    2.重定位节中的符号引用.依赖重定位条目,修改对每个符号的引用,使得它们指向正确的运行时地址.</p>
+<h3 id="7-7-1-重定位条目"><a href="#7-7-1-重定位条目" class="headerlink" title="7.7.1 重定位条目"></a>7.7.1 重定位条目</h3><p>汇编器对最终位置未知的目标引用,生成一个重定位条目,指示链接器在合并时如何修改这个引用.代码的重定位条目放在.rel.text中,已初始化数据的重定位条目放在.rel.data中.</p>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">typedef</span> <span class="token keyword">struct</span><span class="token punctuation">{</span>
+    <span class="token keyword">long</span> offset<span class="token punctuation">;</span> <span class="token comment" spellcheck="true">//符号引用距该节的字节偏移(节偏移)</span>
+    <span class="token keyword">long</span> type<span class="token punctuation">:</span><span class="token number">32</span><span class="token punctuation">,</span><span class="token comment" spellcheck="true">//指示如何修改引用</span>
+            symbol<span class="token punctuation">:</span><span class="token number">32</span><span class="token punctuation">;</span><span class="token comment" spellcheck="true">//符号表中的index</span>
+    <span class="token keyword">long</span> addend<span class="token punctuation">;</span><span class="token comment" spellcheck="true">//有符号常数,指示对地址做偏移调整</span>
+<span class="token punctuation">}</span>Elf64_Rela
+</code></pre>
+<p>链接器在每个节以及每个与该节相关联的重定位条目上迭代执行,根据不同重定位类型对修改引用为运行时地址相关数据.(绝对寻址、PC相对寻址…)</p>
+<h2 id="7-10-动态链接库"><a href="#7-10-动态链接库" class="headerlink" title="7.10 动态链接库"></a>7.10 动态链接库</h2><h3 id="静态库的缺点"><a href="#静态库的缺点" class="headerlink" title="静态库的缺点"></a>静态库的缺点</h3><p>若静态库更新,必须显示的将程序与新的静态库重新链接.<br>且对一些大量使用的函数,这些函数的代码将会被复制到每个运行进程的文本段中,浪费内存.</p>
+<h3 id="共享库"><a href="#共享库" class="headerlink" title="共享库"></a>共享库</h3><p>共享库(共享目标)是一个目标模块,在运行和加载时加载到相应内存地址,并和一个在内存中的程序链接起来.这一动态链接的过程由一个叫动态链接器的程序执行.在Linux中使用.so后缀,在微软操作系统中被称为DLL.<br>一个共享库的.text节的一个副本可以被不同的正在运行时的进程共享.</p>
+<h2 id="7-11-从应用程序中加载和链接共享库"><a href="#7-11-从应用程序中加载和链接共享库" class="headerlink" title="7.11 从应用程序中加载和链接共享库"></a>7.11 从应用程序中加载和链接共享库</h2><p>dlopen,dlsym,dlerror.</p>
+<h2 id="7-12-位置无关代码-fpic"><a href="#7-12-位置无关代码-fpic" class="headerlink" title="7.12 位置无关代码 -fpic"></a>7.12 位置无关代码 -fpic</h2><p>将共享库加载到内存的任意位置</p>
+<h3 id="PIC数据引用"><a href="#PIC数据引用" class="headerlink" title="PIC数据引用"></a>PIC数据引用</h3><p>无论在任意地址加载一个目标模块,数据段与代码段距离保持不变.<br>编译器在数据段开始的地方创建GOT表,加载时动态链接器会重定位GOT表中的每个条目,使得它包含目标的绝对地址.<br>程序运行时,指令通过固定偏移访问对应GOT表并取出绝对地址,完成数据引用的解析.</p>
+<h3 id="PIC函数调用"><a href="#PIC函数调用" class="headerlink" title="PIC函数调用"></a>PIC函数调用</h3><p>详见ret2dl_resolve.</p>
+<h2 id="7-13-库打桩机制"><a href="#7-13-库打桩机制" class="headerlink" title="7.13 库打桩机制"></a>7.13 库打桩机制</h2><p>基本思想:给定一个需要打桩的目标函数,创建一个包装函数,它的院线和目标函数完全一样,使用某种特殊的打桩机制,欺骗系统调用目标函数,再将目标函数的返回值传递给调用者.</p>
+<h3 id="7-13-1-编译时打桩"><a href="#7-13-1-编译时打桩" class="headerlink" title="7.13.1 编译时打桩"></a>7.13.1 编译时打桩</h3><p>更改可重定位目标文件路径.</p>
+<h3 id="7-13-2-链接时打桩"><a href="#7-13-2-链接时打桩" class="headerlink" title="7.13.2 链接时打桩"></a>7.13.2 链接时打桩</h3><p>Linux静态链接器支持使用–wrap f标志打桩,将对f的引用解析成__wrap_f,把对__real_f的引用解析为f<br>gcc -Wl,–wrap,malloc</p>
+<h3 id="7-13-3-运行时打桩"><a href="#7-13-3-运行时打桩" class="headerlink" title="7.13.3 运行时打桩"></a>7.13.3 运行时打桩</h3><p>修改动态链接器的LD_PRELOAD环境变量</p>
+<h1 id="第八章-异常控制流"><a href="#第八章-异常控制流" class="headerlink" title="第八章 异常控制流"></a>第八章 异常控制流</h1><h2 id="8-1-异常"><a href="#8-1-异常" class="headerlink" title="8.1 异常"></a>8.1 异常</h2><p>处理器状态变化称为事件.<br>在任何情况下,当处理器检测到事件发生,它通过一张由异常表基址寄存器寻址的跳转表(即异常表),进行一个间接过程调用,到一个专门设计用来处理这类实践的操作系统子程序_——异常处理程序.</p>
+<h3 id="8-1-1-异常处理"><a href="#8-1-1-异常处理" class="headerlink" title="8.1.1 异常处理"></a>8.1.1 异常处理</h3><p>系统中每种可能类型的异常都分配有一个非负整数的异常号,部分由处理器定义(被零除、缺页、内存访问违例、断点以及算术运算溢出),其他由操作系统内核定义(系统调用,外部IO信号)</p>
+<p>当系统启动(计算机重启或加电)时,操作系统分配和初始化一张名为异常表的跳转表,当异常发生,处理器通过异常表基址n和异常号k,调用n+4*k地址存放的异常处理函数指针.</p>
+<p>异常处理程序运行在内核模式下,对所有的系统资源有完全的访问权限.<br>当控制从用户程序转移到内核,所有的状态信息将压入内核栈中.</p>
+<p>ps:linux系统调用使用的跳转表并非异常表,但也需要通过0x80号异常先进入异常处理程序再进一步跳转.</p>
+<h3 id="8-1-2-异常的类别"><a href="#8-1-2-异常的类别" class="headerlink" title="8.1.2 异常的类别"></a>8.1.2 异常的类别</h3><ol>
+<li>中断:处理器外部IO设备信号</li>
+<li>陷阱和系统调用:执行一条指令产生的有意旳异常,在用户程序和内核之间提供一个接口,即系统调用.</li>
+<li>故障:由错误情况引起,可能被故障处理程序修正,若成功修正就重新执行引起故障的指令,否则返回到abort例程终止程序.(如缺页,以及linux中的段错误,但linux并不会尝试恢复这个错误.)</li>
+<li>终止:不可恢复的致命错误,返回到abort例程终止应用程序.</li>
+</ol>
+<h2 id="8-2-进程"><a href="#8-2-进程" class="headerlink" title="8.2 进程"></a>8.2 进程</h2><p>进程是一个执行中程序的实例.系统中每个程序都运行在某个进程的上下文中.</p>
+<h3 id="8-2-4-用户模式和内核模式"><a href="#8-2-4-用户模式和内核模式" class="headerlink" title="8.2.4 用户模式和内核模式"></a>8.2.4 用户模式和内核模式</h3><p>处理器用某个控制寄存器的一个模式位来标识运行模式.<br>linux提供/proc文件系统,允许用户模式进程访问内核数据结构内容.</p>
+<h4 id="x2F-proc文件系统-待补充"><a href="#x2F-proc文件系统-待补充" class="headerlink" title="/proc文件系统 待补充"></a>/proc文件系统 待补充</h4><h3 id="8-2-5-上下文切换"><a href="#8-2-5-上下文切换" class="headerlink" title="8.2.5 上下文切换"></a>8.2.5 上下文切换</h3><p>内核为每个进程维持一个上下文.上下文是内核重新启动一个被抢占的进程所需的状态.也是程序正确运行所必须的状态.<br>在进程的某些时刻,内核可以决定抢占当前进程,并重新开始一个先前被抢占的进程.这种决策叫做调度,由内核中称为调度器的代码处理.</p>
+<h2 id="8-3-系统调用错误处理"><a href="#8-3-系统调用错误处理" class="headerlink" title="8.3 系统调用错误处理"></a>8.3 系统调用错误处理</h2><p>当系统级函数遇到错误时,通常会设置全局整型变量errno,可以通过错误报告函数(输出错误信息,处理错误或退出程序)以及错误处理包装函数(将可能发生错误的函数和错误处理函数封装到一起)来处理错误同时防止代码臃肿.</p>
+<h2 id="8-4-进程控制"><a href="#8-4-进程控制" class="headerlink" title="8.4 进程控制"></a>8.4 进程控制</h2><h3 id="8-4-3-回收子进程"><a href="#8-4-3-回收子进程" class="headerlink" title="8.4.3 回收子进程"></a>8.4.3 回收子进程</h3><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202305050013956.png"></p>
+<h3 id="8-4-5加载并运行程序"><a href="#8-4-5加载并运行程序" class="headerlink" title="8.4.5加载并运行程序"></a>8.4.5加载并运行程序</h3><p>execve函数在当前进程的上下文中加载并运行一个新程序</p>
+<pre class=" language-c"><code class="language-c"><span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt; unistd.h></span></span>
+<span class="token keyword">int</span> <span class="token function">execve</span><span class="token punctuation">(</span><span class="token keyword">const</span> <span class="token keyword">char</span><span class="token operator">*</span> filename<span class="token punctuation">,</span><span class="token keyword">const</span> <span class="token keyword">char</span><span class="token operator">*</span> argv<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token keyword">const</span> <span class="token keyword">char</span><span class="token operator">*</span> envp<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>execve函数调用一次且只在发生错误(如找不到filename对应文件)才返回到调用程序.<br>argv变量指向一个以null结尾的指针数组,每个指针指向一个参数字符串,argv[0]为可执行目标文件的名字.envp指向一个以null结尾的指针数组,每个指针指向一个环境变量字符串,每个串都是形如”name=value”的名字-值对.<br>在execve加载了filename后,调用启动代码,将控制传递给新程序的主函数.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202305050022890.png"></p>
+<h3 id="程序与进程"><a href="#程序与进程" class="headerlink" title="程序与进程"></a>程序与进程</h3><p>程序是一堆代码和数据,可以作为目标文件存在于磁盘上,或者作为段存在于地址空间中.进程时执行中程序的一个实例.</p>
+<h3 id="利用fork和execve运行程序"><a href="#利用fork和execve运行程序" class="headerlink" title="利用fork和execve运行程序"></a>利用fork和execve运行程序</h3><h2 id="8-5-信号-重点且内容多-翻书查阅"><a href="#8-5-信号-重点且内容多-翻书查阅" class="headerlink" title="8.5 信号 (重点且内容多,翻书查阅)"></a>8.5 信号 (重点且内容多,翻书查阅)</h2><p>信号是更高层的软件形式的异常,低层的硬件异常是由内核异常处理程序处理的,正常情况下对用户进程不可见.信号提供一种机制,通知用户进程发生了这些异常.</p>
+<h3 id="8-5-1-信号术语"><a href="#8-5-1-信号术语" class="headerlink" title="8.5.1 信号术语"></a>8.5.1 信号术语</h3><p>接收信号:当目的进程被内核强迫以某种方式对信号作出反应时,它就接收了信号.一个发出而没有被接收的信号叫待处理信号.在任何时刻,一种类型至多只会有一个待处理信号.如果一个进程由有一个类型为k的待处理信号,那么任何接下来发送到这个进程的类型k的信号都不会排队等待,而是被直接丢弃.(如果当前进程正在执行k的信号处理程序,此时再次收到信号k,该信号会排队等待而不是丢弃)<br>实时信号将不会被丢弃,而是多次注册.</p>
+<p>捕获信号:调用信号处理程序<br>处理信号:执行信号处理程序</p>
+<p>进程只有处理完信号才会返回用户态，进程在用户态下不会有未处理完的信号.<br>如果进程收到一个要捕捉的信号，那么进程从内核态返回用户态时执行用户定义的函数。而且执行用户定义的函数的方法很巧妙，内核是在用户栈上创建一个新的层，该层中将返回地址的值设置成用户定义的处理函数的地址，这样进程从内核返回弹出栈顶时就返回到用户定义的函数处，从函数返回再弹出栈顶时，才返回原先进入内核的地方。这样做的原因是用户定义的处理函数不能且不允许在内核态下执行(如果用户定义的函数在内核态下运行的话，用户就可以获得任何权限)</p>
+<h2 id="8-6-非本地跳转"><a href="#8-6-非本地跳转" class="headerlink" title="8.6 非本地跳转"></a>8.6 非本地跳转</h2><p>setjmp(jmp_buf env),sigsetjmp(sigjmp_buf env,int savesigs)在参数env中保存当前调用环境.调用时返回0.且任何情形下返回值不能赋给变量.<br>(sigsetjmp保存的环境还包括信号的上下文:待处理的和被阻塞的信号向量)</p>
+<p>longjmp(jmp_buf env,int retval)函数从env中恢复最近一次初始化该env的setjmp调用保存的环境,然后从setjmp返回,并带有非零的返回值retval.</p>
+<p>也就是说,setjmp调用一次返回多次,longjmp调用一次,但从不返回.</p>
+<p>非本地跳转的一个重要应用就是允许从一个深层嵌套的函数调用中立即返回.(比如检测到错误后立即跳转到错误处理程序而不是费力地解开调用栈.)</p>
+<p>C++和Java地异常机制是较高层次的.catch类似于setjmp,throw类似于longjmp.</p>
+<h1 id="第九章-虚拟内存"><a href="#第九章-虚拟内存" class="headerlink" title="第九章 虚拟内存"></a>第九章 虚拟内存</h1><h2 id="9-1-物理和虚拟寻址"><a href="#9-1-物理和虚拟寻址" class="headerlink" title="9.1 物理和虚拟寻址"></a>9.1 物理和虚拟寻址</h2><p>使用虚拟寻址,CPU通过生成一个虚拟地址(VA)来访问主存,该虚拟地址被CPU上芯片上的内存管理单元(利用存放在主存中的页表)翻译为物理地址.</p>
+<h2 id="9-3-虚拟内存作为缓存的工具"><a href="#9-3-虚拟内存作为缓存的工具" class="headerlink" title="9.3 虚拟内存作为缓存的工具"></a>9.3 虚拟内存作为缓存的工具</h2><p>VM系统将虚拟内存分割为虚拟页(VP)作为主存和磁盘之间的传输单元.类似的,物理内存被分割为物理页(PP),大小与VP相同.物理页也被称为页帧(page frame)<br>在任意时刻虚拟页面的集合都分为三个不相交的子集:</p>
+<ol>
+<li>未分配的:VM还未分配或创建的页.未分配的页没有任何数据和它们相关联,因此也就不占用任何磁盘空间.</li>
+<li>缓存的:当前已缓存在物理内存中的已分配页</li>
+<li>未缓存的:未缓存在物理内存中的已分配页(即只存在于磁盘上)</li>
+</ol>
+<h3 id="页表"><a href="#页表" class="headerlink" title="页表"></a>页表</h3><p>虚拟内存系统必须有某种方法判定一个虚拟页是否缓存在DRAM中的某个地方.如果是,系统还必须确定这个虚拟页存放在哪个物理页中.如果不命中,系统必须判断这个虚拟页存放在磁盘的哪个位置.在物理内存中选择一个牺牲页,并将虚拟页从磁盘复制到DRAM中,替换这个牺牲页.</p>
+<p>页表存放在物理内存中,将虚拟页映射到物理页.每次地址翻译时都会读取页表.操作系统负责维护页表内容,以及在磁盘与DRAM之间来回传送页.<br>页表是一个页表条目(PTE)的数组.虚拟地址空间的每个页在页表中一个固定偏移量处都有一个PTE.</p>
+<p>简化后的页表示意图:<br>将每个PTE简化为一个有效位和一个n位地址字段.<br>若有效位为1,说明该条目对应的虚拟页缓存在物理内存中,地址字段保存该物理页的物理页号.<br>若有效位为0,说明该条目对应虚拟页未缓存.地址字段表示该虚拟页对应的磁盘地址,若为空表示该虚拟页还未分配.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202306191358796.jpg"></p>
+<h3 id="缺页"><a href="#缺页" class="headerlink" title="缺页"></a>缺页</h3><p>DRAM缓存不命中称为缺页.<br>缺页后触发缺页异常,调用内核中的缺页异常处理程序,选择一个牺牲页进行替换(页面调度)并修改页表.若该牺牲页已经被修改过了,那么内核会将它复制回磁盘.<br>(言外之意就是,其实物理内存中的已经缓存的页在磁盘中也有一个副本,要是没修改过就不用更新,不过已分配页的磁盘地址保存在哪?)<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202306191403569.jpg"></p>
+<h3 id="局部性"><a href="#局部性" class="headerlink" title="局部性"></a>局部性</h3><p>局部性原则保证了在任意时刻,程序趋向于在一个较小的活动页面集合上工作,这个集合叫做工作集或者常驻集合.如果工作集的大小超出了物理内存的大小,就产生”抖动”.</p>
+<h2 id="9-6-地址翻译"><a href="#9-6-地址翻译" class="headerlink" title="9.6 地址翻译"></a>9.6 地址翻译</h2><p>口述一遍这个图的流程,每个流程是怎么实现的以及每一个流程的目的,为什么能加快速度或节约物理内存,地址翻译也就差不多搞清楚了.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202306191759005.jpg"></p>
+<h2 id="9-8-内存映射"><a href="#9-8-内存映射" class="headerlink" title="9.8 内存映射"></a>9.8 内存映射</h2><h3 id="内存映射与对象"><a href="#内存映射与对象" class="headerlink" title="内存映射与对象"></a>内存映射与对象</h3><p>Linux通过将一个虚拟内存区域与一个磁盘上的对象关联起来,以初始化这个虚拟内存区域的内容,这个过程称为写时映射.(对象分为普通文件和匿名文件)<br>如果一个进程将一个共享对象映射到它的虚拟地址空间的一个区域内,那么这个进程对这个区域的任何些操作,对于任何映射了这个共享对象的其他进程也是可见的.而且这些变化也会反映在磁盘上的原始对象中.<br>对于一个映射到私有对象的区域所作的改变,对其他进程来说是不可见的.并且进程对这个区域做的所有操作都不会反映在磁盘的对象中.(对这一点的理解,比如pwn题你改了bss段的数据,可执行文件改变了吗?)</p>
+<p>当两个进程将同一个私有对象映射到虚拟内存中时,共享这个对象的同一个物理副本.该区域在每个进程的页表条目中都被标记为只读.当一个进程试图写这个区域时触发缺页异常,异常处理程序发现该异常是由于对<code>"私有的写时复制区域中的一个页面"</code>的写造成的,就会在物理内存中创建这个页面的一个新副本,更新该进程的页表条目指向这个新副本,恢复该页面的可写权限.</p>
+<h3 id="fork"><a href="#fork" class="headerlink" title="fork"></a>fork</h3><p>当fork被进程调用,内核为新进程创建各种数据结构.创建了当前进程的mm_struct、区域结构和页表的原样副本,并将两个进程中的每个页面都标记为只读,每个区域结构都标记为私有的写时复制.(父子进程私有地址空间的原理)</p>
+<blockquote>
+<p>提问:既然都标为只读和私有的写时复制了,那父子进程都进行写操作后,不久存三个物理副本了?这不是浪费吗…<br>答:”进程对私有对象的区域所作的改变不会反映在磁盘对象中”,也就是说就算你只有一个进程,进行写的时候也会产生副本,因为改变不能反映在磁盘对象中</p>
+</blockquote>
+<h3 id="execve"><a href="#execve" class="headerlink" title="execve"></a>execve</h3><p>从内存映射的视角再看execve做了些什么.</p>
+<pre class=" language-cpp"><code class="language-cpp"><span class="token function">execve</span><span class="token punctuation">(</span><span class="token string">"a.out"</span><span class="token punctuation">,</span><span class="token constant">NULL</span><span class="token punctuation">,</span><span class="token constant">NULL</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<ol>
+<li>删除已存在的用户区域,删除当前进程虚拟地址的用户部分中的已存在的区域结构</li>
+<li>映射私有区域,为新程序的代码、数据、bss和栈区域创建新的数据结构.代码和数据区域被映射为可执行文件中的.text和.data区,bss段是请求二进制零的,映射到匿名文件.(这里可以与C/C++中的变量存储联系起来,什么样的变量会存到bss段?未初始化的静态变量和初始化为0的全局(或静态)变量)</li>
+<li>映射共享区域.libc.so之类的.</li>
+<li>设置程序计数器(PC),指向代码区域的入口点.<br>当然这只是完成了映射,当开始执行时,才调度页面进入主存.</li>
+</ol>
+<h3 id="mmap"><a href="#mmap" class="headerlink" title="mmap"></a>mmap</h3><p>Linux进程可以使用mmap创建新的虚拟内存区域,并将对象映到这些区域中.</p>
+<pre class=" language-cpp"><code class="language-cpp"><span class="token keyword">void</span><span class="token operator">*</span> <span class="token function">mmap</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span> start<span class="token punctuation">,</span>size_t lenth<span class="token punctuation">,</span><span class="token keyword">int</span> prot<span class="token punctuation">,</span><span class="token keyword">int</span> flags<span class="token punctuation">,</span><span class="token keyword">int</span> fd<span class="token punctuation">,</span>off_t offset<span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true">//start:新区域的起始地址</span>
+<span class="token comment" spellcheck="true">//prot:权限</span>
+<span class="token comment" spellcheck="true">//flags:对象类型,MAP_ANON,MAP_SHARED,MAP_PRIVATE</span>
+<span class="token comment" spellcheck="true">//fd:文件描述符(回想一下内存映射的对象就是文件)</span>
+<span class="token comment" spellcheck="true">//offset:映射开始位置相对文件起始位置的偏移量</span>
+
+<span class="token keyword">int</span> <span class="token function">munmap</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span> start<span class="token punctuation">,</span>size_t lenth<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<h2 id="9-9-动态内存分配"><a href="#9-9-动态内存分配" class="headerlink" title="9.9 动态内存分配"></a>9.9 动态内存分配</h2><h3 id="9-9-3-分配器的要求和目标"><a href="#9-9-3-分配器的要求和目标" class="headerlink" title="9.9.3 分配器的要求和目标"></a>9.9.3 分配器的要求和目标</h3><h4 id="要求"><a href="#要求" class="headerlink" title="要求"></a>要求</h4><ol>
+<li>处理任意请求序列</li>
+<li>立即响应请求</li>
+<li>只使用堆</li>
+<li>对齐块</li>
+<li>不修改已分配的块</li>
+</ol>
+<h4 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h4><ol>
+<li>最大化吞吐率</li>
+<li>最大化内存利用率</li>
+</ol>
+<h3 id="9-9-5-实现问题"><a href="#9-9-5-实现问题" class="headerlink" title="9.9.5 实现问题"></a>9.9.5 实现问题</h3><p>空闲块组织:如何记录空闲块<br>放置:如何选择合适的空闲块来放置新分配的块<br>分割:在一个新分配的块放置到某个空闲块之后,我们如何处理这个空闲块中的剩余部分?<br>合并:如何处理一个刚刚释放的块(如何处理内存中连续的多个空闲块)</p>
+<h1 id="第十一章-网络编程"><a href="#第十一章-网络编程" class="headerlink" title="第十一章 网络编程"></a>第十一章 网络编程</h1><h2 id="11-1-客户端-服务器编程模型"><a href="#11-1-客户端-服务器编程模型" class="headerlink" title="11.1 客户端-服务器编程模型"></a>11.1 客户端-服务器编程模型</h2><p>每个网络应用都是基于客户端-服务器模型的.该模型的基本操作是事物.<br>一个事物由四步组成:</p>
+<ol>
+<li>客户端向服务器发送请求</li>
+<li>服务器接收、解释请求,以适当的方式操作它的资源.</li>
+<li>服务器给客户端发送一个响应,等待下一个请求.</li>
+<li>客户端收到响应并处理它.</li>
+</ol>
+<h2 id="11-3"><a href="#11-3" class="headerlink" title="11.3"></a>11.3</h2><p>数据可以同时双向流动,它是全双工的.<br>一个套接字是连接的一个断点.每个套接字都有相应的套接字地址.当客户端发起一个连接请求,客户端套接字地址的端口是由内核自动分配的,称为临时端口.<br>一个连接是由它两端的套接字地址唯一确定的.这对套接字地址叫做套接字对.<br>(cliaddr:cliport,servaddr:servport)</p>
+<h1 id="第十二章-并发编程"><a href="#第十二章-并发编程" class="headerlink" title="第十二章 并发编程"></a>第十二章 并发编程</h1><p>互斥（mutualexclusion）:保证一个线程在临界区执行时，其他线程应该被阻止进入临界区.互斥也并不是只针对多线程。在多进程竞争共享资源的时候，也同样是可以使用互斥的方式来避免资源竞争造成的资源混乱。<br>同步，就是并发进程/线程在一些关键点上可能需要互相等待与互通消息，这种相互制约的等待与互通信息称为进程/线程同步。<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202306261127339.png"></p>
+<p>互斥一般用锁来实现,同步用信号量来实现.信号量同时也可以用作互斥锁.</p>
+<h2 id="12-5-用信号量同步线程"><a href="#12-5-用信号量同步线程" class="headerlink" title="12.5 用信号量同步线程"></a>12.5 用信号量同步线程</h2><h3 id="12-5-4-利用信号量来调度共享资源"><a href="#12-5-4-利用信号量来调度共享资源" class="headerlink" title="12.5.4 利用信号量来调度共享资源"></a>12.5.4 利用信号量来调度共享资源</h3><h4 id="生产者-消费者问题"><a href="#生产者-消费者问题" class="headerlink" title="生产者-消费者问题"></a>生产者-消费者问题</h4><h5 id="CSAPP实例程序中多个P-V操作的顺序问题"><a href="#CSAPP实例程序中多个P-V操作的顺序问题" class="headerlink" title="CSAPP实例程序中多个P,V操作的顺序问题"></a>CSAPP实例程序中多个P,V操作的顺序问题</h5><p>P的顺序是不可交换的,一定是先P可用槽数量或可用数据的信号量,再P互斥锁.否则当互斥锁上锁之后再发现无可用槽或数据,该线程阻塞,而此时对应的生产者/消费者线程由于无法互斥锁上锁同样阻塞,形成死锁.也就是说,互斥锁的上锁一定是在判断完其他条件之后,在正式访问、更改数据之前的最后一个操作.</p>
+<p>V的顺序是可交换的,但类似示例程序的情形还是推荐先解锁.对于该次Insert后槽已填满的情况,V(slots)的行为的速度对其他线程并无影响.但互斥锁会阻塞消费者读取数据.所以先解锁再V(slots)可以加快消费者的速度,尽量减少槽被填满后下次生产者的阻塞.</p>
+<h4 id="读者写者问题"><a href="#读者写者问题" class="headerlink" title="读者写者问题"></a>读者写者问题</h4><blockquote>
+<pre><code>「读-读」允许：同一时刻，允许多个读者同时读
+「读-写」互斥：没有写者时读者才能读，没有读者时写者才能写
+「写-写」互斥：没有其他写者时，写者才能写
+</code></pre>
+</blockquote>
+<h4 id="生产者消费者区别和读者写者问题的区别"><a href="#生产者消费者区别和读者写者问题的区别" class="headerlink" title="生产者消费者区别和读者写者问题的区别"></a>生产者消费者区别和读者写者问题的区别</h4><p>前者用于数据生成和消费分离的场景,后者适用于读操作和写操作分离的场景.<br>多个读者可以同时读取共享数据.多个生产者不能同时完成生产.<br><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/161936748">https://zhuanlan.zhihu.com/p/161936748</a></p>
+<h3 id="12-7-5-死锁"><a href="#12-7-5-死锁" class="headerlink" title="12.7.5 死锁"></a>12.7.5 死锁</h3><p>如果每个线程都是以一种顺序获得互斥锁并已相反的顺序释放,那么这个程序就是无死锁的.</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2023/06/25/CSAPP--Notes/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CSAPP/" rel="tag">CSAPP</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/2023/06/26/CSAPP-Labs/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            CSAPP Labs
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2023/03/12/Pwnhub-2023-March-WP/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Pwnhub 2023 3月公开赛 WP</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2023
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>
