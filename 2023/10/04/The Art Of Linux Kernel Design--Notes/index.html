@@ -113,11 +113,11 @@
     <div class="article-entry" itemprop="articleBody">
        
   <p>Linux0.11内核.正文部分记录过程,引用部分记录知识点和理解.</p>
-<span id="more"></span>
 <h1 id="main函数之前的功能"><a href="#main函数之前的功能" class="headerlink" title="main函数之前的功能"></a>main函数之前的功能</h1><h2 id="加载操作系统"><a href="#加载操作系统" class="headerlink" title="加载操作系统"></a>加载操作系统</h2><p>经典流程:<br>计算机加电设置cs:ip为0xffff0,运行ROM中的BIOS,BIOS初始化中断向量表和一些硬件设备,加载0盘0道1扇区的引导程序bootsect到0x7c00处.bootsect是与操作系统配套的,规划物理内存,加载操作系统,设置根设备为软盘.</p>
 <blockquote>
 <p>Linux0.11要求系统必须存在一个根文件系统,其他文件系统挂接其上.因此Linux的启动需要两部分数据,即系统内核镜像和根文件系统.(kernel pwn中的bzimage和文件系统(比如busybox提供的))</p>
 </blockquote>
+<span id="more"></span>
 <h2 id="保护模式"><a href="#保护模式" class="headerlink" title="保护模式"></a>保护模式</h2><p>关闭中断.设置和全局描述符表(GDT),打开A20gate实现32位寻址(实模式下寻址范围为低1MB).CR0PE标志置1,enable 保护模式,GDT启用,段基址寄存器以选择子形式使用.</p>
 <p>设置段寄存器以适应保护模式,建立内核页目录表,建立中断描述符表(IDT),开启分页模式.以ret模式进入main函数.</p>
 <h1 id="环境设备初始化及激活进程0"><a href="#环境设备初始化及激活进程0" class="headerlink" title="环境设备初始化及激活进程0"></a>环境设备初始化及激活进程0</h1><p>初始化根设备和硬盘.设置缓冲区.</p>
@@ -370,7 +370,7 @@
     </li>
     
     <li class="nav-item">
-      <a class="nav-item-link" href="/about">关于</a>
+      <a class="nav-item-link" href="/2022/01/01/About">关于</a>
     </li>
     
   </ul>

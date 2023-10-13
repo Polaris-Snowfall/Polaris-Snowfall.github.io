@@ -113,7 +113,6 @@
     <div class="article-entry" itemprop="articleBody">
        
   <p>heap没出没进线下…</p>
-<span id="more"></span>
 <h2 id="login"><a href="#login" class="headerlink" title="login"></a>login</h2><p>qemu-riscv64 -g 2333 ./pwn<br>gdbinit这样设置方便调试,然后gdb-multiarch -x gdbinit就能调了</p>
 <pre class=" language-gdb"><code class="language-gdb">set arch riscv:rv64
 target remote 127.0.0.1:2333
@@ -126,6 +125,7 @@ end
 b *0x123457EA
 c
 </code></pre>
+<span id="more"></span>
 <p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202309281240372.png"></p>
 <h3 id="逆向"><a href="#逆向" class="headerlink" title="逆向"></a>逆向</h3><p>main函数,一次向unk_12347078读入8字节,一次向栈上读入最多0x120字节,没有溢出.之后跳转到sub_12345786函数,即vuln.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202309281230369.png"><br>vuln函数:<br>调用strlen函数检查之前在main函数中第二次输入的数据长度是否小于8,这里有个andi a4,a5,0xFF的操作,即只取了strlen结果的低8位,则0x108被转换成0x8,完成绕过.而返回地址恰好存储在strcpy(dest,source)的dest+0x100的地方,正好可以覆盖.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202309281229972.png"><br>还有个后门函数不过有过滤,可以直接跳到这个位置绕过过滤.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202309281239787.png"></p>
 <h3 id="exp"><a href="#exp" class="headerlink" title="exp"></a>exp</h3><pre class=" language-python"><code class="language-python">offset <span class="token operator">=</span> <span class="token number">0x100</span>
@@ -531,7 +531,7 @@ io<span class="token punctuation">.</span>interactive<span class="token punctuat
     </li>
     
     <li class="nav-item">
-      <a class="nav-item-link" href="/about">关于</a>
+      <a class="nav-item-link" href="/2022/01/01/About">关于</a>
     </li>
     
   </ul>

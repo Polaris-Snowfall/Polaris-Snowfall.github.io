@@ -113,10 +113,10 @@
     <div class="article-entry" itemprop="articleBody">
        
   <p>所有内容均基于SGI STL.该项目仅作为本人学习C++STL库,数据结构与算法使用.</p>
-<span id="more"></span>
 <h2 id="内存置配器"><a href="#内存置配器" class="headerlink" title="内存置配器"></a>内存置配器</h2><p>容器使用内存置配器来进行内存空间的分配和释放.<br>为了适配STL标准,在实际使用的分配器实现一个上层接口类simple_alloc.该类默认使用第二级分配器</p>
 <h3 id="第一级分配器-malloc-alloc-template"><a href="#第一级分配器-malloc-alloc-template" class="headerlink" title="第一级分配器 malloc_alloc_template"></a>第一级分配器 malloc_alloc_template</h3><p>该分配器在内部直接使用operator new/delete进行内存管理</p>
 <h3 id="第二级分配器-default-alloc-template"><a href="#第二级分配器-default-alloc-template" class="headerlink" title="第二级分配器 default_alloc_template"></a>第二级分配器 default_alloc_template</h3><p>该分配器以小型内存池进行内存管理,减轻分配内存时的cookie占用的内存.</p>
+<span id="more"></span>
 <h4 id="成员变量"><a href="#成员变量" class="headerlink" title="成员变量"></a>成员变量</h4><p>维护一个free_list数组,每一个free_list是一个存放未分配内存的单向链表(的头指针).用来管理释放或未分配的内存.<br>另外维护两个所有二级分配器共用的静态指针start_free和end_free,分别指向空闲内存(空闲且未链入free_list)的首尾.<br>还有一个size_t类型的heap_size成员,在重新向操作系统malloc内存时会用到其来计算需要申请的空间大小,但不太懂其存在的意义.</p>
 <h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><h5 id="内存分配"><a href="#内存分配" class="headerlink" title="内存分配"></a>内存分配</h5><p>当容器使用alloc分配空间时,若内存超过128bytes(MAX_BYTES)使用第一级分配器进行内存分配.反之使用第二级.</p>
 <p>首先检查对应大小的free_list是否存在未分配空间.若有就直接取出.<br>如果没有,调用refill函数用空闲内存区域先填充free_list(内存充足的情况下每次链入20块),再取出一块完成分配.<br>refill函数其实只负责将从空闲内存区域取出的空间链入free_list,实际的取出工作由chunk_alloc函数完成.</p>
@@ -410,7 +410,7 @@
     </li>
     
     <li class="nav-item">
-      <a class="nav-item-link" href="/about">关于</a>
+      <a class="nav-item-link" href="/2022/01/01/About">关于</a>
     </li>
     
   </ul>

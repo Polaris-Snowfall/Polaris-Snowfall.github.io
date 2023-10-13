@@ -113,8 +113,8 @@
     <div class="article-entry" itemprop="articleBody">
        
   <p>(<del>距上一次好好看题应该有两个月了吧….</del></p>
-<span id="more"></span>
 <h2 id="Dream"><a href="#Dream" class="headerlink" title="Dream"></a>Dream</h2><h3 id="逆向"><a href="#逆向" class="headerlink" title="逆向"></a>逆向</h3><p>第一次看多线程的题.没开pie和canary.<br>主线程在开启一个子线程后开启沙盒只能使用read,write调用,然后是一个0x10字节的溢出.<br>子线程是一个write的无限循环.</p>
+<span id="more"></span>
 <h3 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h3><p>主线程禁掉了open,所以无法进行orw.由于子线程是在主线程开启沙箱前创建的,不受沙箱影响.所以最终是要在子线程中执行system.<br>要通过主线程的溢出劫持子线程的控制流,可以通过线程间共享的got表.将write的got表改为主线程中溢出的地址.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202307161610872.png"></p>
 <p>由于新线程的栈是mmap得到的,所以可以利用其与libc的固定偏移得到.在子线程上再进行栈迁移+rop.<br>(感觉这题的各种偏移巧妙得诡异)</p>
 <h3 id="EXP"><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h3><pre class=" language-python"><code class="language-python">magic_read <span class="token operator">=</span> <span class="token number">0x4013AE</span>
@@ -487,7 +487,7 @@ io<span class="token punctuation">.</span>interactive<span class="token punctuat
     </li>
     
     <li class="nav-item">
-      <a class="nav-item-link" href="/about">关于</a>
+      <a class="nav-item-link" href="/2022/01/01/About">关于</a>
     </li>
     
   </ul>

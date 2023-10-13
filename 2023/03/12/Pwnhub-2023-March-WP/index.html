@@ -113,7 +113,6 @@
     <div class="article-entry" itemprop="articleBody">
        
   <p>Pwnhub 2023 3月公开赛 WP</p>
-<span id="more"></span>
 <h2 id="sh-v1-1"><a href="#sh-v1-1" class="headerlink" title="sh_v1_1"></a>sh_v1_1</h2><p>glibc2.31堆题<br>一堆莫名其妙的全局变量运算,白看了半天最后发现一点用都没有.<br>恢复一下结构体</p>
 <pre class=" language-c"><code class="language-c"><span class="token keyword">struct</span> file<span class="token punctuation">{</span>
 <span class="token keyword">long</span> flag<span class="token punctuation">;</span>
@@ -122,6 +121,7 @@
 <span class="token punctuation">}</span>
 </code></pre>
 <p>程序逻辑就是模拟的一个linux终端,输入命令进行相应处理.<br>漏洞在ln的时候可以备份指针造成uaf</p>
+<span id="more"></span>
 <p>先free两个堆块进tcache,然后uaf部分覆写next指针指向另一个堆块的size域,改成0x421放进unsortedbin泄露libc地址.<br>之后正常打free_hook就行了</p>
 <pre class=" language-python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">find_libc</span><span class="token punctuation">(</span>func<span class="token punctuation">,</span>addr<span class="token punctuation">)</span><span class="token punctuation">:</span>
 <span class="token operator">&amp;</span>nbsp<span class="token punctuation">;</span> <span class="token operator">&amp;</span>nbsp<span class="token punctuation">;</span> <span class="token keyword">global</span> libc<span class="token punctuation">,</span>libc_base<span class="token punctuation">,</span>system_addr<span class="token punctuation">,</span>binsh_addr<span class="token punctuation">,</span>realloc_addr<span class="token punctuation">,</span>free_hook_addr<span class="token punctuation">,</span>onegadget
@@ -528,7 +528,7 @@ io<span class="token punctuation">.</span>interactive<span class="token punctuat
     </li>
     
     <li class="nav-item">
-      <a class="nav-item-link" href="/about">关于</a>
+      <a class="nav-item-link" href="/2022/01/01/About">关于</a>
     </li>
     
   </ul>

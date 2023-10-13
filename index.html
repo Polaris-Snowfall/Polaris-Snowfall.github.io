@@ -199,7 +199,11 @@
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>Linux0.11内核.正文部分记录过程,引用部分记录知识点和理解.</p> 
+  <p>Linux0.11内核.正文部分记录过程,引用部分记录知识点和理解.</p>
+<h1 id="main函数之前的功能"><a href="#main函数之前的功能" class="headerlink" title="main函数之前的功能"></a>main函数之前的功能</h1><h2 id="加载操作系统"><a href="#加载操作系统" class="headerlink" title="加载操作系统"></a>加载操作系统</h2><p>经典流程:<br>计算机加电设置cs:ip为0xffff0,运行ROM中的BIOS,BIOS初始化中断向量表和一些硬件设备,加载0盘0道1扇区的引导程序bootsect到0x7c00处.bootsect是与操作系统配套的,规划物理内存,加载操作系统,设置根设备为软盘.</p>
+<blockquote>
+<p>Linux0.11要求系统必须存在一个根文件系统,其他文件系统挂接其上.因此Linux的启动需要两部分数据,即系统内核镜像和根文件系统.(kernel pwn中的bzimage和文件系统(比如busybox提供的))</p>
+</blockquote> 
       <a class="article-more-link" href="/2023/10/04/The%20Art%20Of%20Linux%20Kernel%20Design--Notes/"
         >阅读更多...</a
       >
@@ -255,7 +259,19 @@
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>heap没出没进线下…</p> 
+  <p>heap没出没进线下…</p>
+<h2 id="login"><a href="#login" class="headerlink" title="login"></a>login</h2><p>qemu-riscv64 -g 2333 ./pwn<br>gdbinit这样设置方便调试,然后gdb-multiarch -x gdbinit就能调了</p>
+<pre><code class="gdb">set arch riscv:rv64
+target remote 127.0.0.1:2333
+define hook-stop
+    info reg
+    echo "\n\n\n\n\n"
+    x/10i $pc
+end
+
+b *0x123457EA
+c
+</code></pre> 
       <a class="article-more-link" href="/2023/10/01/ycb2023/"
         >阅读更多...</a
       >
@@ -311,7 +327,10 @@
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>所有内容均基于SGI STL.该项目仅作为本人学习C++STL库,数据结构与算法使用.</p> 
+  <p>所有内容均基于SGI STL.该项目仅作为本人学习C++STL库,数据结构与算法使用.</p>
+<h2 id="内存置配器"><a href="#内存置配器" class="headerlink" title="内存置配器"></a>内存置配器</h2><p>容器使用内存置配器来进行内存空间的分配和释放.<br>为了适配STL标准,在实际使用的分配器实现一个上层接口类simple_alloc.该类默认使用第二级分配器</p>
+<h3 id="第一级分配器-malloc-alloc-template"><a href="#第一级分配器-malloc-alloc-template" class="headerlink" title="第一级分配器 malloc_alloc_template"></a>第一级分配器 malloc_alloc_template</h3><p>该分配器在内部直接使用operator new/delete进行内存管理</p>
+<h3 id="第二级分配器-default-alloc-template"><a href="#第二级分配器-default-alloc-template" class="headerlink" title="第二级分配器 default_alloc_template"></a>第二级分配器 default_alloc_template</h3><p>该分配器以小型内存池进行内存管理,减轻分配内存时的cookie占用的内存.</p> 
       <a class="article-more-link" href="/2023/09/12/STL--Notes/"
         >阅读更多...</a
       >
@@ -367,7 +386,8 @@
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>(<del>距上一次好好看题应该有两个月了吧….</del></p> 
+  <p>(<del>距上一次好好看题应该有两个月了吧….</del></p>
+<h2 id="Dream"><a href="#Dream" class="headerlink" title="Dream"></a>Dream</h2><h3 id="逆向"><a href="#逆向" class="headerlink" title="逆向"></a>逆向</h3><p>第一次看多线程的题.没开pie和canary.<br>主线程在开启一个子线程后开启沙盒只能使用read,write调用,然后是一个0x10字节的溢出.<br>子线程是一个write的无限循环.</p> 
       <a class="article-more-link" href="/2023/07/20/DASCTF-2023-June-Binary-WP/"
         >阅读更多...</a
       >
@@ -479,7 +499,8 @@
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>CSAPP阅读笔记</p> 
+  <p>CSAPP阅读笔记<br>文章仅作为笔者复习参考,其中内容仅为笔者当前阶段学习CSAPP的理解.</p>
+<h1 id="第三章-程序的机器级表示"><a href="#第三章-程序的机器级表示" class="headerlink" title="第三章 程序的机器级表示"></a>第三章 程序的机器级表示</h1><h3 id="3-6-1条件码"><a href="#3-6-1条件码" class="headerlink" title="3.6.1条件码:"></a>3.6.1条件码:</h3><p>CF:进位标志.最近的操作使最高位产生了进位.<br>ZF:零标志.最近操作的结果为0.<br>SF:符号标志.最近的操作得到负数.<br>OF:溢出标志.最近的操作导致一个补码溢出<br>PF:奇偶标志位.最近操作的结果所有bit中1为偶数<br>AF:辅助进位标志位 运算过程中看最后四位,不论长度为多少 最后四位向前有进位或者借位,AF=1,否则AF=0<br>TF:调试标志位 当TF=1时,处理器每次只执行一条指令,即单步执行<br>IF:中断允许标志位 它用来控制8086是否允许接收外部中断请求 若IF=1,8086能响应外部中断,反之则屏蔽外部中断<br>DF:方向标志位 在串处理指令中,每次操作后,如果DF=0,si di递增,如果DF=1,si di递减;注意此处DF的值是由程序员进行设定的 cld命令是将DF设置为0,std命令是将DF设置为1<br>进位标志表示无符号数运算结果是否超出范围，运算结果仍然正确；<br>溢出标志表示有符号数运算结果是否超出范围，运算结果已经不正确。<br>leaq指令不改变任何条件码.对于逻辑操作,进位标志和溢出标志会设置成0.对于移作,进位标志将设置为最后一个被移出的位,溢出标志设置为0.INC和DEC指令仅设出和零标志.</p> 
       <a class="article-more-link" href="/2023/06/25/CSAPP--Notes/"
         >阅读更多...</a
       >
@@ -535,7 +556,15 @@
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>Pwnhub 2023 3月公开赛 WP</p> 
+  <p>Pwnhub 2023 3月公开赛 WP</p>
+<h2 id="sh-v1-1"><a href="#sh-v1-1" class="headerlink" title="sh_v1_1"></a>sh_v1_1</h2><p>glibc2.31堆题<br>一堆莫名其妙的全局变量运算,白看了半天最后发现一点用都没有.<br>恢复一下结构体</p>
+<pre><code class="c">struct file{
+long flag;
+char filename[32];
+char* content_ptr;
+}
+</code></pre>
+<p>程序逻辑就是模拟的一个linux终端,输入命令进行相应处理.<br>漏洞在ln的时候可以备份指针造成uaf</p> 
       <a class="article-more-link" href="/2023/03/12/Pwnhub-2023-March-WP/"
         >阅读更多...</a
       >
@@ -747,7 +776,7 @@
     </li>
     
     <li class="nav-item">
-      <a class="nav-item-link" href="/about">关于</a>
+      <a class="nav-item-link" href="/2022/01/01/About">关于</a>
     </li>
     
   </ul>
