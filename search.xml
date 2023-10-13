@@ -4,6 +4,60 @@
   
     
     <entry>
+      <title>词法分析</title>
+      <link href="/2023/10/13/Lexical-Analysis/"/>
+      <url>/2023/10/13/Lexical-Analysis/</url>
+      
+        <content type="html"><![CDATA[<h1 id="词法分析"><a href="#词法分析" class="headerlink" title="词法分析"></a>词法分析</h1><h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><h3 id="词法分析-1"><a href="#词法分析-1" class="headerlink" title="词法分析"></a>词法分析</h3><p>词法分析是编译的第一阶段.词法分析主要任务是读入输入字符,产生记号(token)序列,提交给语法分析使用.<br>由于这种交互模式,词法分析器可以作为语法分析器的子程序或协作程序.语法分析器每次调用词法分析器持续读入字符,直到识别出下一个记号.</p><p>词法分析除了产生记号,也收集记号相关的信息作为记号的属性(比如数字的值,标识符对应的字符串).记号影响语法分析,记号的属性影响记号的翻译.属性一般存储在符号表中.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121650256.png"></p><h3 id="记号、模式、词素"><a href="#记号、模式、词素" class="headerlink" title="记号、模式、词素"></a>记号、模式、词素</h3><p>词素是源程序的字符序列</p><p>模式是描述源程序中表示特定记号的词素集合的规则.</p><p>每个符合某模式的词素经词法分析后产生对应的记号.</p><h3 id="记号的描述"><a href="#记号的描述" class="headerlink" title="记号的描述"></a>记号的描述</h3><p>字母表: 有限符号的集合<br>语言是给定字母表上任意字符串的集合.</p><h4 id="正规表达式-Regular-Expressions"><a href="#正规表达式-Regular-Expressions" class="headerlink" title="正规表达式 Regular Expressions"></a>正规表达式 Regular Expressions</h4><p>正规表达式表示的语言叫做正规集.</p><h5 id="非正规集"><a href="#非正规集" class="headerlink" title="非正规集"></a>非正规集</h5><p>正规表达式描述能力有限,其不能描述均衡或嵌套结构,如具有配对括号的符号串集合.<br>正规表达式只能表示固定次数的重复或给定结构的没有指定次数的重复.</p><h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p>接下来我们要完成对一个给定的正规表达式r的识别器的构造.</p><h3 id="有穷自动机"><a href="#有穷自动机" class="headerlink" title="有穷自动机"></a>有穷自动机</h3><h4 id="概念-1"><a href="#概念-1" class="headerlink" title="概念"></a>概念</h4><p>语言的识别器是一个程序,它以字符串x作为输入,输出true(接受)或false来表示x是否是语言的句子.</p><p>不确定的有穷自动机(NFA):<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121724289.png"><br>NFA可以由带标记的有向图(状态转换图),转换表表示.<br>F(T,a)=S:在T状态时,如果当前输入字符是a,可以转换到S状态(对于NFA来说,这里的S可能是一个状态集合)<br>当且仅当对应的转换图中存在从开始状态到某个接受状态的路径,使得该路径的便上的标记恰好连成字符串x时,NFA接受字符串x.</p><p>确定的有穷自动机(DFA)是特殊的NFA:<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121725005.png"><br>也就是对于当前正在识别的字符a,当前状态有唯一的转换,这非常适合计算机的模拟.</p><h4 id="模拟DFA"><a href="#模拟DFA" class="headerlink" title="模拟DFA"></a>模拟DFA</h4><p>算法: 持续读入字符并根据当前输入字符进行状态转换(“对于当前正在识别的字符a,当前状态有唯一的转换”),当输入结束,检查当前状态是否为一个接受状态.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121735931.png"></p><p>有了DFA的模拟算法,现在只需要构造r的DFA表示.</p><h4 id="从正规表达式到NFA"><a href="#从正规表达式到NFA" class="headerlink" title="从正规表达式到NFA"></a>从正规表达式到NFA</h4><p>然而更容易的方式是从正规表达式r先构造出一个NFA.</p><h5 id="Thompson构造法"><a href="#Thompson构造法" class="headerlink" title="Thompson构造法"></a>Thompson构造法</h5><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121745954.png"></p><p>对于字符表中的每个符号a(包括ε),构造一个如下的NFA.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121750561.png"></p><p>接下来要做的便是根据正规表达式r来”组合”之前产生的NFA.<br>实际就是改变之前各NFA初始状态和接受状态,并增加一些结点和有向边,从而”组合”成r的NFA.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121758670.png"></p><p>这样产生的NFA有以下的性质:<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121802370.png"></p><h4 id="从NFA到DFA"><a href="#从NFA到DFA" class="headerlink" title="从NFA到DFA"></a>从NFA到DFA</h4><p>其实就是消除ε转换(目标1)和对同一输入符号的多种转换(目标2).</p><h5 id="子集构造算法"><a href="#子集构造算法" class="headerlink" title="子集构造算法"></a>子集构造算法</h5><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121820731.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121821896.png"></p><p>分析一下这个算法是怎么实现这两个目标的.</p><p>通过ε-closure()来合并只通过ε转换可以达到的状态为一个状态集,这个状态集是该算法操作的基本单位(目标1).<br>对于某个状态T对某个特定字符a的一种或多种(对于转换的结果而言)转换关系F(T,a),产生一个新的状态(这个状态是NFA中F(T,a)的所有输出状态的集合).之后再根据该状态集合里的每个状态在NFA中的转换关系得到状态集合之间的转换关系(目标2).</p><p>其实,两个目标都是通过将状态合并为状态集合的方式来实现的.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121820231.png"></p><h4 id="NFA的双堆栈模拟"><a href="#NFA的双堆栈模拟" class="headerlink" title="NFA的双堆栈模拟"></a>NFA的双堆栈模拟</h4><p>至此我们已经完成了对正规表达式r的识别器的构造.而实际上,NFA也是可以直接模拟的.</p><h5 id="算法描述"><a href="#算法描述" class="headerlink" title="算法描述"></a>算法描述</h5><p>回想一下我们是怎么实现NFA到DFA转换的那两个目标,可以发现该模拟算法实质上是在运行中构造DFA.</p><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121839249.png"></p><h5 id="算法实现"><a href="#算法实现" class="headerlink" title="算法实现"></a>算法实现</h5><p>我们要实现的结构有两个,当前状态集合,要转换到的状态集合.注意这里与DFA模拟时不同,DFA中状态集合是实现为一个新的状态,有状态集合之间独立的转换关系(新的转换表),而模拟NFA时我们只具有单个状态之间的转换关系.</p><p>这两个结构可以以两个栈的形式实现.一个栈表示当前状态集合,一个栈表示要转换到的状态集合.压入所有在ε-closure(当前状态)的输出状态.转换时遍历当前状态集合的每一个状态并进行状态转换,压入结果到另一个栈中.清空当前状态集合,两个栈交换身份.</p><h4 id="最长词素匹配"><a href="#最长词素匹配" class="headerlink" title="最长词素匹配"></a>最长词素匹配</h4><p>常见有如下的实现:如果有多个模式匹配成功,选择最长词素匹配的模式.<br>当当前状态集合中含有接受状态时,记录当前输入指针的位置和该接受状态后继续识别,直到NFA进入终止(无法状态转换或输入结束),恢复到最近一次保存的输入指针位置,以该接受状态为结果.</p><h4 id="基于DFA的模式匹配器的优化"><a href="#基于DFA的模式匹配器的优化" class="headerlink" title="基于DFA的模式匹配器的优化"></a>基于DFA的模式匹配器的优化</h4><h5 id="NFA的重要状态"><a href="#NFA的重要状态" class="headerlink" title="NFA的重要状态"></a>NFA的重要状态</h5><p>如果一个NFA的状态有一个标记为非ε的出边,那么该状态为重要状态.<br>如果两个子集的重要状态相同且两者同时包含或不包含NFA的接受状态,那么这两个子集可被认为是等同的.</p><blockquote><p>The constructed NFA has only one accepting state, but this state, having<br>no out-transitions, is not an imp ortant state. By concatenating a unique right<br>endmarker # to a regular expression r , we give the accepting state for r a<br>transition on #, making it an imp ortant state of the NFA for (r )#. In other<br>words, by using the augmented regular expression (r )#, we can forget ab out<br>accepting states as the subset construction pro ceeds; when the construction is<br>complete, any state with a transition on # must b e an accepting state.</p></blockquote><h5 id="Functions-Computed-From-the-Syntax-Tree"><a href="#Functions-Computed-From-the-Syntax-Tree" class="headerlink" title="Functions Computed From the Syntax Tree"></a>Functions Computed From the Syntax Tree</h5><h6 id="Compute"><a href="#Compute" class="headerlink" title="Compute"></a>Compute</h6><p>为了直接从正规表达式r构造DFA,需要从语法树中计算这四个函数.Each de nition refers to the syntax tree for a particular<br>augmented regular expression (r )#</p><p>直白点说,nullable就是该位置代表的字符串是否可以为空(ε).<br>firstpos就是该节点所代表的字符串可能的开始位置集合.<br>lastpos就是该节点所代表的字符串可能的结束位置集合.<br>followpos就是可能的紧跟着该位置的位置集合.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310122309087.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310122309685.png"></p><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310122312703.png"></p><p>最后我们需要的其实只有follow集,根据求出的follow集可以得到这样一个没有ε的NFA<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310131045245.png"></p><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310131044965.png"></p><h6 id="TO-DFA"><a href="#TO-DFA" class="headerlink" title="TO DFA"></a>TO DFA</h6><p>其实感觉和之前的思想是差不多的,状态-&gt;状态集合.<br>使用根节点的first集合并初始状态,以是否有#转换来合并接受状态.其他状态由followpos来合并.<br>差别就在于之前是通过NFA的转换关系来合并的,这里是直接通过计算follow集来合并的(其实感觉是一回事).<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310131046225.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310131046738.png"></p><h5 id="最小化DFA的状态数"><a href="#最小化DFA的状态数" class="headerlink" title="最小化DFA的状态数"></a>最小化DFA的状态数</h5><p>每一个正规集都可以由一个状态最少的DFA识别,这个DFA是唯一的.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310131120540.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310131120171.png"></p><h5 id="表压缩算法"><a href="#表压缩算法" class="headerlink" title="表压缩算法"></a>表压缩算法</h5><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310131134804.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310131134760.png"></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 学习笔记 </category>
+          
+          <category> 编译原理 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Lexical-Analysis </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Linux内核设计的艺术 阅读笔记</title>
+      <link href="/2023/10/04/The%20Art%20Of%20Linux%20Kernel%20Design--Notes/"/>
+      <url>/2023/10/04/The%20Art%20Of%20Linux%20Kernel%20Design--Notes/</url>
+      
+        <content type="html"><![CDATA[<p>Linux0.11内核.正文部分记录过程,引用部分记录知识点和理解.</p><h1 id="main函数之前的功能"><a href="#main函数之前的功能" class="headerlink" title="main函数之前的功能"></a>main函数之前的功能</h1><h2 id="加载操作系统"><a href="#加载操作系统" class="headerlink" title="加载操作系统"></a>加载操作系统</h2><p>经典流程:<br>计算机加电设置cs:ip为0xffff0,运行ROM中的BIOS,BIOS初始化中断向量表和一些硬件设备,加载0盘0道1扇区的引导程序bootsect到0x7c00处.bootsect是与操作系统配套的,规划物理内存,加载操作系统,设置根设备为软盘.</p><blockquote><p>Linux0.11要求系统必须存在一个根文件系统,其他文件系统挂接其上.因此Linux的启动需要两部分数据,即系统内核镜像和根文件系统.(kernel pwn中的bzimage和文件系统(比如busybox提供的))</p></blockquote><h2 id="保护模式"><a href="#保护模式" class="headerlink" title="保护模式"></a>保护模式</h2><p>关闭中断.设置和全局描述符表(GDT),打开A20gate实现32位寻址(实模式下寻址范围为低1MB).CR0PE标志置1,enable 保护模式,GDT启用,段基址寄存器以选择子形式使用.</p><p>设置段寄存器以适应保护模式,建立内核页目录表,建立中断描述符表(IDT),开启分页模式.以ret模式进入main函数.</p><h1 id="环境设备初始化及激活进程0"><a href="#环境设备初始化及激活进程0" class="headerlink" title="环境设备初始化及激活进程0"></a>环境设备初始化及激活进程0</h1><p>初始化根设备和硬盘.设置缓冲区.</p><blockquote><p>除内核代码及其数据所占物理空间之外,其余物理内存主要分为3部分,主内存区(进程代码运行的空间),缓冲区(主机与外设进行数据交互的中转站),虚拟盘(可以缓存外设的数据,提高效率).</p></blockquote><p>建立内存管理基址mmu,将中断异常与IDT挂接(其实这里才是建立中断描述符表吧).开启部分中断.</p><p>初始化块设备请求项结构</p><blockquote><p>Linux0.11将外设分为两类:<br>块设备:将存储空间等分为若干同样大小的小存储空间块,每个块有块号,可以独立,随机读写,如硬盘,软盘.<br>字符设备:以字符为单位进行IO通信,如键盘,命令行显示器.</p></blockquote><p>进程想与块设备沟通,必须经过主机内存中的缓冲区.请求项管理结构就是管理缓冲区中缓冲块与块设备上逻辑块之间读写关系的数据结构.是以一个数组,同时也维护一个请求链表.</p><p>挂接交互界面相关外设的中断服务例程.如串行口,显示器,键盘.</p><p>初始化进程0,设置task_struct,使进程0具有处理系统调用的能力,设置时钟中断做好进程切换的准备工作.</p><p>最后以iret(唯一的从高权限到低权限的方式)的方式切换到3特权级,之前运行的内核控制流正式成为进程0.</p><h1 id="进程1的创建及执行"><a href="#进程1的创建及执行" class="headerlink" title="进程1的创建及执行"></a>进程1的创建及执行</h1><p>进程0通过fork创建进程1,设置相关数据结构,切换到进程1.</p><blockquote><p>通常有以下两种情况可以产生进程切换:</p><ol><li>允许进程运行的时间结束.每个进程在创建时都被赋予了有限的时间片,当时间片减少到0便发生进程切换.</li><li>进程的运行停止.比如等待外设的数据,等待其他程序运行的结果,进程主动停止一段时间或进程执行完毕等等.</li></ol></blockquote><p>进程1安装硬盘文件系统.格式化虚拟盘(使其具有文件系统相关内容,引导块,超级块,格式化之后虚拟盘正式成为一个块设备)并更换根设备为虚拟盘.</p><blockquote><p>操作系统中的文件系统可以大致分为两部分,一部分在操作系统内核中,另一部分在硬盘,软盘,虚拟盘中.<br>文件系统用inode(i结点)来管理文件,一个inode管理一个文件.文件的路径在操作系统中由目录文件中的目录项管理,一个目录项对应一级路径,目录文件也是文件,也由一个inode管理.一个目录文件挂在另一个目录文件的目录项上,就成了父子目录的关系.所有的文件最终挂接成一个树形结构,树根i节点就叫这个文件系统的根i节点.一个逻辑设备(一个物理设备可分成多个逻辑设备)只能包含一个这样的树形结构.</p></blockquote><blockquote><p>加载文件系统最重要的标志,就是把一个逻辑设备上的文件系统的根i节点,关联到另一个文件系统的i节点,也就是常说的mount.可以联系一下之前容器中bind mount的操作.</p></blockquote><blockquote><p>一个文件系统必须挂接在另一个文件系统上,必然就存在一个根文件系统,Linux0.11中的super_block[8]中保存的根设备的超级块对应的文件系统便是根文件系统.</p></blockquote><h1 id="进程2的创建及执行"><a href="#进程2的创建及执行" class="headerlink" title="进程2的创建及执行"></a>进程2的创建及执行</h1><p>加载完根文件系统之后,进程1(其实是kernel)具备了对设备文件的访问能力.使用open和dup打开/dev/tty0文件作为标准输入,输出,错误文件.</p><p>进程1创建进程2并切换到进程2.进程2关闭标准输入重新以/etc/rc为标准输入,execve运行/bin/sh的shell程序.相当于shell的初始化,执行/etc/rc里的预置命令,比如创建进程并加载/etc/update程序</p><blockquote><p>update进程将缓冲区中的数据同步到外设.该程序每隔一段时间就会被唤醒,完成同步工作后挂起等待下一次唤醒.</p></blockquote><p>update进程挂起后控制流回到进程2,进程2完成善后工作后退出.</p><p>进程1继续执行,以/dev/tty0为标准输入重建shell.shell在等待输入后挂起,当接收到键盘中断,shell进程从字符缓冲队列(其实就是tty0的内容)读取指令数据,并完成相应操作.</p><p>至此系统进入怠速状态.</p><h1 id="文件操作"><a href="#文件操作" class="headerlink" title="文件操作"></a>文件操作</h1><blockquote><p>安装文件系统就是在根文件系统的基础上,把硬盘中的文件系统安装在根文件系统上,使操作系统也具备<code>以文件形式与硬盘进行数据交互的能力</code>.</p></blockquote><blockquote><p>安装文件系统分三步:<br>1)将硬盘的超级块读取出来并载入super_block[8].<br>2)将虚拟盘上指定的i节点读出,加载到系统的inode_table[32]中.<br>(<del>是不是意味着最多只能挂载8个文件系统(设备),挂载点最多32个?</del>)<br>3) 将硬盘上的超级块挂接到指定的i节点上.</p></blockquote><h1 id="进程间通信"><a href="#进程间通信" class="headerlink" title="进程间通信"></a>进程间通信</h1><h2 id="管道机制"><a href="#管道机制" class="headerlink" title="管道机制"></a>管道机制</h2><blockquote><p>操作系统在内存中为每个管道开辟一页内存,为这一页内存赋予文件的属性,这一页内存由两个进程共享,但不会分配给任何进程,只由内核掌控.</p></blockquote><blockquote><p>从技术上看,管道就是一页内存.<br>1)文件属性:创建管道相当于创建(并打开)一个文件,进程对管道的访问形式与访问文件相同.<br>2)减少页属性:该页不映射到进程的地址空间内.无法被进程以内存形式访问.</p></blockquote><h2 id="信号机制"><a href="#信号机制" class="headerlink" title="信号机制"></a>信号机制</h2><blockquote><p>发送信号:<br>1)进程通过调用特定的库函数给另一个进程发送信号,另一种方式是用户通过键盘输入信息产生键盘中断后,中断服务例程给进程发送信号.发送信号的实质是设置信号位图上的信号位.(这也是为何未处理的相同信号会丢失的原因)</p></blockquote><blockquote><p>系统检测进程接收到的信号:<br>进程并不能检测收到的信号,该工作由内核完成.</p><ol><li>在系统调用返回之前检测当前进程是否接收到信号.</li><li>时钟中断产生后,其中断处理例程执行结束之前检测.</li></ol></blockquote><blockquote><p>处理信号.当用户程序不需要处理信号时,信号处理函数完全不参与用户进程的执行,当用户进程需要处理信号时,进程的程序将暂时停止执行,转而去执行信号处理函数,执行完毕后将从暂停的现场继续执行.</p></blockquote><p>这里处理信号的方式挺有意思的,解决了我看CSAPP时的一个疑问.</p><blockquote><p>在系统调用返回前或时钟中断返回前,先把内核栈中保存的寄存器备份在当前进程的<code>用户栈</code>中,修改内核栈中的寄存器使得iret之后跳转到用户空间的信号处理函数.处理完成后,再通过前面备份在用户空间的指令和数据,返回用户空间执行.</p></blockquote><p>这里又有一个问题,既然已经回到用户态了,那即使在用户栈上布置的暂停现场的状态,也无法通过ret指令完成状态(如edi等寄存器)的恢复.原来在信号处理函数完成后,从栈上弹出的返回地址是一个restorer函数的地址,它将完成用户进程状态的恢复并再次ret到用户进程.</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 学习笔记 </category>
+          
+          <category> 操作系统 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Kernel </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>DASCTF 2023六月挑战赛｜二进制专项 复现</title>
       <link href="/2023/07/20/DASCTF-2023-June-Binary-WP/"/>
       <url>/2023/07/20/DASCTF-2023-June-Binary-WP/</url>
@@ -17,6 +71,12 @@
           
       </categories>
       
+      
+        <tags>
+            
+            <tag> Pwn </tag>
+            
+        </tags>
       
     </entry>
     
@@ -32,14 +92,14 @@
       
       <categories>
           
-          <category> IO_FILE </category>
+          <category> Pwn </category>
           
       </categories>
       
       
         <tags>
             
-            <tag> Pwn </tag>
+            <tag> IO_FILE </tag>
             
         </tags>
       
