@@ -44,8 +44,8 @@
         }
       </style>
     
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
-<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end --></head>
   </html>
 </html>
 
@@ -254,7 +254,7 @@ one_gadget <span class="token operator">=</span> <span class="token keyword">lam
 <h2 id="逆向-1"><a href="#逆向-1" class="headerlink" title="逆向"></a>逆向</h2><p>是一个求图中两点间最短路径的程序,算法大概是从起点开始广搜然后比较所有能到达终点的路径长度(<del>一点算法不懂的表示很难逆</del>).</p>
 <p>程序的图是用如下结构来表示的.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310192032023.png"></p>
 <p>可以无限制的创建结点和边,输入函数有个offbynull,且可以绕开’\0’的截断,由此可以将tcache和unsortedbin中的堆拿出来,泄露堆和libc地址.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310192035153.png"></p>
-<p>现在就差任意写了,看看最短路径函数.<br>变量命名有点逆天,因为我是按照Dijkstra算法逆的,逆完发现就是个广搜.</p>
+<p>现在就差任意写了,看看最短路径函数.<br>变量命名有点逆天,因为我是按照刚学的算法逆的,逆完发现就是个广搜.</p>
 <p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310192038807.png"></p>
 <p>该函数使用如下的结构.算法首先创建了一个PathInfo的数组dist(存储路径信息)和一个S_set集合(记录一个结点是否已经以其为源点进行过广搜).<br>manager中的bottom_idx和top_idx,用作dist数组的索引.可以理解为双指针.<br>每搜到一个结点,<code>无论是否已经由其他点出发搜到过</code>,将该路径信息存到dist[top_idx]中.top_idx++.每以一个结点为源点开始搜索,将dist[bottom_idx]取出存到栈上的path,进行计算操作,bottom_idx++.这样top_idx和bottom_idx之间的PathInfo,就是已搜到但还未以其为源点搜索的结点(其实是路径信息).直到top_idx==bottom_idx,完成广搜.</p>
 <p>不过有一个问题,dist数组只分配了node_count+1个PathInfo,而算法是每搜到一个结点,<code>无论是否已经由其他点出发搜到过</code>,将该路径信息存到dist数组中,所以存在溢出.构造一个图,其中一个结点有很多条入边,可以Poc出这个漏洞.</p>
