@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>MIT6.828 Lab3 |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end --></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-6.828-Lab3"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  MIT6.828 Lab3
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/6.828-Lab3/" class="article-date">
+  <time datetime="2023-10-02T16:00:00.000Z" itemprop="datePublished">2023-10-03</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/">操作系统</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/6-828/">6.828</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.4k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">11 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="Lec-7"><a href="#Lec-7" class="headerlink" title="Lec 7"></a>Lec 7</h1><p>一些虚拟内存实现的技巧,如延迟分配,写时复制等<br><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.828/2018/lec/l-usingvm.pdf">https://pdos.csail.mit.edu/6.828/2018/lec/l-usingvm.pdf</a></p>
+<h2 id="Lab3-User-Environments"><a href="#Lab3-User-Environments" class="headerlink" title="Lab3 User Environments"></a>Lab3 User Environments</h2><h3 id="PartA-User-Environments-and-Exception-Handling"><a href="#PartA-User-Environments-and-Exception-Handling" class="headerlink" title="PartA: User Environments and Exception Handling"></a>PartA: User Environments and Exception Handling</h3><h4 id="Creating-and-Running-Environments"><a href="#Creating-and-Running-Environments" class="headerlink" title="Creating and Running Environments"></a>Creating and Running Environments</h4><p>创建并初始化envs,env_setup_vm函数为环境e建立一个专属的页目录表,由于在UTOP上的内核空间映射对每个环境都是相同的,所以可以直接拷贝kern_pgdir过来.</p>
+<span id="more"></span>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">void</span>
+<span class="token function">env_init</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// Set up envs array</span>
+    <span class="token comment" spellcheck="true">// LAB 3: Your code here.</span>
+    <span class="token keyword">struct</span> Env<span class="token operator">*</span> e<span class="token punctuation">;</span>
+    <span class="token keyword">for</span><span class="token punctuation">(</span>e <span class="token operator">=</span> envs<span class="token punctuation">;</span>e<span class="token operator">&lt;</span>envs<span class="token operator">+</span>NENV<span class="token punctuation">;</span><span class="token operator">++</span>e<span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        e<span class="token operator">-></span>env_id <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        e<span class="token operator">-></span>env_status <span class="token operator">=</span> ENV_FREE<span class="token punctuation">;</span>
+        e<span class="token operator">-></span>env_link <span class="token operator">=</span> <span class="token punctuation">(</span>e<span class="token operator">==</span>envs<span class="token operator">+</span>NENV<span class="token number">-1</span><span class="token punctuation">)</span><span class="token operator">?</span><span class="token number">0</span><span class="token punctuation">:</span>e<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    env_free_list <span class="token operator">=</span> envs<span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">// Per-CPU part of the initialization</span>
+    <span class="token function">env_init_percpu</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">static</span> <span class="token keyword">int</span>
+<span class="token function">env_setup_vm</span><span class="token punctuation">(</span><span class="token keyword">struct</span> Env <span class="token operator">*</span>e<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">int</span> i<span class="token punctuation">;</span>
+    <span class="token keyword">struct</span> PageInfo <span class="token operator">*</span>p <span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">// Allocate a page for the page directory</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span>p <span class="token operator">=</span> <span class="token function">page_alloc</span><span class="token punctuation">(</span>ALLOC_ZERO<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token keyword">return</span> <span class="token operator">-</span>E_NO_MEM<span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">// LAB 3: Your code here.</span>
+    e<span class="token operator">-></span>env_pgdir <span class="token operator">=</span> <span class="token function">page2kva</span><span class="token punctuation">(</span>p<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">memcpy</span><span class="token punctuation">(</span>e<span class="token operator">-></span>env_pgdir<span class="token punctuation">,</span>kern_pgdir<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    p<span class="token operator">-></span>pp_ref<span class="token operator">++</span><span class="token punctuation">;</span>
+    
+    <span class="token comment" spellcheck="true">// UVPT maps the env's own page table read-only.</span>
+    <span class="token comment" spellcheck="true">// Permissions: kernel R, user R</span>
+    e<span class="token operator">-></span>env_pgdir<span class="token punctuation">[</span><span class="token function">PDX</span><span class="token punctuation">(</span>UVPT<span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token function">PADDR</span><span class="token punctuation">(</span>e<span class="token operator">-></span>env_pgdir<span class="token punctuation">)</span> <span class="token operator">|</span> PTE_P <span class="token operator">|</span> PTE_U<span class="token punctuation">;</span>
+
+    <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>由于还没有文件系统,JOS采用将ELF文件直接链接到内核的方式来提供用户程序,load_icode函数按照binary文件中的ELF头和程序头,将binary映像加载到用户进程(以JOS的概念,进程应该改成环境)空间中,并建立用户页表的相应映射.</p>
+<p>实现这一函数主要是熟悉ELF头和程序头各项的意义,其实在MBR加载内核映像的时候我们已经完成过相同的操作.注意页目录表的切换.</p>
+<pre class=" language-c"><code class="language-c">
+<span class="token keyword">static</span> <span class="token keyword">void</span>
+<span class="token function">load_icode</span><span class="token punctuation">(</span><span class="token keyword">struct</span> Env <span class="token operator">*</span>e<span class="token punctuation">,</span> uint8_t <span class="token operator">*</span>binary<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// LAB 3: Your code here.</span>
+    <span class="token keyword">struct</span> Proghdr <span class="token operator">*</span>ph<span class="token punctuation">,</span> <span class="token operator">*</span>eph<span class="token punctuation">;</span>
+    <span class="token keyword">struct</span> Elf <span class="token operator">*</span>elfhdr <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">struct</span> Elf <span class="token operator">*</span><span class="token punctuation">)</span>binary<span class="token punctuation">;</span>
+
+    <span class="token keyword">if</span><span class="token punctuation">(</span>elfhdr<span class="token operator">-></span>e_magic<span class="token operator">!=</span>ELF_MAGIC<span class="token punctuation">)</span>
+        <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"invalid ELF format,magic is not correct\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    ph <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">struct</span> Proghdr <span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token punctuation">(</span>uint8_t<span class="token operator">*</span><span class="token punctuation">)</span>elfhdr<span class="token operator">+</span>elfhdr<span class="token operator">-></span>e_phoff<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    eph <span class="token operator">=</span> ph<span class="token operator">+</span>elfhdr<span class="token operator">-></span>e_phnum<span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">//为使之后能直接使用memcpy,切换到用户页表.</span>
+    <span class="token function">lcr3</span><span class="token punctuation">(</span><span class="token function">PADDR</span><span class="token punctuation">(</span>e<span class="token operator">-></span>env_pgdir<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token punctuation">;</span>ph<span class="token operator">&lt;</span>eph<span class="token punctuation">;</span><span class="token operator">++</span>ph<span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>ph<span class="token operator">-></span>p_filesz <span class="token operator">></span> ph<span class="token operator">-></span>p_memsz<span class="token punctuation">)</span>
+            <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"file size is great than memmory size\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>ph<span class="token operator">-></span>p_type<span class="token operator">==</span>ELF_PROG_LOAD<span class="token punctuation">)</span>
+        <span class="token punctuation">{</span>
+            <span class="token function">region_alloc</span><span class="token punctuation">(</span>e<span class="token operator">-></span>env_pgdir<span class="token punctuation">,</span>ph<span class="token operator">-></span>p_va<span class="token punctuation">,</span>ph<span class="token operator">-></span>p_memsz<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token function">memcpy</span><span class="token punctuation">(</span>ph<span class="token operator">-></span>p_va<span class="token punctuation">,</span>binary<span class="token operator">+</span>ph<span class="token operator">-></span>p_offset<span class="token punctuation">,</span>ph<span class="token operator">-></span>p_filesz<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token function">memset</span><span class="token punctuation">(</span>ph<span class="token operator">-></span>p_va<span class="token operator">+</span>ph<span class="token operator">-></span>p_filesz<span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>ph<span class="token operator">-></span>p_memsz<span class="token operator">-</span>ph<span class="token operator">-></span>p_filesz<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    e<span class="token operator">-></span>env_tf<span class="token punctuation">.</span>tf_eip <span class="token operator">=</span> elfhdr<span class="token operator">-></span>e_entry<span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">// Now map one page for the program's initial stack</span>
+    <span class="token comment" spellcheck="true">// at virtual address USTACKTOP - PGSIZE.</span>
+    <span class="token function">region_alloc</span><span class="token punctuation">(</span>e<span class="token operator">-></span>env_pgdir<span class="token punctuation">,</span>USTACKTOP<span class="token operator">-</span>PGSIZE<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token function">lcr3</span><span class="token punctuation">(</span><span class="token function">PADDR</span><span class="token punctuation">(</span>kern_pgdir<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+
+<span class="token comment" spellcheck="true">//</span>
+<span class="token comment" spellcheck="true">// Allocate len bytes of physical memory for environment env,</span>
+<span class="token comment" spellcheck="true">// and map it at virtual address va in the environment's address space.</span>
+<span class="token comment" spellcheck="true">// Does not zero or otherwise initialize the mapped pages in any way.</span>
+<span class="token comment" spellcheck="true">// Pages should be writable by user and kernel.</span>
+<span class="token comment" spellcheck="true">// Panic if any allocation attempt fails.</span>
+<span class="token comment" spellcheck="true">//</span>
+<span class="token keyword">static</span> <span class="token keyword">void</span>
+<span class="token function">region_alloc</span><span class="token punctuation">(</span><span class="token keyword">struct</span> Env <span class="token operator">*</span>e<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>va<span class="token punctuation">,</span> size_t len<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// LAB 3: Your code here.</span>
+    <span class="token comment" spellcheck="true">// (But only if you need it for load_icode.)</span>
+    <span class="token comment" spellcheck="true">//</span>
+    <span class="token comment" spellcheck="true">// Hint: It is easier to use region_alloc if the caller can pass</span>
+    <span class="token comment" spellcheck="true">//   'va' and 'len' values that are not page-aligned.</span>
+    <span class="token comment" spellcheck="true">//   You should round va down, and round (va + len) up.</span>
+    <span class="token comment" spellcheck="true">//   (Watch out for corner-cases!)</span>
+
+    <span class="token keyword">struct</span> PageInfo<span class="token operator">*</span> pp<span class="token punctuation">;</span>
+    <span class="token keyword">void</span><span class="token operator">*</span> end_va <span class="token operator">=</span> <span class="token function">ROUNDUP</span><span class="token punctuation">(</span>va<span class="token operator">+</span>len<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    va <span class="token operator">=</span> <span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>va<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token punctuation">;</span>va<span class="token operator">&lt;</span>end_va<span class="token punctuation">;</span>va <span class="token operator">+</span><span class="token operator">=</span> PGSIZE<span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        
+        <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>pp <span class="token operator">=</span> <span class="token function">page_alloc</span><span class="token punctuation">(</span>ALLOC_ZERO<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">==</span><span class="token number">0</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{</span>
+            <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"region_alloc:out of memory"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token function">page_insert</span><span class="token punctuation">(</span>e<span class="token operator">-></span>env_pgdir<span class="token punctuation">,</span>pp<span class="token punctuation">,</span>va<span class="token punctuation">,</span>PTE_U<span class="token operator">|</span>PTE_W<span class="token operator">|</span>PTE_P<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>之后便可以创建用户环境并运行.</p>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">void</span>
+<span class="token function">env_create</span><span class="token punctuation">(</span>uint8_t <span class="token operator">*</span>binary<span class="token punctuation">,</span> <span class="token keyword">enum</span> EnvType type<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// LAB 3: Your code here.</span>
+    <span class="token keyword">struct</span> Env<span class="token operator">*</span> e<span class="token punctuation">;</span>
+    <span class="token keyword">int</span> ret <span class="token operator">=</span> <span class="token function">env_alloc</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>e<span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span>ret<span class="token operator">&lt;</span><span class="token number">0</span><span class="token punctuation">)</span>
+        <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"env_alloc:%e"</span><span class="token punctuation">,</span>ret<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    e<span class="token operator">-></span>env_type <span class="token operator">=</span> type<span class="token punctuation">;</span>
+    <span class="token function">load_icode</span><span class="token punctuation">(</span>e<span class="token punctuation">,</span>binary<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">void</span>
+<span class="token function">env_run</span><span class="token punctuation">(</span><span class="token keyword">struct</span> Env <span class="token operator">*</span>e<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// LAB 3: Your code here.</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span>curenv <span class="token operator">!=</span> <span class="token constant">NULL</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>curenv<span class="token operator">-></span>env_status<span class="token operator">==</span>ENV_RUNNING<span class="token punctuation">)</span>
+            curenv<span class="token operator">-></span>env_status<span class="token operator">=</span>ENV_RUNNABLE<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    curenv <span class="token operator">=</span> e<span class="token punctuation">;</span>
+    e<span class="token operator">-></span>env_status<span class="token operator">=</span>ENV_RUNNING<span class="token punctuation">;</span>
+    e<span class="token operator">-></span>env_runs<span class="token operator">++</span><span class="token punctuation">;</span>
+    <span class="token function">lcr3</span><span class="token punctuation">(</span><span class="token function">PADDR</span><span class="token punctuation">(</span>e<span class="token operator">-></span>env_pgdir<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token function">env_pop_tf</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>e<span class="token operator">-></span>env_tf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+
+</code></pre>
+<h5 id="env相关流程分析"><a href="#env相关流程分析" class="headerlink" title="env相关流程分析"></a>env相关流程分析</h5><h6 id="创建与初始化"><a href="#创建与初始化" class="headerlink" title="创建与初始化"></a>创建与初始化</h6><p>i386_init函数在mem_init函数中完成envs数组的内存分配并在kern_pgdir中完成映射.<br>调用env_init,初始化envs数组中的各env,并链入env_free_list等待分配,load新的带有用户段的GDT,设置LDT.</p>
+<h6 id="运行准备与运行"><a href="#运行准备与运行" class="headerlink" title="运行准备与运行"></a>运行准备与运行</h6><p>env_create函数创建一个针对特定二进制(ELF)文件的运行环境.先调用env_alloc函数分配一个env结构,设置env环境(包括各段选择子,这是切换到用户级权限的关键之一),并为env建立一个单独的页表,映射内核及该页表本身.<br>调用load_icode函数按ELF头和文件头记录的信息为ELF格式的可执行文件创建内存映像,设置Trapframe-&gt;tf_eip为该程序的入口点,为环境映射一个初始栈.<br>env_run函数设置相关运行信息,调用env_pop_tf函数用env-&gt;env_tf设置程序状态,开始以用户级权限运行程序.</p>
+<h4 id="Handling-Interrupts-and-Exceptions"><a href="#Handling-Interrupts-and-Exceptions" class="headerlink" title="Handling Interrupts and Exceptions"></a>Handling Interrupts and Exceptions</h4><p>trapentry.S中以宏的方式形式定义了各中断处理例程的入口,以及所有traps共用的例程alltraps.<br>该函数按照Trapframe的结构为trap函数压栈准备参数,设置ds和es寄存器.然后调用trap函数且不再返回.</p>
+<pre class=" language-asm"><code class="language-asm">/* TRAPHANDLER defines a globally-visible function for handling a trap.
+ * It pushes a trap number onto the stack, then jumps to _alltraps.
+ * Use TRAPHANDLER for traps where the CPU automatically pushes an error code.
+ *
+ * You shouldn't call a TRAPHANDLER function from C, but you may
+ * need to _declare_ one in C (for instance, to get a function pointer
+ * during IDT setup).  You can declare the function with
+ *   void NAME();
+ * where NAME is the argument passed to TRAPHANDLER.
+ */
+#define TRAPHANDLER(name, num)						\
+    .globl name;		/* define global symbol for 'name' */	\
+    .type name, @function;	/* symbol type is function */		\
+    .align 2;		/* align function definition */		\
+    name:			/* function starts here */		\
+    pushl $(num);							\
+    jmp _alltraps
+
+/* Use TRAPHANDLER_NOEC for traps where the CPU doesn't push an error code.
+ * It pushes a 0 in place of the error code, so the trap frame has the same
+ * format in either case.
+ */
+#define TRAPHANDLER_NOEC(name, num)					\
+    .globl name;							\
+    .type name, @function;						\
+    .align 2;							\
+    name:								\
+    pushl $0;							\
+    pushl $(num);							\
+    jmp _alltraps
+
+.text
+
+TRAPHANDLER_NOEC(divide_handler, T_DIVIDE);
+//......
+//其他中断定义方式相同,这里省略了
+
+/*
+ * Lab 3: Your code here for _alltraps
+ */
+.global _alltraps
+_alltraps:
+    pushl %ds;
+    pushl %es;
+    pushal;
+
+    movw $GD_KD,%ax;
+    movw %ds,%ax;
+    movw %es,%ax;
+
+    pushl %esp;
+    call trap;
+</code></pre>
+<p>下面是Trapframe结构的定义,由注释分为三个部分,<br>最下面的一部分仅在发生特权级切换的时候才压入.<br>下图中的Trapframe部分在发生异常时由处理器硬件压入.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310030006345.png"></p>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">struct</span> PushRegs <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">/* registers as pushed by pusha */</span>
+    uint32_t reg_edi<span class="token punctuation">;</span>
+    uint32_t reg_esi<span class="token punctuation">;</span>
+    uint32_t reg_ebp<span class="token punctuation">;</span>
+    uint32_t reg_oesp<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">/* Useless */</span>
+    uint32_t reg_ebx<span class="token punctuation">;</span>
+    uint32_t reg_edx<span class="token punctuation">;</span>
+    uint32_t reg_ecx<span class="token punctuation">;</span>
+    uint32_t reg_eax<span class="token punctuation">;</span>
+<span class="token punctuation">}</span> <span class="token function">__attribute__</span><span class="token punctuation">(</span><span class="token punctuation">(</span>packed<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">struct</span> Trapframe <span class="token punctuation">{</span>
+    <span class="token keyword">struct</span> PushRegs tf_regs<span class="token punctuation">;</span>
+    uint16_t tf_es<span class="token punctuation">;</span>
+    uint16_t tf_padding1<span class="token punctuation">;</span>
+    uint16_t tf_ds<span class="token punctuation">;</span>
+    uint16_t tf_padding2<span class="token punctuation">;</span>
+    uint32_t tf_trapno<span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">/* below here defined by x86 hardware */</span>
+    uint32_t tf_err<span class="token punctuation">;</span>
+    uintptr_t tf_eip<span class="token punctuation">;</span>
+    uint16_t tf_cs<span class="token punctuation">;</span>
+    uint16_t tf_padding3<span class="token punctuation">;</span>
+    uint32_t tf_eflags<span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">/* below here only when crossing rings, such as from user to kernel */</span>
+    uintptr_t tf_esp<span class="token punctuation">;</span>
+    uint16_t tf_ss<span class="token punctuation">;</span>
+    uint16_t tf_padding4<span class="token punctuation">;</span>
+<span class="token punctuation">}</span> <span class="token function">__attribute__</span><span class="token punctuation">(</span><span class="token punctuation">(</span>packed<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<h5 id="trap流程分析"><a href="#trap流程分析" class="headerlink" title="trap流程分析"></a>trap流程分析</h5><p>i386_init中调用trap_init完成trap的初始化:将各中断处理例程(在本实现中是中断处理例程的入口点)挂接到IDT中,设置TSS段(存储了内核栈的地址信息)并挂接到GDT中,设置IDT和TSS.</p>
+<p>当中断或异常发生,处理器根据中断向量号在IDT中寻找对应的中断处理例程,在进行特权级检查(中断处理例程DPL≤CPL≤中断门描述符DPL)后,若发生特权级转换,CPU从当前TSS段中取出内核栈的地址信息(ss,esp)并加载到ss,esp寄存器中(加载前临时保存原值).在内核栈中压入原栈地址,再压入CS和eip,跳转到中断处理例程.接下来由操作系统(而不是处理器)压入错误码(是否压入因异常而异)及其他寄存器信息,形成Trapframe结构.跳转到trap函数.</p>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">void</span>
+<span class="token function">trap</span><span class="token punctuation">(</span><span class="token keyword">struct</span> Trapframe <span class="token operator">*</span>tf<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// The environment may have set DF and some versions</span>
+    <span class="token comment" spellcheck="true">// of GCC rely on DF being clear</span>
+    <span class="token keyword">asm</span> <span class="token keyword">volatile</span><span class="token punctuation">(</span><span class="token string">"cld"</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token punctuation">:</span> <span class="token string">"cc"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">// Check that interrupts are disabled.  If this assertion</span>
+    <span class="token comment" spellcheck="true">// fails, DO NOT be tempted to fix it by inserting a "cli" in</span>
+    <span class="token comment" spellcheck="true">// the interrupt path.</span>
+    <span class="token function">assert</span><span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span><span class="token function">read_eflags</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span> FL_IF<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token function">cprintf</span><span class="token punctuation">(</span><span class="token string">"Incoming TRAP frame at %p\n"</span><span class="token punctuation">,</span> tf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>tf<span class="token operator">-></span>tf_cs <span class="token operator">&amp;</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment" spellcheck="true">// Trapped from user mode.</span>
+        <span class="token function">assert</span><span class="token punctuation">(</span>curenv<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment" spellcheck="true">// Copy trap frame (which is currently on the stack)</span>
+        <span class="token comment" spellcheck="true">// into 'curenv->env_tf', so that running the environment</span>
+        <span class="token comment" spellcheck="true">// will restart at the trap point.</span>
+        curenv<span class="token operator">-></span>env_tf <span class="token operator">=</span> <span class="token operator">*</span>tf<span class="token punctuation">;</span>
+        <span class="token comment" spellcheck="true">// The trapframe on the stack should be ignored from here on.</span>
+        tf <span class="token operator">=</span> <span class="token operator">&amp;</span>curenv<span class="token operator">-></span>env_tf<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment" spellcheck="true">// Record that tf is the last real trapframe so</span>
+    <span class="token comment" spellcheck="true">// print_trapframe can print some additional information.</span>
+    last_tf <span class="token operator">=</span> tf<span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">// Dispatch based on what type of trap occurred</span>
+    <span class="token function">trap_dispatch</span><span class="token punctuation">(</span>tf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">// Return to the current environment, which should be running.</span>
+    <span class="token function">assert</span><span class="token punctuation">(</span>curenv <span class="token operator">&amp;&amp;</span> curenv<span class="token operator">-></span>env_status <span class="token operator">==</span> ENV_RUNNING<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">env_run</span><span class="token punctuation">(</span>curenv<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>trap函数进一步根据中断向量号分发(trap_dispatch)到各真正的中断处理例程(本实现中IDT中保存的只是一个中断处理例程的entry).<br>完成异常处理后,调用env_run函数恢复原环境(进程).</p>
+<h3 id="Part-B-Page-Faults-Breakpoints-Exceptions-and-System-Calls"><a href="#Part-B-Page-Faults-Breakpoints-Exceptions-and-System-Calls" class="headerlink" title="Part B: Page Faults, Breakpoints Exceptions, and System Calls"></a>Part B: Page Faults, Breakpoints Exceptions, and System Calls</h3><h4 id="The-Breakpoint-Exception"><a href="#The-Breakpoint-Exception" class="headerlink" title="The Breakpoint Exception"></a>The Breakpoint Exception</h4><p>调试器执行的原理:临时替换断点处的1字节指令为int 3系统调用触发The Breakpoint Exception.在这里的实现中会调用内核监视器monitor,添加两个命令nextstep和continue,前者会修改eflags的FL_TF位使处理器开始单步执行,每次执行完成发出一个中断号为1的debug exception,在本实现中该异常处理例程同样会启动monitor.</p>
+<blockquote>
+<p>The breakpoint exception, interrupt vector 3 (T_BRKPT), is normally used to allow debuggers to insert breakpoints in a program’s code by temporarily replacing the relevant program instruction with the special 1-byte int3 software interrupt instruction.</p>
+</blockquote>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">int</span>
+<span class="token function">mon_nextstep</span><span class="token punctuation">(</span><span class="token keyword">int</span> argc<span class="token punctuation">,</span> <span class="token keyword">char</span> <span class="token operator">*</span><span class="token operator">*</span>argv<span class="token punctuation">,</span> <span class="token keyword">struct</span> Trapframe <span class="token operator">*</span>tf<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token operator">!</span>tf<span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"empty Trapframe"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    
+    <span class="token function">cprintf</span><span class="token punctuation">(</span><span class="token string">"$rip: %p\n"</span><span class="token punctuation">,</span>tf<span class="token operator">-></span>tf_eip<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">switch</span><span class="token punctuation">(</span>tf<span class="token operator">-></span>tf_trapno<span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token keyword">case</span> T_BRKPT<span class="token punctuation">:</span>
+            tf<span class="token operator">-></span>tf_eflags <span class="token operator">|</span><span class="token operator">=</span> FL_TF<span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token keyword">case</span> T_DEBUG<span class="token punctuation">:</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>tf<span class="token operator">-></span>tf_eflags <span class="token operator">&amp;</span> FL_TF<span class="token punctuation">)</span>
+                <span class="token keyword">return</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token keyword">default</span><span class="token punctuation">:</span>
+            <span class="token function">cprintf</span><span class="token punctuation">(</span><span class="token string">"nextstep(ni) can only called via int 3(breakpoint exception)\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">int</span>
+<span class="token function">mon_continue</span><span class="token punctuation">(</span><span class="token keyword">int</span> argc<span class="token punctuation">,</span> <span class="token keyword">char</span> <span class="token operator">*</span><span class="token operator">*</span>argv<span class="token punctuation">,</span> <span class="token keyword">struct</span> Trapframe <span class="token operator">*</span>tf<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token operator">!</span>tf<span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"empty Trapframe"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">if</span><span class="token punctuation">(</span>tf<span class="token operator">-></span>tf_trapno<span class="token operator">==</span>T_DEBUG<span class="token operator">||</span>tf<span class="token operator">-></span>tf_trapno<span class="token operator">==</span>T_BRKPT<span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>tf<span class="token operator">-></span>tf_eflags <span class="token operator">&amp;</span> FL_TF<span class="token punctuation">)</span> 
+        <span class="token punctuation">{</span>
+            tf<span class="token operator">-></span>tf_eflags <span class="token operator">&amp;</span><span class="token operator">=</span> <span class="token operator">~</span>FL_TF<span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>	
+
+    <span class="token function">cprintf</span><span class="token punctuation">(</span><span class="token string">"continue can only called via breakpoint or debug exception!\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4 id="System-calls-系统调用"><a href="#System-calls-系统调用" class="headerlink" title="System calls 系统调用"></a>System calls 系统调用</h4><p>注意权限位的检验采用(perm&amp;(*pte))==perm的形式,想象一下交集便于理解这一操作.(一些类型转换使程序看起来很乱,ye..i know…)</p>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">int</span>
+<span class="token function">user_mem_check</span><span class="token punctuation">(</span><span class="token keyword">struct</span> Env <span class="token operator">*</span>env<span class="token punctuation">,</span> <span class="token keyword">const</span> <span class="token keyword">void</span> <span class="token operator">*</span>va<span class="token punctuation">,</span> size_t len<span class="token punctuation">,</span> <span class="token keyword">int</span> perm<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// LAB 3: Your code here.</span>
+        uintptr_t start_va <span class="token operator">=</span> <span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span><span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>va<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        uintptr_t end_va <span class="token operator">=</span> <span class="token function">ROUNDUP</span><span class="token punctuation">(</span><span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span><span class="token punctuation">(</span>va<span class="token operator">+</span>len<span class="token punctuation">)</span><span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        pte_t<span class="token operator">*</span> pte<span class="token punctuation">;</span>
+        <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token punctuation">;</span>start_va<span class="token operator">&lt;</span>end_va<span class="token punctuation">;</span>start_va<span class="token operator">+</span><span class="token operator">=</span>PGSIZE<span class="token punctuation">)</span>
+        <span class="token punctuation">{</span>
+            pte <span class="token operator">=</span> <span class="token function">pgdir_walk</span><span class="token punctuation">(</span>env<span class="token operator">-></span>env_pgdir<span class="token punctuation">,</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>start_va<span class="token punctuation">,</span>false<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>start_va<span class="token operator">>=</span>ULIM<span class="token operator">||</span>pte<span class="token operator">==</span><span class="token constant">NULL</span><span class="token operator">||</span><span class="token operator">!</span><span class="token punctuation">(</span><span class="token operator">*</span>pte<span class="token operator">&amp;</span>PTE_P<span class="token punctuation">)</span><span class="token operator">||</span><span class="token punctuation">(</span><span class="token punctuation">(</span>perm<span class="token operator">&amp;</span><span class="token punctuation">(</span><span class="token operator">*</span>pte<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">!=</span>perm<span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{</span>
+                user_mem_check_addr <span class="token operator">=</span> start_va<span class="token operator">></span><span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>va<span class="token operator">?</span>start_va<span class="token punctuation">:</span><span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>va<span class="token punctuation">;</span>
+                <span class="token keyword">return</span> <span class="token operator">-</span>E_FAULT<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h5 id="syscall流程分析"><a href="#syscall流程分析" class="headerlink" title="syscall流程分析"></a>syscall流程分析</h5><p>用户进程调用sys_xxx函数(其实用户并不直接调用这样的函数,而是由更上一层的函数如cprintf之类的调用.<del>这里的用户指的是使用JOS而不是开发JOS的开发者hh</del>),向操作系统申请xxx的操作,sys_xxx函数调用syscall函数,syscall函数使用int 0x30触发中断.<br>(上述sys_xxx,syscall函数均为lib/syscall.c中定义的由用户进程使用的函数,而非kern/syscall.c中的内核使用的实现)</p>
+<p>中断处理过程参考上面的trap流程分析.<br>最终被分发到内核的syscall函数,该函数通过调用相应的内核函数完成功能,并设置系统调用返回值,之后正常从中断返回到用户进程.</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2023/6.828-Lab3/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/6%C2%B7828/" rel="tag">6·828</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/2023/The%20Art%20Of%20Linux%20Kernel%20Design--Notes/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Linux内核设计的艺术 阅读笔记
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2023/ycb2023/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">羊城杯2023 复现</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2023
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2022/About">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>

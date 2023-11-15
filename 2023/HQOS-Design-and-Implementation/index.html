@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>HQOS 设计与实现 |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end --></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-HQOS-Design-and-Implementation"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  HQOS 设计与实现
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/HQOS-Design-and-Implementation/" class="article-date">
+  <time datetime="2023-11-14T16:00:00.000Z" itemprop="datePublished">2023-11-15</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/">程序设计</a> / <a class="article-category-link" href="/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/HQOS/">HQOS</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">3.5k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">15 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="序"><a href="#序" class="headerlink" title="序"></a>序</h1><p>“THE MAN WHO CHANGED CHROME” 曾经指出如何学习计算机基础知识:</p>
+<blockquote>
+<p>自己写一个CPU,在自己写的CPU上运行自己写的操作系统,然后用自己写的编译器编译运行一个程序.</p>
+</blockquote>
+<p>于是便有了写一个操作系统的想法.在粗略看完一遍《操作系统真相还原》后,感觉从引导操作系统到实现各种操作系统概念的完整过程工作量有点太大了,暂时还没有那么多时间和精力来完成,便暂且搁置了.</p>
+<p>感谢MIT的6.828课程,让我能在有限的时间里一步一步地实现一个操作系统雏形JOS.JOS的开发过程请查看 /学习笔记/6.828分类下的文章.</p>
+<p>在接下来的几年时间,我会继续开发扩展该操作系统,并重构目前实现模型中我不太喜欢的实现,就叫它HQOS吧.</p>
+<p>本博客记录当前版本HQOS的设计与实现,你可以在github上找到其历史文档及代码实现.</p>
+<h1 id="设计与实现-Version-0-0"><a href="#设计与实现-Version-0-0" class="headerlink" title="设计与实现 Version 0.0"></a>设计与实现 Version 0.0</h1><h2 id="总览"><a href="#总览" class="headerlink" title="总览"></a>总览</h2><p>HQOS使用C语言进行开发,是一个基于x86架构的Unix-like微内核操作系统,你可以从中找到很多Unix-like的设计和功能.一些模块如File system,Network等在用户态实现.</p>
+<ol>
+<li>Memory management</li>
+<li>Processes and Threads</li>
+<li>File systems</li>
+<li>Network</li>
+<li>System calls, Interrupts, Exceptions</li>
+<li>User library</li>
+</ol>
+<h2 id="Memory-management"><a href="#Memory-management" class="headerlink" title="Memory management"></a>Memory management</h2><h3 id="Physical-Page-Management"><a href="#Physical-Page-Management" class="headerlink" title="Physical Page Management"></a>Physical Page Management</h3><h4 id="Keep-track-of-physical-page-frames"><a href="#Keep-track-of-physical-page-frames" class="headerlink" title="Keep track of (physical) page frames"></a>Keep track of (physical) page frames</h4><p>HQOS以页面粒度进行物理内存管理.对于每一个物理页,使用一个PageInfo结构来跟踪其的使用情况(空闲或使用中,被多少”用户”使用).所有的PageInfo结构位于一个连续的数组中,PageInfo结构在数组中的索引与物理页的地址相关联(IDX &lt;—&gt; PGNUM = PADDR / PGSIZE).</p>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">struct</span> PageInfo <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// Next page on the free list.</span>
+    <span class="token keyword">struct</span> PageInfo <span class="token operator">*</span>pp_link<span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">// pp_ref is the count of pointers (usually in page table entries)</span>
+    <span class="token comment" spellcheck="true">// to this page, for pages allocated using page_alloc.</span>
+    <span class="token comment" spellcheck="true">// Pages allocated at boot time using pmap.c's</span>
+    <span class="token comment" spellcheck="true">// boot_alloc do not have valid reference count fields.</span>
+
+    uint16_t pp_ref<span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre>
+<h4 id="Dynamically-allocate-x2F-free-page-frames"><a href="#Dynamically-allocate-x2F-free-page-frames" class="headerlink" title="Dynamically allocate / free page frames"></a>Dynamically allocate / free page frames</h4><h5 id="Interface"><a href="#Interface" class="headerlink" title="Interface"></a>Interface</h5><pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">//For kernel:</span>
+<span class="token comment" spellcheck="true">//请求分配一个物理页</span>
+<span class="token keyword">struct</span> PageInfo <span class="token operator">*</span><span class="token function">page_alloc</span><span class="token punctuation">(</span><span class="token keyword">int</span> alloc_flags<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//减少对某物理页的一次引用</span>
+<span class="token keyword">void</span>
+<span class="token function">page_decref</span><span class="token punctuation">(</span><span class="token keyword">struct</span> PageInfo<span class="token operator">*</span> pp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//释放某物理页</span>
+<span class="token keyword">void</span>	<span class="token function">page_free</span><span class="token punctuation">(</span><span class="token keyword">struct</span> PageInfo <span class="token operator">*</span>pp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">//For User:</span>
+<span class="token comment" spellcheck="true">//分配并映射一个页面</span>
+<span class="token keyword">int</span>	<span class="token function">sys_page_alloc</span><span class="token punctuation">(</span>envid_t env<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>pg<span class="token punctuation">,</span> <span class="token keyword">int</span> perm<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//映射一个页面</span>
+<span class="token keyword">int</span>	<span class="token function">sys_page_map</span><span class="token punctuation">(</span>envid_t src_env<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>src_pg<span class="token punctuation">,</span>
+             envid_t dst_env<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>dst_pg<span class="token punctuation">,</span> <span class="token keyword">int</span> perm<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//取消一个页面的映射</span>
+<span class="token keyword">int</span>	<span class="token function">sys_page_unmap</span><span class="token punctuation">(</span>envid_t env<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>pg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<h5 id="Implementation"><a href="#Implementation" class="headerlink" title="Implementation"></a>Implementation</h5><p>HQOS以单向链表的数据结构组织空闲物理页.page_alloc与page_free分别从空闲链表中取出一个物理页或加入一个到空闲链表中.在目前的实现中,page_free仅在page_decref中调用,当且仅当某物理页不再被任何一处引用,释放该物理页.</p>
+<h3 id="Virtual-memory-management"><a href="#Virtual-memory-management" class="headerlink" title="Virtual memory management"></a>Virtual memory management</h3><h4 id="Page-translation"><a href="#Page-translation" class="headerlink" title="Page translation"></a>Page translation</h4><h5 id="Interface-1"><a href="#Interface-1" class="headerlink" title="Interface"></a>Interface</h5><pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">//For kernel:</span>
+<span class="token comment" spellcheck="true">//插入一个页面到页表中(映射一个虚拟地址对应的页面)</span>
+<span class="token keyword">int</span>	<span class="token function">page_insert</span><span class="token punctuation">(</span>pde_t <span class="token operator">*</span>pgdir<span class="token punctuation">,</span> <span class="token keyword">struct</span> PageInfo <span class="token operator">*</span>pp<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>va<span class="token punctuation">,</span> <span class="token keyword">int</span> perm<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//从页表中移除一个页面(取消一个虚拟地址对应页面的映射)</span>
+<span class="token keyword">void</span>	<span class="token function">page_remove</span><span class="token punctuation">(</span>pde_t <span class="token operator">*</span>pgdir<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>va<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//寻找虚拟地址对应页面的PageInfo结构及页表条目</span>
+<span class="token keyword">struct</span> PageInfo <span class="token operator">*</span><span class="token function">page_lookup</span><span class="token punctuation">(</span>pde_t <span class="token operator">*</span>pgdir<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>va<span class="token punctuation">,</span> pte_t <span class="token operator">*</span><span class="token operator">*</span>pte_store<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<h5 id="Implementation-1"><a href="#Implementation-1" class="headerlink" title="Implementation"></a>Implementation</h5><p>HQOS运行在x86’s protected-mode memory management architecture之上.<br>逻辑地址(虚拟地址)经Segmentation Mechanism转换为线性地址,再经由Paging Mechanism转换到物理地址,最终送上硬件总线.</p>
+<p>HQOS仅通过页面翻译过程完成虚拟地址到物理地址的转换,(实现的方式是: 将全局描述符表中所有条目的段基址设置为0,段界限设置为0xffffffff,此时线性地址就等于虚拟地址.),segmentation在HQOS的实现中更多地作用于权限控制.</p>
+<p>HQOS使用二级页表来完成页面翻译,一个页目录表中有1024个页表条目,一个页表中有1024个页条目,每个页大小为4096字节.(当然,这是x86硬件决定的)</p>
+<h4 id="Pagefault-handling"><a href="#Pagefault-handling" class="headerlink" title="Pagefault handling"></a>Pagefault handling</h4><pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">//For User</span>
+<span class="token function">sys_env_set_pgfault_upcall</span><span class="token punctuation">(</span>envid_t envid<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>func<span class="token punctuation">)</span>
+</code></pre>
+<p>HQOS对于内核态的页面错误,产生Kernel panic.而对于用户态的页面错误,销毁产生页面错误的用户进程或派发到一个完成注册的用户态页面错误处理函数.</p>
+<h4 id="Page-replacement-待实现"><a href="#Page-replacement-待实现" class="headerlink" title="Page replacement (待实现)"></a>Page replacement (待实现)</h4><h2 id="Processes-and-Threads"><a href="#Processes-and-Threads" class="headerlink" title="Processes and Threads"></a>Processes and Threads</h2><h3 id="Processes"><a href="#Processes" class="headerlink" title="Processes"></a>Processes</h3><h4 id="Process-model"><a href="#Process-model" class="headerlink" title="Process model"></a>Process model</h4><p>HQOS使用术语”环境(Environment)“来表示进程.<br>    HQOS使用struct Env的数组来管理系统中所有进程(无论进程是否存在,进程状态由env_status标识),数组的大小即为HQOS允许的最大进程数NENV.</p>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">struct</span> Env <span class="token punctuation">{</span>
+    <span class="token keyword">struct</span> Trapframe env_tf<span class="token punctuation">;</span>	<span class="token comment" spellcheck="true">// Saved registers</span>
+    <span class="token keyword">struct</span> Env <span class="token operator">*</span>env_link<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Next free Env</span>
+    envid_t env_id<span class="token punctuation">;</span>			<span class="token comment" spellcheck="true">// Unique environment identifier</span>
+    envid_t env_parent_id<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// env_id of this env's parent</span>
+    <span class="token keyword">enum</span> EnvType env_type<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Indicates special system environments</span>
+    <span class="token keyword">unsigned</span> env_status<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Status of the environment</span>
+    uint32_t env_runs<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Number of times environment has run</span>
+    <span class="token keyword">int</span> env_cpunum<span class="token punctuation">;</span>			<span class="token comment" spellcheck="true">// The CPU that the env is running on</span>
+
+    <span class="token comment" spellcheck="true">// Address space</span>
+    pde_t <span class="token operator">*</span>env_pgdir<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Kernel virtual address of page dir</span>
+
+    <span class="token comment" spellcheck="true">// Exception handling</span>
+    <span class="token keyword">void</span> <span class="token operator">*</span>env_pgfault_upcall<span class="token punctuation">;</span>	<span class="token comment" spellcheck="true">// Page fault upcall entry point</span>
+
+    bool env_ipc_recving<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Env is blocked receiving</span>
+    <span class="token keyword">void</span> <span class="token operator">*</span>env_ipc_dstva<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// VA at which to map received page</span>
+    uint32_t env_ipc_value<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Data value sent to us</span>
+    envid_t env_ipc_from<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// envid of the sender</span>
+    <span class="token keyword">int</span> env_ipc_perm<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Perm of page mapping received</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre>
+<p>每个进程有自己独立的页目录表,即拥有一个独立的32位虚拟地址空间.这意味着同一个物理页可以映射到多个进程中,这是HQOS目前进程间通信实现的关键.HQOS中属于内核的物理空间完整的映射到每个进程的虚拟地址空间中.</p>
+<p>进程目前不具有也不需要独立的内核堆栈.</p>
+<h4 id="Process-creation"><a href="#Process-creation" class="headerlink" title="Process creation"></a>Process creation</h4><h5 id="Interface-2"><a href="#Interface-2" class="headerlink" title="Interface"></a>Interface</h5><pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">//For Kernel:</span>
+<span class="token comment" spellcheck="true">// Allocates a new env with env_alloc, loads the named elf</span>
+<span class="token comment" spellcheck="true">// binary into it with load_icode, and sets its env_type.</span>
+<span class="token comment" spellcheck="true">// This function is ONLY called during kernel initialization,</span>
+<span class="token comment" spellcheck="true">// before running the first user-mode environment.</span>
+<span class="token comment" spellcheck="true">// The new env's parent ID is set to 0.</span>
+<span class="token comment" spellcheck="true">//</span>
+<span class="token keyword">void</span>
+<span class="token function">env_create</span><span class="token punctuation">(</span>uint8_t <span class="token operator">*</span>binary<span class="token punctuation">,</span> <span class="token keyword">enum</span> EnvType type<span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">//For User:</span>
+<span class="token comment" spellcheck="true">//Create the new environment</span>
+<span class="token comment" spellcheck="true">//the register set is copied from the current environment</span>
+<span class="token comment" spellcheck="true">//新进程的虚拟地址空间仅初始化了内核部分</span>
+envid_t
+<span class="token function">sys_exofork</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span>
+</code></pre>
+<h4 id="Process-scheduling"><a href="#Process-scheduling" class="headerlink" title="Process scheduling"></a>Process scheduling</h4><h5 id="Interface-3"><a href="#Interface-3" class="headerlink" title="Interface"></a>Interface</h5><pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">//For Kernel:</span>
+<span class="token comment" spellcheck="true">// Choose a user environment to run and run it.</span>
+<span class="token keyword">void</span>
+<span class="token function">sched_yield</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">//For User:</span>
+<span class="token keyword">void</span>
+<span class="token function">sys_yield</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<h5 id="Implementation-2"><a href="#Implementation-2" class="headerlink" title="Implementation"></a>Implementation</h5><p>HQOS的进程调度采用轮转调度(round robin).但目前还没有加入时间片的概念.每当时钟中断产生,时钟中断处理例程从当前进程在进程数组中的位置开始遍历其他进程,切换到下一个可运行状态的进程.若无其他可运行的进程,进程重启自身.内核进程不会因时钟中断发生调度(因为目前处理器在内核态时屏蔽中断).<br>进程当然也可主动让出处理器.</p>
+<p>这样的实现当然是让人非常不满的,很快其将会重新实现.</p>
+<h4 id="Interprocess-Communication-IPC"><a href="#Interprocess-Communication-IPC" class="headerlink" title="Interprocess Communication (IPC)"></a>Interprocess Communication (IPC)</h4><h5 id="Locking"><a href="#Locking" class="headerlink" title="Locking"></a>Locking</h5><p>HQOS支持多处理器,可能会有多个进程同时进入内核态.HQOS使用一个内核整体的Kernel Lock,进入内核时获取,离开内核时释放,也就是说,HQOS目前仅支持单个内核进程运行.这样的实现依赖于HQOS内核空间对所有进程而言是共享的.</p>
+<h5 id="Sending-and-Receiving-Messages"><a href="#Sending-and-Receiving-Messages" class="headerlink" title="Sending and Receiving Messages"></a>Sending and Receiving Messages</h5><h6 id="By-Value"><a href="#By-Value" class="headerlink" title="By Value"></a>By Value</h6><p>通过用户进程可读的进程表(envs数组)来传递一字长的value.然而该value对所有进程都可见,且一字长的数据太短,所以一般用来辅助By page的传递方式.</p>
+<h6 id="By-page"><a href="#By-page" class="headerlink" title="By page"></a>By page</h6><p>将sender的某页面映射到recver的虚拟地址空间中.<br>sender指示接收进程及页面权限.<br>recver指示将要映射到的虚拟地址.</p>
+<p>recver阻塞直到sender将其唤醒.检测消息来源是否为期望的sender的工作由用户态调用者完成.</p>
+<pre class=" language-c"><code class="language-c"> <span class="token keyword">int</span>
+<span class="token function">sys_ipc_try_send</span><span class="token punctuation">(</span>envid_t envid<span class="token punctuation">,</span> uint32_t value<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>srcva<span class="token punctuation">,</span> <span class="token keyword">unsigned</span> perm<span class="token punctuation">)</span>
+<span class="token keyword">int</span>
+<span class="token function">sys_ipc_recv</span><span class="token punctuation">(</span><span class="token keyword">void</span> <span class="token operator">*</span>dstva<span class="token punctuation">)</span>
+</code></pre>
+<h3 id="Threads-线程-待实现"><a href="#Threads-线程-待实现" class="headerlink" title="Threads 线程(待实现)"></a>Threads 线程(待实现)</h3><h2 id="File-systems"><a href="#File-systems" class="headerlink" title="File systems"></a>File systems</h2><h3 id="On-Disk-File-System-Structure"><a href="#On-Disk-File-System-Structure" class="headerlink" title="On-Disk File System Structure"></a>On-Disk File System Structure</h3><h4 id="Sectors-and-Blocks"><a href="#Sectors-and-Blocks" class="headerlink" title="Sectors and Blocks"></a>Sectors and Blocks</h4><p>磁盘每个扇区大小为512字节,JOS使用的块大小为512字节.</p>
+<h4 id="Superblocks"><a href="#Superblocks" class="headerlink" title="Superblocks"></a>Superblocks</h4><p>HQOS仅有一个超级块,位于磁盘1(第二个磁盘)的块1(第二个扇区).</p>
+<pre class=" language-c"><code class="language-c"><span class="token macro property">#<span class="token directive keyword">define</span> FS_MAGIC	0x53465148	</span><span class="token comment" spellcheck="true">// related vaguely to 'HQFS'</span>
+
+<span class="token keyword">struct</span> Super <span class="token punctuation">{</span>
+    uint32_t s_magic<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Magic number: FS_MAGIC</span>
+    uint32_t s_nblocks<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Total number of blocks on disk</span>
+    <span class="token keyword">struct</span> File s_root<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Root directory node</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre>
+<h4 id="File-Meta-data"><a href="#File-Meta-data" class="headerlink" title="File Meta-data"></a>File Meta-data</h4><p>文件的元数据保存在其所在的目录文件中.<br>f_direct数组中记录的为保存该文件数据的磁盘的块号(直接块).<br>f_indirect为间接块的块号,该块的数据为该文件对应的其他直接块的块号,相当于direct数组的扩展.</p>
+<pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// Number of block pointers in a File descriptor</span>
+<span class="token macro property">#<span class="token directive keyword">define</span> NDIRECT		10</span>
+<span class="token comment" spellcheck="true">// Number of direct block pointers in an indirect block</span>
+<span class="token macro property">#<span class="token directive keyword">define</span> NINDIRECT	(BLKSIZE / 4)</span>
+
+<span class="token keyword">struct</span> File <span class="token punctuation">{</span>
+    <span class="token keyword">char</span> f_name<span class="token punctuation">[</span>MAXNAMELEN<span class="token punctuation">]</span><span class="token punctuation">;</span>	<span class="token comment" spellcheck="true">// filename</span>
+    off_t f_size<span class="token punctuation">;</span>			<span class="token comment" spellcheck="true">// file size in bytes</span>
+    uint32_t f_type<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// file type</span>
+
+    <span class="token comment" spellcheck="true">// Block pointers.</span>
+    <span class="token comment" spellcheck="true">// A block is allocated iff its value is != 0.</span>
+    uint32_t f_direct<span class="token punctuation">[</span>NDIRECT<span class="token punctuation">]</span><span class="token punctuation">;</span>	<span class="token comment" spellcheck="true">// direct blocks</span>
+    uint32_t f_indirect<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// indirect block</span>
+
+    <span class="token comment" spellcheck="true">// Pad out to 256 bytes; must do arithmetic in case we're compiling</span>
+    <span class="token comment" spellcheck="true">// fsformat on a 64-bit machine.</span>
+    uint8_t f_pad<span class="token punctuation">[</span><span class="token number">256</span> <span class="token operator">-</span> MAXNAMELEN <span class="token operator">-</span> <span class="token number">8</span> <span class="token operator">-</span> <span class="token number">4</span><span class="token operator">*</span>NDIRECT <span class="token operator">-</span> <span class="token number">4</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span> <span class="token function">__attribute__</span><span class="token punctuation">(</span><span class="token punctuation">(</span>packed<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>	<span class="token comment" spellcheck="true">// required only on some 64-bit machines</span>
+</code></pre>
+<h4 id="Directories"><a href="#Directories" class="headerlink" title="Directories"></a>Directories</h4><p>保存文件的元数据,目录本身也是一个文件,其元数据保存在其上层目录中.根目录的内容保存在超级块中.</p>
+<h3 id="File-System-Structure"><a href="#File-System-Structure" class="headerlink" title="File System Structure"></a>File System Structure</h3><h4 id="Disk-Access"><a href="#Disk-Access" class="headerlink" title="Disk Access"></a>Disk Access</h4><p>HQOS没有在内核中添加IDE磁盘驱动程序及相关系统调用,而是将其实现于用户态的文件系统中.文件系统进程使用了EFLAGS中的IOPL位,有权限执行IO指令.</p>
+<h4 id="Block-Cache"><a href="#Block-Cache" class="headerlink" title="Block Cache"></a>Block Cache</h4><p>HQOS借助虚拟地址空间来实现块缓存(不得不夸一下JOS的设计者们,好多巧妙的实现).文件系统的DISKMAP(0x10000000 )至DISKMAP+DISKMAX(0xD0000000)用来缓存磁盘,共3GB空间,故HQOS仅支持3GB以下的磁盘.</p>
+<pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// Return the virtual address of this disk block.</span>
+<span class="token keyword">void</span><span class="token operator">*</span>
+<span class="token function">diskaddr</span><span class="token punctuation">(</span>uint32_t blockno<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>blockno <span class="token operator">==</span> <span class="token number">0</span> <span class="token operator">||</span> <span class="token punctuation">(</span>super <span class="token operator">&amp;&amp;</span> blockno <span class="token operator">>=</span> super<span class="token operator">-></span>s_nblocks<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"bad block number %08x in diskaddr"</span><span class="token punctuation">,</span> blockno<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token keyword">char</span><span class="token operator">*</span><span class="token punctuation">)</span> <span class="token punctuation">(</span>DISKMAP <span class="token operator">+</span> blockno <span class="token operator">*</span> BLKSIZE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>HQOS并不直接读取完整的3GB磁盘空间到地址空间中,而是当访问磁盘块所在页时,触发页面错误,由错误处理例程从磁盘中读入并完成映射.</p>
+<pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// Fault any disk block that is read in to memory by</span>
+<span class="token comment" spellcheck="true">// loading it from disk.</span>
+<span class="token keyword">static</span> <span class="token keyword">void</span>
+<span class="token function">bc_pgfault</span><span class="token punctuation">(</span><span class="token keyword">struct</span> UTrapframe <span class="token operator">*</span>utf<span class="token punctuation">)</span>
+</code></pre>
+<p>文件系统依赖页面的PTE_D(dirty)位来决定是否需要刷新块(写回到磁盘).</p>
+<p>由于目前HQOS还未实现页面置换算法,我很担心Block Cache对内存的消耗.</p>
+<h4 id="Block-Bitmap"><a href="#Block-Bitmap" class="headerlink" title="Block Bitmap"></a>Block Bitmap</h4><p>HQOS使用Bitmap来记录磁盘中Block的使用状态,进而完成分配释放等操作.</p>
+<h3 id="The-file-system-interface"><a href="#The-file-system-interface" class="headerlink" title="The file system interface"></a>The file system interface</h3><p>文件系统接口是以进程间通信的方式提供的.文件系统持续无休止的接收其他进程的IPC请求,将请求调度到特定的处理例程,完成请求的文件操作.</p>
+<h2 id="Network"><a href="#Network" class="headerlink" title="Network"></a>Network</h2><p>我暂时还不熟悉计算机网络相关知识,所以对Network部分的说明不会太多.</p>
+<h3 id="Network-System"><a href="#Network-System" class="headerlink" title="Network System"></a>Network System</h3><p>这是HQOS网络体系的总览.HQOS使用E1000网卡,在Kernel中实现由E1000的驱动程序,负责将packet传给E1000或从E1000接收packet.与E1000驱动程序进行交互的是用户态的Network server,由核心网络进程、输出进程、输入进程构成.<br>核心网络进程的实现使用了开源的IwIP的TCP/IP协议套件.</p>
+<p>其他用户进程通过IPC机制与Network server交互.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202311152114274.png"></p>
+<h2 id="System-calls-Interrupts-Exceptions"><a href="#System-calls-Interrupts-Exceptions" class="headerlink" title="System calls, Interrupts, Exceptions"></a>System calls, Interrupts, Exceptions</h2><p>实话说我不认为System calls, Interrupts, Exceptions的概念是与其他操作系统概念并列的,不过作为OS实现的重要部分,我需要单独的一章来说明,之前已经在其他操作系统概念的说明中介绍过的部分不再说明.</p>
+<h3 id="Protected-Control-Transfer"><a href="#Protected-Control-Transfer" class="headerlink" title="Protected Control Transfer"></a>Protected Control Transfer</h3><h4 id="The-Interrupt-Descriptor-Table"><a href="#The-Interrupt-Descriptor-Table" class="headerlink" title="The Interrupt Descriptor Table"></a>The Interrupt Descriptor Table</h4><p>异常和中断导致处理器从用户模式切换到内核模式,内核模式的入口点和中断处理例程由内核明确规定.在HQOS中,所有的中断或异常都会导致切换到内核态,并由内核态进行处理(即使HQOS允许用户态页面错误处理例程,那也是先进入内核再由内核处理例程dispatch),这是在中断描述符表IDT中实现的.</p>
+<p>HQOS目前仅支持中断门,意味着HQOS不支持嵌套中断.</p>
+<h4 id="The-Task-State-Segment"><a href="#The-Task-State-Segment" class="headerlink" title="The Task State Segment"></a>The Task State Segment</h4><p>发生中断时,处理器将状态保存到TSS段中ESP3和SS3中,并加载ESP0和SS0,从内核返回是逆过程.HQOS目前仅使用TSS作为用户/内核堆栈的切换.HQOS目前为每个CPU分配了一个内核堆栈.</p>
+<h3 id="syscall"><a href="#syscall" class="headerlink" title="syscall"></a>syscall</h3><pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// syscall.c</span>
+<span class="token keyword">void</span>	<span class="token function">sys_cputs</span><span class="token punctuation">(</span><span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span>string<span class="token punctuation">,</span> size_t len<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">sys_cgetc</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+envid_t	<span class="token function">sys_getenvid</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">sys_env_destroy</span><span class="token punctuation">(</span>envid_t<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">void</span>	<span class="token function">sys_yield</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">static</span> envid_t <span class="token function">sys_exofork</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">sys_env_set_status</span><span class="token punctuation">(</span>envid_t env<span class="token punctuation">,</span> <span class="token keyword">int</span> status<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">sys_env_set_trapframe</span><span class="token punctuation">(</span>envid_t env<span class="token punctuation">,</span> <span class="token keyword">struct</span> Trapframe <span class="token operator">*</span>tf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">sys_env_set_pgfault_upcall</span><span class="token punctuation">(</span>envid_t env<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>upcall<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">sys_page_alloc</span><span class="token punctuation">(</span>envid_t env<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>pg<span class="token punctuation">,</span> <span class="token keyword">int</span> perm<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">sys_page_map</span><span class="token punctuation">(</span>envid_t src_env<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>src_pg<span class="token punctuation">,</span>
+             envid_t dst_env<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>dst_pg<span class="token punctuation">,</span> <span class="token keyword">int</span> perm<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">sys_page_unmap</span><span class="token punctuation">(</span>envid_t env<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>pg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">sys_ipc_try_send</span><span class="token punctuation">(</span>envid_t to_env<span class="token punctuation">,</span> uint32_t value<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>pg<span class="token punctuation">,</span> <span class="token keyword">int</span> perm<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">sys_ipc_recv</span><span class="token punctuation">(</span><span class="token keyword">void</span> <span class="token operator">*</span>rcv_pg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">unsigned</span> <span class="token keyword">int</span> <span class="token function">sys_time_msec</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span> <span class="token function">sys_tx_pkt</span><span class="token punctuation">(</span><span class="token keyword">char</span><span class="token operator">*</span> buf<span class="token punctuation">,</span>size_t nbytes<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<h2 id="User-library"><a href="#User-library" class="headerlink" title="User library"></a>User library</h2><pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// exit.c</span>
+<span class="token keyword">void</span>	<span class="token function">exit</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// pgfault.c</span>
+<span class="token keyword">void</span>	<span class="token function">set_pgfault_handler</span><span class="token punctuation">(</span><span class="token keyword">void</span> <span class="token punctuation">(</span><span class="token operator">*</span>handler<span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token keyword">struct</span> UTrapframe <span class="token operator">*</span>utf<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// readline.c</span>
+<span class="token keyword">char</span><span class="token operator">*</span>	<span class="token function">readline</span><span class="token punctuation">(</span><span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span>buf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// ipc.c</span>
+<span class="token keyword">void</span>	<span class="token function">ipc_send</span><span class="token punctuation">(</span>envid_t to_env<span class="token punctuation">,</span> uint32_t value<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>pg<span class="token punctuation">,</span> <span class="token keyword">int</span> perm<span class="token punctuation">)</span><span class="token punctuation">;</span>
+int32_t <span class="token function">ipc_recv</span><span class="token punctuation">(</span>envid_t <span class="token operator">*</span>from_env_store<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>pg<span class="token punctuation">,</span> <span class="token keyword">int</span> <span class="token operator">*</span>perm_store<span class="token punctuation">)</span><span class="token punctuation">;</span>
+envid_t	<span class="token function">ipc_find_env</span><span class="token punctuation">(</span><span class="token keyword">enum</span> EnvType type<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// fork.c</span>
+<span class="token macro property">#<span class="token directive keyword">define</span>	PTE_SHARE	0x400</span>
+envid_t	<span class="token function">fork</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// fd.c</span>
+<span class="token keyword">int</span>	<span class="token function">close</span><span class="token punctuation">(</span><span class="token keyword">int</span> fd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+ssize_t	<span class="token function">read</span><span class="token punctuation">(</span><span class="token keyword">int</span> fd<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>buf<span class="token punctuation">,</span> size_t nbytes<span class="token punctuation">)</span><span class="token punctuation">;</span>
+ssize_t	<span class="token function">write</span><span class="token punctuation">(</span><span class="token keyword">int</span> fd<span class="token punctuation">,</span> <span class="token keyword">const</span> <span class="token keyword">void</span> <span class="token operator">*</span>buf<span class="token punctuation">,</span> size_t nbytes<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">seek</span><span class="token punctuation">(</span><span class="token keyword">int</span> fd<span class="token punctuation">,</span> off_t offset<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">void</span>	<span class="token function">close_all</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ssize_t	<span class="token function">readn</span><span class="token punctuation">(</span><span class="token keyword">int</span> fd<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>buf<span class="token punctuation">,</span> size_t nbytes<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">dup</span><span class="token punctuation">(</span><span class="token keyword">int</span> oldfd<span class="token punctuation">,</span> <span class="token keyword">int</span> newfd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">fstat</span><span class="token punctuation">(</span><span class="token keyword">int</span> fd<span class="token punctuation">,</span> <span class="token keyword">struct</span> Stat <span class="token operator">*</span>statbuf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">stat</span><span class="token punctuation">(</span><span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span>path<span class="token punctuation">,</span> <span class="token keyword">struct</span> Stat <span class="token operator">*</span>statbuf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// file.c</span>
+<span class="token keyword">int</span>	<span class="token function">open</span><span class="token punctuation">(</span><span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span>path<span class="token punctuation">,</span> <span class="token keyword">int</span> mode<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">ftruncate</span><span class="token punctuation">(</span><span class="token keyword">int</span> fd<span class="token punctuation">,</span> off_t size<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">remove</span><span class="token punctuation">(</span><span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span>path<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">sync</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// pageref.c</span>
+<span class="token keyword">int</span>	<span class="token function">pageref</span><span class="token punctuation">(</span><span class="token keyword">void</span> <span class="token operator">*</span>addr<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// sockets.c</span>
+<span class="token keyword">int</span>     <span class="token function">accept</span><span class="token punctuation">(</span><span class="token keyword">int</span> s<span class="token punctuation">,</span> <span class="token keyword">struct</span> sockaddr <span class="token operator">*</span>addr<span class="token punctuation">,</span> socklen_t <span class="token operator">*</span>addrlen<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>     <span class="token function">bind</span><span class="token punctuation">(</span><span class="token keyword">int</span> s<span class="token punctuation">,</span> <span class="token keyword">struct</span> sockaddr <span class="token operator">*</span>name<span class="token punctuation">,</span> socklen_t namelen<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>     <span class="token function">shutdown</span><span class="token punctuation">(</span><span class="token keyword">int</span> s<span class="token punctuation">,</span> <span class="token keyword">int</span> how<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>     <span class="token function">connect</span><span class="token punctuation">(</span><span class="token keyword">int</span> s<span class="token punctuation">,</span> <span class="token keyword">const</span> <span class="token keyword">struct</span> sockaddr <span class="token operator">*</span>name<span class="token punctuation">,</span> socklen_t namelen<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>     <span class="token function">listen</span><span class="token punctuation">(</span><span class="token keyword">int</span> s<span class="token punctuation">,</span> <span class="token keyword">int</span> backlog<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>     <span class="token function">socket</span><span class="token punctuation">(</span><span class="token keyword">int</span> domain<span class="token punctuation">,</span> <span class="token keyword">int</span> type<span class="token punctuation">,</span> <span class="token keyword">int</span> protocol<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// nsipc.c</span>
+<span class="token keyword">int</span>     <span class="token function">nsipc_accept</span><span class="token punctuation">(</span><span class="token keyword">int</span> s<span class="token punctuation">,</span> <span class="token keyword">struct</span> sockaddr <span class="token operator">*</span>addr<span class="token punctuation">,</span> socklen_t <span class="token operator">*</span>addrlen<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>     <span class="token function">nsipc_bind</span><span class="token punctuation">(</span><span class="token keyword">int</span> s<span class="token punctuation">,</span> <span class="token keyword">struct</span> sockaddr <span class="token operator">*</span>name<span class="token punctuation">,</span> socklen_t namelen<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>     <span class="token function">nsipc_shutdown</span><span class="token punctuation">(</span><span class="token keyword">int</span> s<span class="token punctuation">,</span> <span class="token keyword">int</span> how<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>     <span class="token function">nsipc_close</span><span class="token punctuation">(</span><span class="token keyword">int</span> s<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>     <span class="token function">nsipc_connect</span><span class="token punctuation">(</span><span class="token keyword">int</span> s<span class="token punctuation">,</span> <span class="token keyword">const</span> <span class="token keyword">struct</span> sockaddr <span class="token operator">*</span>name<span class="token punctuation">,</span> socklen_t namelen<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>     <span class="token function">nsipc_listen</span><span class="token punctuation">(</span><span class="token keyword">int</span> s<span class="token punctuation">,</span> <span class="token keyword">int</span> backlog<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>     <span class="token function">nsipc_recv</span><span class="token punctuation">(</span><span class="token keyword">int</span> s<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>mem<span class="token punctuation">,</span> <span class="token keyword">int</span> len<span class="token punctuation">,</span> <span class="token keyword">unsigned</span> <span class="token keyword">int</span> flags<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>     <span class="token function">nsipc_send</span><span class="token punctuation">(</span><span class="token keyword">int</span> s<span class="token punctuation">,</span> <span class="token keyword">const</span> <span class="token keyword">void</span> <span class="token operator">*</span>buf<span class="token punctuation">,</span> <span class="token keyword">int</span> size<span class="token punctuation">,</span> <span class="token keyword">unsigned</span> <span class="token keyword">int</span> flags<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>     <span class="token function">nsipc_socket</span><span class="token punctuation">(</span><span class="token keyword">int</span> domain<span class="token punctuation">,</span> <span class="token keyword">int</span> type<span class="token punctuation">,</span> <span class="token keyword">int</span> protocol<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// spawn.c</span>
+envid_t	<span class="token function">spawn</span><span class="token punctuation">(</span><span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span>program<span class="token punctuation">,</span> <span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span><span class="token operator">*</span>argv<span class="token punctuation">)</span><span class="token punctuation">;</span>
+envid_t	<span class="token function">spawnl</span><span class="token punctuation">(</span><span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span>program<span class="token punctuation">,</span> <span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span>arg0<span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// console.c</span>
+<span class="token keyword">void</span>	<span class="token function">cputchar</span><span class="token punctuation">(</span><span class="token keyword">int</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">getchar</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">iscons</span><span class="token punctuation">(</span><span class="token keyword">int</span> fd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">opencons</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// pipe.c</span>
+<span class="token keyword">int</span>	<span class="token function">pipe</span><span class="token punctuation">(</span><span class="token keyword">int</span> pipefds<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span>	<span class="token function">pipeisclosed</span><span class="token punctuation">(</span><span class="token keyword">int</span> pipefd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// wait.c</span>
+<span class="token keyword">void</span>	<span class="token function">wait</span><span class="token punctuation">(</span>envid_t env<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">//sleep.c</span>
+<span class="token keyword">void</span> <span class="token function">sleep</span><span class="token punctuation">(</span><span class="token keyword">int</span> ms<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">int</span> <span class="token function">transpackt</span><span class="token punctuation">(</span><span class="token keyword">char</span><span class="token operator">*</span> buf<span class="token punctuation">,</span>size_t nbytes<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span> <span class="token function">recvpackt</span><span class="token punctuation">(</span><span class="token keyword">char</span><span class="token operator">*</span> buf<span class="token punctuation">,</span>size_t max_bytes<span class="token punctuation">,</span><span class="token keyword">int</span><span class="token operator">*</span> lenth_store<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><p><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.828/2018/readings/i386/toc.htm">Intel 80386 Reference Manual</a><br><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.828/2018/readings/hardware/8254x_GBe_SDM.pdf">Intel’s Software Developer’s Manual for the E1000</a></p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2023/HQOS-Design-and-Implementation/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/HQOS/" rel="tag">HQOS</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/2023/6.828-Lab6/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            MIT6.828 Lab6
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2023/Life/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">如果有一天</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2023
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2022/About">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>

@@ -44,8 +44,8 @@
         }
       </style>
     
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
-<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end --></head>
   </html>
 </html>
 
@@ -118,7 +118,7 @@
 <p>Linux0.11要求系统必须存在一个根文件系统,其他文件系统挂接其上.因此Linux的启动需要两部分数据,即系统内核镜像和根文件系统.(kernel pwn中的bzimage和文件系统(比如busybox提供的))</p>
 </blockquote>
 <span id="more"></span>
-<h2 id="保护模式"><a href="#保护模式" class="headerlink" title="保护模式"></a>保护模式</h2><p>关闭中断.设置和全局描述符表(GDT),打开A20gate实现32位寻址(实模式下寻址范围为低1MB).CR0PE标志置1,enable 保护模式,GDT启用,段基址寄存器以选择子形式使用.</p>
+<h2 id="保护模式"><a href="#保护模式" class="headerlink" title="保护模式"></a>保护模式</h2><p>关闭中断.设置全局描述符表(GDT),打开A20gate实现32位寻址(实模式下寻址范围为低1MB).CR0PE标志置1,enable 保护模式,GDT启用,段基址寄存器以选择子形式使用.</p>
 <p>设置段寄存器以适应保护模式,建立内核页目录表,建立中断描述符表(IDT),开启分页模式.以ret模式进入main函数.</p>
 <h1 id="环境设备初始化及激活进程0"><a href="#环境设备初始化及激活进程0" class="headerlink" title="环境设备初始化及激活进程0"></a>环境设备初始化及激活进程0</h1><p>初始化根设备和硬盘.设置缓冲区.</p>
 <blockquote>
@@ -276,9 +276,9 @@
       </a>
     
     
-      <a href="/2023/ycb2023/" class="article-nav-link">
+      <a href="/2023/6.828-Lab3/" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
-        <div class="article-nav-title">羊城杯2023 复现</div>
+        <div class="article-nav-title">MIT6.828 Lab3</div>
       </a>
     
   </nav>

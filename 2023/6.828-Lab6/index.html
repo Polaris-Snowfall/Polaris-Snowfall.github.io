@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>MIT6.828 Lab6 |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end --></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-6.828-Lab6"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  MIT6.828 Lab6
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/6.828-Lab6/" class="article-date">
+  <time datetime="2023-11-14T16:00:00.000Z" itemprop="datePublished">2023-11-15</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/">操作系统</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/6-828/">6.828</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">1.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">6 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="Lab-6-Network-Driver"><a href="#Lab-6-Network-Driver" class="headerlink" title="Lab 6: Network Driver"></a>Lab 6: Network Driver</h2><h3 id="Part-A-Initialization-and-transmitting-packets"><a href="#Part-A-Initialization-and-transmitting-packets" class="headerlink" title="Part A: Initialization and transmitting packets"></a>Part A: Initialization and transmitting packets</h3><h4 id="time"><a href="#time" class="headerlink" title="time"></a>time</h4><p>在之前的时钟中断调度前加一个对time_tick函数的调用,注意时钟中断每个CPU都会收到,而我们的目的是计时,所以选择固定选择一个CPU来处理就好,bootcpu当然是最合适的.</p>
+<pre class=" language-c"><code class="language-c">        <span class="token keyword">case</span> IRQ_OFFSET<span class="token operator">+</span>IRQ_TIMER<span class="token punctuation">:</span>
+            <span class="token function">lapic_eoi</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>thiscpu<span class="token operator">==</span>bootcpu<span class="token punctuation">)</span>
+                <span class="token function">time_tick</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token function">sched_yield</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+</code></pre>
+<h4 id="The-Network-Interface-Card"><a href="#The-Network-Interface-Card" class="headerlink" title="The Network Interface Card"></a>The Network Interface Card</h4><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202311131138871.png"></p>
+<h5 id="PCI-Interface"><a href="#PCI-Interface" class="headerlink" title="PCI Interface"></a>PCI Interface</h5><p>现在要完成E1000作为一个PCI设备的识别和初始化</p>
+<blockquote>
+<p>The E1000 is a PCI device, which means it plugs into the PCI bus on the motherboard. The PCI bus has address, data, and interrupt lines, and allows the CPU to communicate with PCI devices and PCI devices to read and write memory. A PCI device needs to be discovered and initialized before it can be used. Discovery is the process of walking the PCI bus looking for attached devices. Initialization is the process of allocating I/O and memory space as well as negotiating the IRQ line for the device to use.</p>
+</blockquote>
+<blockquote>
+<p> To perform PCI initialization during boot, the PCI code walks the PCI bus looking for devices. When it finds a device, it reads its vendor ID and device ID and uses these two values as a key to search the pci_attach_vendor array. </p>
+<p>If the discovered device’s vendor ID and device ID match an entry in the array, the PCI code calls that entry’s attachfn to perform device initialization.</p>
+</blockquote>
+<p>在Software Developer’s Manual中找到E1000的vendor ID和device ID,为E1000声明一个用来attach的函数</p>
+<pre class=" language-c"><code class="language-c"><span class="token macro property">#<span class="token directive keyword">define</span> PCI_E1000_VENDOR_ID 0x8086</span>
+<span class="token macro property">#<span class="token directive keyword">define</span> PCI_E1000_DEVICE_ID 0x100E</span>
+
+<span class="token keyword">int</span> <span class="token function">e1000_attach</span><span class="token punctuation">(</span><span class="token keyword">struct</span> pci_func <span class="token operator">*</span>pcif<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>填入pci_attach_vendor数组中,这样E1000可以被识别.</p>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">struct</span> pci_driver pci_attach_vendor<span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+    <span class="token punctuation">{</span>PCI_E1000_VENDOR_ID<span class="token punctuation">,</span>PCI_E1000_DEVICE_ID<span class="token punctuation">,</span>e1000_attach<span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">{</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">0</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre>
+<h5 id="Memory-mapped"><a href="#Memory-mapped" class="headerlink" title="Memory-mapped"></a>Memory-mapped</h5><blockquote>
+<p>Software communicates with the E1000 via memory-mapped I/O (MMIO).</p>
+</blockquote>
+<p>mmio_map_region的实现在lab4中.</p>
+<pre class=" language-c"><code class="language-c">
+<span class="token keyword">volatile</span> <span class="token keyword">void</span><span class="token operator">*</span> e1000<span class="token punctuation">;</span>
+
+
+<span class="token keyword">int</span> <span class="token function">e1000_attach</span><span class="token punctuation">(</span><span class="token keyword">struct</span> pci_func <span class="token operator">*</span>pcif<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token function">pci_func_enable</span><span class="token punctuation">(</span>pcif<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    e1000 <span class="token operator">=</span> <span class="token function">mmio_map_region</span><span class="token punctuation">(</span>pcif<span class="token operator">-></span>reg_base<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span>pcif<span class="token operator">-></span>reg_size<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">cprintf</span><span class="token punctuation">(</span><span class="token string">"Device e1000 attached, status:%p\n"</span><span class="token punctuation">,</span><span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span><span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4 id="Transmitting-Packets"><a href="#Transmitting-Packets" class="headerlink" title="Transmitting Packets"></a>Transmitting Packets</h4><h5 id="C-Structures"><a href="#C-Structures" class="headerlink" title="C Structures"></a>C Structures</h5><p>加上e1000设备的初始化操作</p>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">struct</span> e1000_tx_desc tds<span class="token punctuation">[</span>NTRANS_DESC<span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">int</span> <span class="token function">e1000_attach</span><span class="token punctuation">(</span><span class="token keyword">struct</span> pci_func <span class="token operator">*</span>pcif<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">int</span> r<span class="token punctuation">;</span>
+    <span class="token function">pci_func_enable</span><span class="token punctuation">(</span>pcif<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    e1000 <span class="token operator">=</span> <span class="token function">mmio_map_region</span><span class="token punctuation">(</span>pcif<span class="token operator">-></span>reg_base<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span>pcif<span class="token operator">-></span>reg_size<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">cprintf</span><span class="token punctuation">(</span><span class="token string">"Device e1000 attached, status:%p\n"</span><span class="token punctuation">,</span><span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_STATUS<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TDBAL<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">PADDR</span><span class="token punctuation">(</span>tds<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TDLEN<span class="token punctuation">)</span> <span class="token operator">=</span> TDLEN<span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TDH<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TDT<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TCTL<span class="token punctuation">)</span> <span class="token operator">=</span> E1000_TCTL_EN<span class="token operator">|</span>
+                                    E1000_TCTL_PSP<span class="token operator">|</span>
+                                <span class="token punctuation">(</span>E1000_TCTL_COLD<span class="token operator">&amp;</span><span class="token punctuation">(</span><span class="token number">0x40</span><span class="token operator">&lt;&lt;</span>E1000_TCTL_COLD_SHIFT<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TIPG<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">10</span> <span class="token operator">|</span> <span class="token punctuation">(</span><span class="token number">8</span> <span class="token operator">&lt;&lt;</span> <span class="token number">10</span><span class="token punctuation">)</span> <span class="token operator">|</span> <span class="token punctuation">(</span><span class="token number">12</span> <span class="token operator">&lt;&lt;</span> <span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">inline</span> uint32_t <span class="token function">tdh</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TDH<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">inline</span> uint32_t <span class="token function">tdt</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TDT<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">int</span> <span class="token function">tds_init</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>i<span class="token operator">&lt;</span>NTRANS_DESC<span class="token punctuation">;</span><span class="token operator">++</span>i<span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        tds<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>addr <span class="token operator">=</span> <span class="token function">PADDR</span><span class="token punctuation">(</span>tdbufs<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TDBAL<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">PADDR</span><span class="token punctuation">(</span>tds<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TDBAH<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TDLEN<span class="token punctuation">)</span> <span class="token operator">=</span> TDLEN<span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TDH<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TDT<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TCTL<span class="token punctuation">)</span> <span class="token operator">=</span> E1000_TCTL_EN<span class="token operator">|</span>
+                                    E1000_TCTL_PSP<span class="token operator">|</span>
+                                <span class="token punctuation">(</span>E1000_TCTL_COLD<span class="token operator">&amp;</span><span class="token punctuation">(</span><span class="token number">0x40</span><span class="token operator">&lt;&lt;</span>E1000_TCTL_COLD_SHIFT<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TIPG<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">10</span> <span class="token operator">|</span> <span class="token punctuation">(</span><span class="token number">8</span> <span class="token operator">&lt;&lt;</span> <span class="token number">10</span><span class="token punctuation">)</span> <span class="token operator">|</span> <span class="token punctuation">(</span><span class="token number">12</span> <span class="token operator">&lt;&lt;</span> <span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">int</span> <span class="token function">tx_pkt</span><span class="token punctuation">(</span><span class="token keyword">char</span><span class="token operator">*</span> buf<span class="token punctuation">,</span>size_t nbytes<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span>nbytes<span class="token operator">></span>DESC_BUF_SZ<span class="token punctuation">)</span>
+        <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"tx_pkt: invalid packet size\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    
+    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>tds<span class="token punctuation">[</span><span class="token function">tdt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">.</span>cmd<span class="token operator">&amp;</span>E1000_TXD_CMD_RS<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span>tds<span class="token punctuation">[</span><span class="token function">tdt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">.</span>status<span class="token operator">&amp;</span>E1000_TXD_STAT_DD<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{</span>
+            <span class="token function">cprintf</span><span class="token punctuation">(</span><span class="token string">"tx_pkt: the transmit queue is full,please retry\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token operator">-</span>E_TDQ_FULL<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token function">memcpy</span><span class="token punctuation">(</span>tdbufs<span class="token punctuation">[</span><span class="token function">tdt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">,</span>buf<span class="token punctuation">,</span>nbytes<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    tds<span class="token punctuation">[</span><span class="token function">tdt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">.</span>length <span class="token operator">=</span> <span class="token punctuation">(</span>uint16_t<span class="token punctuation">)</span>nbytes<span class="token punctuation">;</span>
+    tds<span class="token punctuation">[</span><span class="token function">tdt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">.</span>cmd <span class="token operator">|</span><span class="token operator">=</span> <span class="token punctuation">(</span>E1000_TXD_CMD_RS<span class="token operator">|</span>E1000_TXD_CMD_EOP<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    tds<span class="token punctuation">[</span><span class="token function">tdt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">.</span>status <span class="token operator">&amp;</span><span class="token operator">=</span> <span class="token punctuation">(</span><span class="token operator">~</span>E1000_TXD_STAT_DD<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_TDT<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token function">tdt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">%</span>NTRANS_DESC<span class="token punctuation">;</span>
+    <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3 id="Part-B-Receiving-packets-and-the-web-server"><a href="#Part-B-Receiving-packets-and-the-web-server" class="headerlink" title="Part B: Receiving packets and the web server"></a>Part B: Receiving packets and the web server</h3><p>和Transmit packets类似,查手册写就行了.</p>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">int</span> <span class="token function">rx_init</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>i<span class="token operator">&lt;</span>NRECV_DESC<span class="token punctuation">;</span><span class="token operator">++</span>i<span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        rds<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>addr <span class="token operator">=</span> <span class="token function">PADDR</span><span class="token punctuation">(</span>rdbufs<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        rds<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>status <span class="token operator">&amp;</span><span class="token operator">=</span> <span class="token operator">~</span>E1000_RXD_STAT_DD<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_RAL<span class="token punctuation">)</span> <span class="token operator">=</span> MAC_IPL<span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_RAH<span class="token punctuation">)</span> <span class="token operator">=</span> MAC_IPH<span class="token operator">|</span>E1000_RAH_AV<span class="token punctuation">;</span>
+
+    <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>i<span class="token operator">&lt;</span><span class="token number">128</span><span class="token punctuation">;</span><span class="token operator">++</span>i<span class="token punctuation">)</span>
+        <span class="token punctuation">(</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_MTA<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_RDBAL<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">PADDR</span><span class="token punctuation">(</span>rds<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_RDBAH<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_RDLEN<span class="token punctuation">)</span> <span class="token operator">=</span> NRECV_DESC<span class="token operator">*</span>DESC_BUF_SZ<span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_RDH<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_RDT<span class="token punctuation">)</span> <span class="token operator">=</span> NRECV_DESC<span class="token number">-1</span><span class="token punctuation">;</span>
+    
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_RCTL<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">(</span>E1000_RCTL_EN <span class="token operator">|</span> E1000_RCTL_SECRC <span class="token operator">|</span> E1000_RCTL_BAM <span class="token operator">|</span> <span class="token number">0</span><span class="token operator">&lt;&lt;</span>RCTL_BSIZE_SHIFT<span class="token punctuation">)</span> <span class="token operator">&amp;</span> <span class="token punctuation">(</span><span class="token operator">~</span>E1000_RCTL_LPE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">int</span> <span class="token function">rx_pkt</span><span class="token punctuation">(</span><span class="token keyword">char</span><span class="token operator">*</span> buf<span class="token punctuation">,</span>size_t max_bytes<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    uint32_t next <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token function">rdt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">%</span>NRECV_DESC<span class="token punctuation">;</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>rds<span class="token punctuation">[</span>next<span class="token punctuation">]</span><span class="token punctuation">.</span>status<span class="token operator">&amp;</span>E1000_RXD_STAT_DD<span class="token punctuation">)</span><span class="token operator">==</span><span class="token number">0</span><span class="token punctuation">)</span>
+        <span class="token keyword">return</span> <span class="token operator">-</span>E_RDQ_EMPTY<span class="token punctuation">;</span>
+    uint16_t lenth <span class="token operator">=</span> rds<span class="token punctuation">[</span>next<span class="token punctuation">]</span><span class="token punctuation">.</span>length<span class="token punctuation">;</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span>lenth<span class="token operator">></span>max_bytes<span class="token punctuation">)</span>
+        <span class="token keyword">return</span> <span class="token operator">-</span>E_INVAL<span class="token punctuation">;</span>
+    <span class="token function">memcpy</span><span class="token punctuation">(</span>buf<span class="token punctuation">,</span>rdbufs<span class="token punctuation">[</span>next<span class="token punctuation">]</span><span class="token punctuation">,</span>lenth<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    rds<span class="token punctuation">[</span>next<span class="token punctuation">]</span><span class="token punctuation">.</span>status <span class="token operator">&amp;</span><span class="token operator">=</span> <span class="token punctuation">(</span><span class="token operator">~</span>E1000_RXD_STAT_DD<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>e1000<span class="token operator">+</span>E1000_RDT<span class="token punctuation">)</span> <span class="token operator">=</span> next<span class="token punctuation">;</span>
+    <span class="token keyword">return</span> lenth<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3 id="效果"><a href="#效果" class="headerlink" title="效果"></a>效果</h3><p>其他代码详见github.<br>通过所有测试.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202311141920905.png"></p>
+<p>现在启动httpd server,在浏览器中访问html页面(正好桌面上有这个html及css等文件,就拿来实验了,这是我曾经的一次作业,你可以通过这个页面猜到,我最终没有通过考试),可以看到这样的界面.<br>你可以看到有张只有一小半的BUPT校徽,<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202311141954122.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202311141744741.png"></p>
+<p>我尝试输出字节数的方式来探究其只有一小半的原因.发现确实未发送完全.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202311141751103.png"></p>
+<p>我启动e1000的调试功能,多次实验发现在第125次发送时稳定触发,与TX描述符个数无关,更奇怪的时,触发之后125,126,127还能够继续传输,并且再次触发.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202311142017469.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202311142036889.png"></p>
+<p>我在课程提供的qemu的源码中找到了这一报错,它意味着e1000正在发送的描述符的buffer_addr为空,但我找不出原因,我的初始化工作和其他工作看起来没有问题,至少不太可能出现buffer_addr为空的问题.我不确定是否是课程提供的qemu存在的问题,该问题会在以后的开发中再来解决,毕竟计算机网络方面的知识我还所知甚少,近期的开发会先从JOS一些实现的优化开始.</p>
+<p>如果您知道问题出在哪里,请联系我,感激不尽.</p>
+<pre class=" language-c"><code class="language-c">        <span class="token keyword">if</span> <span class="token punctuation">(</span>desc<span class="token punctuation">.</span>buffer_addr<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>desc_offset <span class="token operator">&lt;</span> size<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                size_t iov_copy<span class="token punctuation">;</span>
+                hwaddr ba <span class="token operator">=</span> <span class="token function">le64_to_cpu</span><span class="token punctuation">(</span>desc<span class="token punctuation">.</span>buffer_addr<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                size_t copy_size <span class="token operator">=</span> size <span class="token operator">-</span> desc_offset<span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>copy_size <span class="token operator">></span> s<span class="token operator">-></span>rxbuf_size<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    copy_size <span class="token operator">=</span> s<span class="token operator">-></span>rxbuf_size<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">do</span> <span class="token punctuation">{</span>
+                    iov_copy <span class="token operator">=</span> <span class="token function">MIN</span><span class="token punctuation">(</span>copy_size<span class="token punctuation">,</span> iov<span class="token operator">-></span>iov_len <span class="token operator">-</span> iov_ofs<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token function">pci_dma_write</span><span class="token punctuation">(</span>d<span class="token punctuation">,</span> ba<span class="token punctuation">,</span> iov<span class="token operator">-></span>iov_base <span class="token operator">+</span> iov_ofs<span class="token punctuation">,</span> iov_copy<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    copy_size <span class="token operator">-</span><span class="token operator">=</span> iov_copy<span class="token punctuation">;</span>
+                    ba <span class="token operator">+</span><span class="token operator">=</span> iov_copy<span class="token punctuation">;</span>
+                    iov_ofs <span class="token operator">+</span><span class="token operator">=</span> iov_copy<span class="token punctuation">;</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span>iov_ofs <span class="token operator">==</span> iov<span class="token operator">-></span>iov_len<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        iov<span class="token operator">++</span><span class="token punctuation">;</span>
+                        iov_ofs <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span> <span class="token keyword">while</span> <span class="token punctuation">(</span>copy_size<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            desc_offset <span class="token operator">+</span><span class="token operator">=</span> desc_size<span class="token punctuation">;</span>
+            desc<span class="token punctuation">.</span>length <span class="token operator">=</span> <span class="token function">cpu_to_le16</span><span class="token punctuation">(</span>desc_size<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>desc_offset <span class="token operator">>=</span> total_size<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                desc<span class="token punctuation">.</span>status <span class="token operator">|</span><span class="token operator">=</span> E1000_RXD_STAT_EOP <span class="token operator">|</span> E1000_RXD_STAT_IXSM<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                <span class="token comment" spellcheck="true">/* Guest zeroing out status is not a hardware requirement.
+                   Clear EOP in case guest didn't do it. */</span>
+                desc<span class="token punctuation">.</span>status <span class="token operator">&amp;</span><span class="token operator">=</span> <span class="token operator">~</span>E1000_RXD_STAT_EOP<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span> <span class="token comment" spellcheck="true">// as per intel docs; skip descriptors with null buf addr</span>
+            <span class="token function">DBGOUT</span><span class="token punctuation">(</span>RX<span class="token punctuation">,</span> <span class="token string">"Null RX descriptor!!\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2023/6.828-Lab6/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/6%C2%B7828/" rel="tag">6·828</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/2023/HQOS-Design-and-Implementation/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">HQOS 设计与实现</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2023
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2022/About">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>

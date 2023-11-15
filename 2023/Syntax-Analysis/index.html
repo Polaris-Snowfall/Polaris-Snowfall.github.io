@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>语法分析 |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end --></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Syntax-Analysis"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  语法分析
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/Syntax-Analysis/" class="article-date">
+  <time datetime="2023-11-02T16:00:00.000Z" itemprop="datePublished">2023-11-03</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86/">编译原理</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">3.8k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">13 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h1><h2 id="语法分析"><a href="#语法分析" class="headerlink" title="语法分析"></a>语法分析</h2><p>语法分析器接收词法分析器提供的记号串,检查它们是否能由源程序语言的文法产生.</p>
+<p>语法分析器的输出是对词法分析器产生的记号流的分析树的某种表示.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201353760.png"></p>
+<span id="more"></span>
+<h2 id="上下文无关文法"><a href="#上下文无关文法" class="headerlink" title="上下文无关文法"></a>上下文无关文法</h2><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201357869.png"></p>
+<p>对于文法G产生的语言L(G),当且仅当文法G的开始符号S经过一步或多步推导得到终结符串w时,我们说终结符串w是G的句子.如果两个文法产生同样的语言,则称这两个文法等价.</p>
+<h2 id="分析树和推导"><a href="#分析树和推导" class="headerlink" title="分析树和推导"></a>分析树和推导</h2><p>推导的每一步有两个选择:1)选择被替换的非终结符 2)选择用于替换该终结符的产生式.若每一步都替代最左非终结符的推导,这样的推导叫做最左推导.由最左推导得到的文法符号的串,称为该文法的左句型.</p>
+<p>分析树可以看作推导的图形表示,但其不能显示出替代顺序的选择.比如图中两个E-&gt;id的替代顺序.所以每个分析树都有唯一的最左和最右推导.然而每一个句子不一定只有一个分析树.存在这样句子的文法G称为二义性文法.语法分析器在处理具有二义性的文法时,需要有消除二义性的规则,从而保留唯一一棵分析树.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201408736.png"></p>
+<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><p>实现部分阅读建议: 从文法识别开始阅读,当识别过程中提到文法的某种设计要求或特征时,阅读文法设计对应细节.</p>
+<h2 id="文法设计"><a href="#文法设计" class="headerlink" title="文法设计"></a>文法设计</h2><h3 id="从NFA到上下文无关文法"><a href="#从NFA到上下文无关文法" class="headerlink" title="从NFA到上下文无关文法"></a>从NFA到上下文无关文法</h3><p>挺好理解的,每个状态转移对应一个产生式.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201426926.png"></p>
+<h3 id="文法处理"><a href="#文法处理" class="headerlink" title="文法处理"></a>文法处理</h3><h4 id="消除左递归"><a href="#消除左递归" class="headerlink" title="消除左递归"></a>消除左递归</h4><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201637505.png"></p>
+<p>直接左递归可以用这种方式来消除.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201639863.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201651495.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201652315.png"></p>
+<p>而对于非直接左递归产生式,如:<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201645704.png"><br>进行如下的消除算法.<br>简单说说算法的思想:<br>先将所有的非终结符编号1-n,从A1开始对每一个非终结符Ai,对于Ai-&gt;Aj γ的产生式,用Aj的产生式替换Ai-&gt;Aj γ中的Aj,经过N轮后,对于任意产生式Ai-&gt;Aj γ,一定有j &gt;= i.意味着每次推导产生的非终结符的序号一定不小于原非终结符的序号,类似于单调的概念.故无法从一个非终结符推导出它的”祖先”非终结符.</p>
+<p>也就消除(其实是转化)了非直接左递归.之前的消除直接左递归的算法就可以使用了.当然这是从宏观上看的该算法,实际上在算法中每次外循环后都已经消除Ai的非直接左递归,并完成了消除直接左递归的操作.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201644085.png"></p>
+<h4 id="提取左因子"><a href="#提取左因子" class="headerlink" title="提取左因子"></a>提取左因子</h4><p>当不清楚应该用两个选择中的哪个来替换非终结符A时,可改写A产生式来推迟这种决定,直到看见足够多的输入能做出正确选择为止.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201728574.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201728434.png"></p>
+<h3 id="LL-1-文法"><a href="#LL-1-文法" class="headerlink" title="LL(1)文法"></a>LL(1)文法</h3><blockquote>
+<p>Predictive parsers, that is, recursive-descent parsers needing no backtracking,can be constructed for a class of grammars called LL(1). The first “L” in LL(1) stands for scanning the input from left to right, the second “L” for producing a leftmost derivation, and the “1” for using one input symbol of lookahead at each step to make parsing action decisions.</p>
+</blockquote>
+<h2 id="文法识别"><a href="#文法识别" class="headerlink" title="文法识别"></a>文法识别</h2><h3 id="自顶向下语法分析"><a href="#自顶向下语法分析" class="headerlink" title="自顶向下语法分析"></a>自顶向下语法分析</h3><p>自顶向下语法分析的目的是为输入字符串寻找最左推导,或者说,从根节点开始,自上而下,从左到右地为输入字符串建立一棵分析树.</p>
+<h4 id="递归下降语法分析"><a href="#递归下降语法分析" class="headerlink" title="递归下降语法分析"></a>递归下降语法分析</h4><p>递归下降语法分析是自顶向下分析的一般形式,它可能需要回溯,也就是重复地扫描某段输入.</p>
+<p>典型的递归下降语法分析算法:<br>为每个非终结符创建一个函数(procedure).当语法分析器开始分析非终结符A,非终结符A的对应的函数被调用.其选择一个非终结符的推导,若产生式的记号为终结符,右移输入指针表示成功匹配,若为非终结符Xi,调用Xi的函数.该算法用函数调用的栈隐式地记录了非终结符的处理顺序.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201443552.png"></p>
+<p>该算法有两个点需要注意,这两个点也就是导致该算法需要回溯的原因.</p>
+<ol>
+<li>非终结符A可能有多个产生式,如何选择?递归下降语法分析的策略是遍历每一个产生式.</li>
+<li>若选择的产生式不能匹配输入,触发一个non-ultimate failure,该错误使得输入回退到line1,也就是选择产生式的时.这意味着该算法需要在每次遍历选择时保存输入指针的位置.继续遍历,选择一个新的产生式.直到遍历完A的所有产生式,报告一个错误(该句子不是文法的语言).</li>
+</ol>
+<p>该算法有一个问题,对于含有A-&gt;Aa这样产生式的左递归文法,分析器在处理A时,不断的调用A的处理例程,但输入指针并没有前移,形成死循环.详见文法设计部分<code>消除左递归</code></p>
+<h5 id="预测语法分析器"><a href="#预测语法分析器" class="headerlink" title="预测语法分析器"></a>预测语法分析器</h5><p>有的文法可以用不带回溯的递归下降语法分析器来构造.不带回溯的递归下降语法分析器称为预测语法分析器.</p>
+<p>看这样一个例子.当前输入符号是a,此时正在处理的非终结符A有两个产生式:A-&gt;aB,A-&gt;bB,很明显我们应该选择前者,这便是预测,其实可以类比词法分析选择状态转移的过程.(<del>其实不太懂为什么叫预测,词法分析的时候也没DFA见叫预测有限有穷自动机</del>).</p>
+<p>所以我们应该为输入符号和非终结符产生式创建一个关联,称作分析表(当然也有其他的结构).类比于词法分析中将NFA转换成DFA进行模拟,我们应该对文法<code>提取左因子</code>来保证不存在同一非终结符对于输入符号a的多种产生式.</p>
+<h6 id="预测分析表的构造"><a href="#预测分析表的构造" class="headerlink" title="预测分析表的构造"></a>预测分析表的构造</h6><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201813871.png"><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201813745.png"></p>
+<h6 id="表驱动的预测分析算法"><a href="#表驱动的预测分析算法" class="headerlink" title="表驱动的预测分析算法"></a>表驱动的预测分析算法</h6><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201815234.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201815613.png"></p>
+<h3 id="自底向上语法分析"><a href="#自底向上语法分析" class="headerlink" title="自底向上语法分析"></a>自底向上语法分析</h3><p>自根节点向下建立分析树.<br><del>大量概念名词预警</del></p>
+<p>归约: 一个匹配某产生式右部的字符串w被产生式左部替代的过程,推导的逆过程.<br>自底向上语法分析就是将一个句子一步步归约到文法的开始符号.</p>
+<p>从定义可以看出,自底向上语法分析主要解决两个问题:</p>
+<ol>
+<li>什么时候进行归约</li>
+<li>选择哪个产生式进行归约</li>
+</ol>
+<p>句柄: 一个符号串的句柄是和一个产生式右部匹配的字串,且对该字串的归约过程是最右推导逆过程的一步.</p>
+<h4 id="移进归约分析法"><a href="#移进归约分析法" class="headerlink" title="移进归约分析法"></a>移进归约分析法</h4><p>移进归约分析法用栈来保存文法符号,用输入缓冲区来保存要分析的串w,用$来标记栈底和输入串的右端.初始时栈为空.</p>
+<p>语法分析其将零个或多个输入符号压入栈,直到句柄B在栈顶出现为止,然后选择合适的产生式将句柄B归约,重复此过程直到发现错误或栈中只有开始符号且输入为空.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271156763.png"></p>
+<p>选用栈来进行移进归约分析基于这样一个事实: 句柄总是出现在栈顶而不是栈中.<br>其实就是非终结符总是出现在上一个右句型的左部.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271159720.png"></p>
+<p>但对于一些上下文无关文法,根据栈中的内容和下一个输入符号不能决定是移进还是归约,或不能决定按哪一个产生式进行归约,如二义性文法.这类文法不属于<code>LR(k)</code>类文法.</p>
+<h5 id="LR语法分析"><a href="#LR语法分析" class="headerlink" title="LR语法分析"></a>LR语法分析</h5><p>为什么选择LR语法分析?简单来说就是,广泛有效性.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271218831.png"></p>
+<p>LR语法分析器通过记录当前状态(state)来决定移进归约的操作,状态是项目(item)的集合,项目指示对某个产生式的识别状态(区分于语法分析器的状态).<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271355698.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271355785.png"></p>
+<blockquote>
+<p>One collection of sets of LR(0) items,called the canonical LR(0) collection,provides the basis for constructing a deterministic finite automaton that is used to make parsing decisions.Such an automatonis called an LR(0) automaton.</p>
+</blockquote>
+<h6 id="SLR语法分析"><a href="#SLR语法分析" class="headerlink" title="SLR语法分析"></a>SLR语法分析</h6><p>LR语法分析器依靠自动机来完成移进归约操作的决定,<br>LR(0)规范集,其实就是LR语法分析器状态的集合(项目(item)集合(set)的集合(collection)),是构造该自动机的基础.</p>
+<p>为文法G构造LR(0)规范集,需要增广文法,闭包(closure)函数,转移(goto)函数.</p>
+<p>拓广文法: 加入一个新的开始符号和产生式S’ -&gt; S,使得仅当S归约到S’时到达接受状态.(原开始符号可能有多个产生式,也就有多种归约能到达接受状态)</p>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271423144.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271430616.png"></p>
+<p>解释一下闭包函数的作用:<br>    对于项目E’ -&gt; ·E,指示了语法分析器此刻期望从输入中得到E(回忆一下,项目指示了对某产生式的识别状态),当然,如果存在产生式E-&gt;T,分析器同样可能期望得到一个T.为了节约存储空间,我们使用closure来计算出分析器在某状态时的项目集合,指示当前状态所有可能期望得到的串.<br>    <img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271431598.png"><br>这里再引入两个概念,核心项目和非核心项目.非核心项目可以通过对核心项目求闭包来重新生成.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271438905.png"></p>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271453632.png"><br>GOTO(I,X)就是在状态I识别到文法符号X后到达的新状态.<br>看这样一个例子:<br>在状态I识别到符号+,状态I的项目(后文在说状态的项目时默认是求闭包后的结果)中期待得到符号+的项目只有E-&gt;E· +T,识别+后称为E-&gt;E+ · T,则新状态应该是项目E-&gt;E+ · T的闭包.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271512338.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271515732.png"></p>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271541992.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271541791.png"></p>
+<p>LR(0)语法分析器的识别过程.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271537409.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271535052.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271539985.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271540363.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271540956.png"></p>
+<p>活前缀的有效项目,我的理解,有效项目指示当前栈中活前缀在遇到下一个文法符号β时的动作,若β为ε,则归约,否则移进.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310271620179.png"></p>
+<h6 id="规范LR-1"><a href="#规范LR-1" class="headerlink" title="规范LR(1)"></a>规范LR(1)</h6><p>SLR语法分析依靠活前缀的有效项目进行归约或移进操作的指示,然而对于一些文法,可能有一个活前缀的多个有效项目指示分析器做不同的操作,产生移进-归约冲突.看下面这样一个例子:</p>
+<p>对于如下文法:<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310311707582.png"><br>构造其LR(0)标准集,其中一个状态是这样的.该状态对于活前缀L且即将识别符号=时,有两个有效的项目分别指示移进和归约.语法分析器不能决定.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310311707718.png"><br>然而该冲突其实并不存在,因为文法中不存在以R=开始的右句型(=不在FOLLOW(R)中),所以应该选择移进操作.由此可见,如果让状态蕴含更多的信息,可以解决这样的冲突.</p>
+<p>回顾一下在自顶向下分析中,我们解决推导冲突的办法: 提取左因子,合并状态,也可以说成减少状态蕴藏的信息,得到唯一的状态转换.<br>在这里正好逆一下,分裂状态,使状态蕴含更多的信息,得到唯一的状态转换.</p>
+<blockquote>
+<p>同样是消除冲突,为什么会有相反的两种思想?</p>
+<blockquote>
+<p>本质上是相同的,减少目标状态信息,增加当前状态信息.解决推导冲突所需要的信息,在多个输入符号之后,所以我们暂时减少目标状态的信息以推迟决定,直到当前状态搜集到足够多能做出决定的信息.而解决(类似示例中的)归约冲突所需要的信息,存在于文法本身,若文法设计本身不存在这样的归约冲突,语法分析器便可根据文法本身解决问题,所以要做的就是从文法中产生这样的信息并保存到状态中.</p>
+</blockquote>
+</blockquote>
+<p>规范LR(1)语法分析的项目:<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310311744785.png"></p>
+<p>还记得我们说SLR语法分析依靠活前缀的有效项目进行归约或移进操作的指示吗?规范LR(1)可以理解为提高了有效项目的要求.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310311745101.png"></p>
+<p>规范LR(1)项目集的构造<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310311749511.png"></p>
+<p>规范LR(1)分析表的构造<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310311752329.png"></p>
+<h6 id="LALR"><a href="#LALR" class="headerlink" title="LALR"></a>LALR</h6><p>为了减少规范LR语法分析表的大小,使用一种LALR的分析方法.</p>
+<p>来看这样一个文法和对应的规范LR的GOTO图.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310311805400.png"></p>
+<p>状态I4和I7都只有一个项目<br>对于状态I4,当下个文法符号是c或d时,根据项目的第一分量(产生式)进行归约,对于状态I7,当下个文法符号是$时同样根据项目第一分量进行归约,而这两个第一分量(core)相同.所以我们可以合并这两个状态,而不破坏原本对分析器的指示.<br>(这样的合并可能会延后错误的发现,但不会遗漏).<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310312058793.png"></p>
+<p>来分析一下这样合并的有效性:</p>
+<blockquote>
+<p>是否会引进移进-归约冲突?</p>
+<blockquote>
+<p>不会.进行合并的状态的项目一定有相同的core,对一个core而言,是如何决定进行移进还是归约的?根据·是否到了产生式的结尾.也就是只和core有关而与第二分量无关.有的人可能会说,归约的条件还有一个下一文法符号符合第二分量,但在限定了对一个core而言,这其实是决定归约或报告错误,与移进无关.若合并后存在移进-归约冲突,说明该冲突本身就存在于规范LR(1)分析中,该文法不是LR(1)文法.</p>
+</blockquote>
+<p>是否会引进归约-归约冲突?</p>
+<blockquote>
+<p>可能会.在规范LR(1)中,如何决定进行归约的产生式?由第二分量决定.对于这样两个即将被我们合并的状态,各自在识别下一个符号e和d的时候能够根据第二分量选择正确的产生式,而在合并之后,第二分量相同,无法决定,产生归约-归约冲突.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310311904951.png"></p>
+</blockquote>
+</blockquote>
+<p>简易但耗空间的LALR表的构造.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310311915957.png"></p>
+<p>更efficient的构造方式,还是利用分析过程中通过对核心项目的计算来减小分析表的大小.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310312119100.png"></p>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202311031547552.png"></p>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202311031548493.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202311031548887.png"></p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2023/Syntax-Analysis/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Syntax-Analysis/" rel="tag">Syntax-Analysis</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/2023/Life/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            如果有一天
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2023/6.828-Lab5/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">MIT6.828 Lab5</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2023
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2022/About">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>
