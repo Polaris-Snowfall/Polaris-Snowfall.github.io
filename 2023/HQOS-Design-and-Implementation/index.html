@@ -88,7 +88,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">3.5k</span>
+            <span class="post-count">3.4k</span>
         </span>
     </span>
 
@@ -97,7 +97,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">15 分钟</span>
+            <span class="post-count">14 分钟</span>
         </span>
     </span>
 </div>
@@ -273,7 +273,7 @@ envid_t
 </code></pre>
 <h4 id="Directories"><a href="#Directories" class="headerlink" title="Directories"></a>Directories</h4><p>保存文件的元数据,目录本身也是一个文件,其元数据保存在其上层目录中.根目录的内容保存在超级块中.</p>
 <h3 id="File-System-Structure"><a href="#File-System-Structure" class="headerlink" title="File System Structure"></a>File System Structure</h3><h4 id="Disk-Access"><a href="#Disk-Access" class="headerlink" title="Disk Access"></a>Disk Access</h4><p>HQOS没有在内核中添加IDE磁盘驱动程序及相关系统调用,而是将其实现于用户态的文件系统中.文件系统进程使用了EFLAGS中的IOPL位,有权限执行IO指令.</p>
-<h4 id="Block-Cache"><a href="#Block-Cache" class="headerlink" title="Block Cache"></a>Block Cache</h4><p>HQOS借助虚拟地址空间来实现块缓存(不得不夸一下JOS的设计者们,好多巧妙的实现).文件系统的DISKMAP(0x10000000 )至DISKMAP+DISKMAX(0xD0000000)用来缓存磁盘,共3GB空间,故HQOS仅支持3GB以下的磁盘.</p>
+<h4 id="Block-Cache"><a href="#Block-Cache" class="headerlink" title="Block Cache"></a>Block Cache</h4><p>HQOS借助虚拟地址空间来实现块缓存.文件系统的DISKMAP(0x10000000 )至DISKMAP+DISKMAX(0xD0000000)用来缓存磁盘,共3GB空间,故HQOS仅支持3GB以下的磁盘.</p>
 <pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// Return the virtual address of this disk block.</span>
 <span class="token keyword">void</span><span class="token operator">*</span>
 <span class="token function">diskaddr</span><span class="token punctuation">(</span>uint32_t blockno<span class="token punctuation">)</span>
