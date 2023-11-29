@@ -118,7 +118,7 @@
 </blockquote>
 <p>于是便有了写一个操作系统的想法.在粗略看完一遍《操作系统真相还原》后,感觉从引导操作系统到实现各种操作系统概念的完整过程工作量有点太大了,暂时还没有那么多时间和精力来完成,便暂且搁置了.</p>
 <p>感谢MIT的6.828课程,让我能在有限的时间里一步一步地实现一个操作系统雏形JOS.JOS的开发过程请查看 /学习笔记/6.828分类下的文章.</p>
-<p>在接下来的几年时间,我会继续开发扩展该操作系统,并重构目前实现模型中我不太喜欢的实现,就叫它HQOS吧.</p>
+<p>在接下来的一段时间,我会继续开发扩展该操作系统,并重构目前实现模型中我不太喜欢的实现,就叫它HQOS吧.</p>
 <p>本博客记录当前版本HQOS的设计与实现,你可以在github上找到其历史文档及代码实现.<br><a target="_blank" rel="noopener" href="https://github.com/Polaris-Snowfall/HQOS">github</a></p>
 <span id="more"></span>
 <h1 id="设计与实现-Version-0-0"><a href="#设计与实现-Version-0-0" class="headerlink" title="设计与实现 Version 0.0"></a>设计与实现 Version 0.0</h1><h2 id="总览"><a href="#总览" class="headerlink" title="总览"></a>总览</h2><p>HQOS使用C语言进行开发,是一个基于x86架构的Unix-like微内核操作系统,你可以从中找到很多Unix-like的设计和功能.一些模块如File system,Network等在用户态实现.</p>
