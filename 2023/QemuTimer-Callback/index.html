@@ -44,8 +44,8 @@
         }
       </style>
     
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
-<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end --></head>
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
   </html>
 </html>
 
@@ -174,11 +174,16 @@
     <span class="token function">qemu_mutex_lock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token comment" spellcheck="true">//将ts从timer_list中移除(?什么时候加进来过,估计是防止二次加入)</span>
     <span class="token function">timer_del_locked</span><span class="token punctuation">(</span>timer_list<span class="token punctuation">,</span> ts<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token comment" spellcheck="true">//将ts根据expire_time插入到active_timer链表中,active_timer是一个sorted list.可以看出其是按照expire_time升序排列的.返回值rearm代表插入后ts是否在头部,即timer_list中最近的deadline改变.</span>
+    <span class="token comment" spellcheck="true">/*将ts根据expire_time插入到active_timer链表中,
+    active_timer是一个sorted list.
+    可以看出其是按照expire_time升序排列的.
+    返回值rearm代表插入后ts是否在头部,
+    即timer_list中最近的deadline改变.*/</span>
     rearm <span class="token operator">=</span> <span class="token function">timer_mod_ns_locked</span><span class="token punctuation">(</span>timer_list<span class="token punctuation">,</span> ts<span class="token punctuation">,</span> expire_time<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token function">qemu_mutex_unlock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    <span class="token comment" spellcheck="true">//若timer_list中最近的deadline改变,调用timerlist_rearm.原因后续解释</span>
+    <span class="token comment" spellcheck="true">/*若timer_list中最近的deadline改变,调用
+    timerlist_rearm.原因后续解释*/</span>
     <span class="token keyword">if</span> <span class="token punctuation">(</span>rearm<span class="token punctuation">)</span> <span class="token punctuation">{</span>
         <span class="token function">timerlist_rearm</span><span class="token punctuation">(</span>timer_list<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
@@ -318,7 +323,8 @@
         timeout_ns <span class="token operator">=</span> <span class="token punctuation">(</span>uint64_t<span class="token punctuation">)</span>mlpoll<span class="token punctuation">.</span>timeout <span class="token operator">*</span> <span class="token punctuation">(</span>int64_t<span class="token punctuation">)</span><span class="token punctuation">(</span>SCALE_MS<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
 
-    <span class="token comment" spellcheck="true">//计算timerlistgroup中最近的deadline,若小于当前timeout_ns,更新timeout_ns为deadline.</span>
+    <span class="token comment" spellcheck="true">/*计算timerlistgroup中最近的deadline,
+    若小于当前timeout_ns,更新timeout_ns为deadline.*/</span>
     timeout_ns <span class="token operator">=</span> <span class="token function">qemu_soonest_timeout</span><span class="token punctuation">(</span>timeout_ns<span class="token punctuation">,</span>
                                       <span class="token function">timerlistgroup_deadline_ns</span><span class="token punctuation">(</span>
                                           <span class="token operator">&amp;</span>main_loop_tlg<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
@@ -328,7 +334,8 @@
 
     mlpoll<span class="token punctuation">.</span>state <span class="token operator">=</span> ret <span class="token operator">&lt;</span> <span class="token number">0</span> <span class="token operator">?</span> MAIN_LOOP_POLL_ERR <span class="token punctuation">:</span> MAIN_LOOP_POLL_OK<span class="token punctuation">;</span>
 
-    <span class="token comment" spellcheck="true">//再次调用main_loop_poll_notifiers中所有notifier的notify函数告知其检查这次poll的结果.</span>
+    <span class="token comment" spellcheck="true">/*再次调用main_loop_poll_notifiers中所有
+    notifier的notify函数告知其检查这次poll的结果.*/</span>
     <span class="token function">notifier_list_notify</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>main_loop_poll_notifiers<span class="token punctuation">,</span> <span class="token operator">&amp;</span>mlpoll<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
     <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">icount_enabled</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
