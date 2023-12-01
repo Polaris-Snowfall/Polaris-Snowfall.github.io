@@ -43,9 +43,9 @@
           font-size: 1.6rem;
         }
       </style>
-    <link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end -->
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
-</head>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
   </html>
 </html>
 
@@ -88,7 +88,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">3.4k</span>
+            <span class="post-count">3.3k</span>
         </span>
     </span>
 
@@ -97,7 +97,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">15 分钟</span>
+            <span class="post-count">14 分钟</span>
         </span>
     </span>
 </div>
@@ -146,7 +146,7 @@
   testb   $0x2,%al
   jnz     seta20.1
 
-  movb    $0xd1,%al               # 0xd1 -&gt; port 0x64
+  movb    $0xd1,%al               # 0xd1 -> port 0x64
   outb    %al,$0x64
 
 seta20.2:
@@ -154,7 +154,7 @@ seta20.2:
   testb   $0x2,%al
   jnz     seta20.2
 
-  movb    $0xdf,%al               # 0xdf -&gt; port 0x60
+  movb    $0xdf,%al               # 0xdf -> port 0x60
   outb    %al,$0x60
 </code></pre>
 <p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202309211153437.png"></p>
@@ -184,9 +184,9 @@ gdt:
 <pre class=" language-makefrag"><code class="language-makefrag"># How to build the kernel disk image
 $(OBJDIR)/kern/kernel.img: $(OBJDIR)/kern/kernel $(OBJDIR)/boot/boot
     @echo + mk $@
-    $(V)dd if=/dev/zero of=$(OBJDIR)/kern/kernel.img~ count=10000 2&gt;/dev/null
-    $(V)dd if=$(OBJDIR)/boot/boot of=$(OBJDIR)/kern/kernel.img~ conv=notrunc 2&gt;/dev/null
-    $(V)dd if=$(OBJDIR)/kern/kernel of=$(OBJDIR)/kern/kernel.img~ seek=1 conv=notrunc 2&gt;/dev/null
+    $(V)dd if=/dev/zero of=$(OBJDIR)/kern/kernel.img~ count=10000 2>/dev/null
+    $(V)dd if=$(OBJDIR)/boot/boot of=$(OBJDIR)/kern/kernel.img~ conv=notrunc 2>/dev/null
+    $(V)dd if=$(OBJDIR)/kern/kernel of=$(OBJDIR)/kern/kernel.img~ seek=1 conv=notrunc 2>/dev/null
     $(V)mv $(OBJDIR)/kern/kernel.img~ $(OBJDIR)/kern/kernel.img
 </code></pre>
 <h3 id="The-Kernel"><a href="#The-Kernel" class="headerlink" title="The Kernel"></a>The Kernel</h3><h4 id="entry-S流程分析"><a href="#entry-S流程分析" class="headerlink" title="entry.S流程分析"></a>entry.S流程分析</h4><p>上来第一个指令就看不懂</p>
@@ -204,24 +204,24 @@ $(OBJDIR)/kern/kernel.img: $(OBJDIR)/kern/kernel $(OBJDIR)/boot/boot
             <span class="token comment" spellcheck="true">// Replace this with your code.</span>
             num <span class="token operator">=</span> <span class="token function">getint</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>ap<span class="token punctuation">,</span>lflag<span class="token punctuation">)</span><span class="token punctuation">;</span>
             <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token keyword">long</span> <span class="token keyword">long</span><span class="token punctuation">)</span>num <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span>
-            <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+            <span class="token punctuation">{</span>
                 <span class="token function">putch</span><span class="token punctuation">(</span><span class="token string">'-'</span><span class="token punctuation">,</span>putdat<span class="token punctuation">)</span><span class="token punctuation">;</span>
                 num <span class="token operator">=</span> <span class="token operator">-</span><span class="token punctuation">(</span><span class="token keyword">long</span> <span class="token keyword">long</span><span class="token punctuation">)</span>num<span class="token punctuation">;</span>
-            <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
             base <span class="token operator">=</span> <span class="token number">8</span><span class="token punctuation">;</span>
             <span class="token keyword">goto</span> number<span class="token punctuation">;</span>
             <span class="token keyword">break</span><span class="token punctuation">;</span>
 </code></pre>
 <h4 id="The-Stack"><a href="#The-Stack" class="headerlink" title="The Stack"></a>The Stack</h4><pre class=" language-c"><code class="language-c"><span class="token keyword">int</span>
 <span class="token function">mon_backtrace</span><span class="token punctuation">(</span><span class="token keyword">int</span> argc<span class="token punctuation">,</span> <span class="token keyword">char</span> <span class="token operator">*</span><span class="token operator">*</span>argv<span class="token punctuation">,</span> <span class="token keyword">struct</span> Trapframe <span class="token operator">*</span>tf<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token comment" spellcheck="true">// Your code here.</span>
     <span class="token function">cprintf</span><span class="token punctuation">(</span><span class="token string">"Stack backtrace:\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     uint32_t ebp <span class="token operator">=</span> <span class="token function">read_ebp</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     uint32_t eip <span class="token operator">=</span> <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>ebp<span class="token operator">+</span><span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">struct</span> Eipdebuginfo dinfo<span class="token punctuation">;</span>
     <span class="token keyword">while</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token function">debuginfo_eip</span><span class="token punctuation">(</span>eip<span class="token punctuation">,</span><span class="token operator">&amp;</span>dinfo<span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token function">cprintf</span><span class="token punctuation">(</span><span class="token string">"  ebp %08x  eip %08x  args %08x %08x %08x %08x %08x\n"</span><span class="token punctuation">,</span>ebp<span class="token punctuation">,</span>eip<span class="token punctuation">,</span><span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>ebp<span class="token operator">+</span><span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">,</span><span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>ebp<span class="token operator">+</span><span class="token number">12</span><span class="token punctuation">)</span><span class="token punctuation">,</span><span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>ebp<span class="token operator">+</span><span class="token number">16</span><span class="token punctuation">)</span><span class="token punctuation">,</span><span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>ebp<span class="token operator">+</span><span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">,</span><span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>ebp<span class="token operator">+</span><span class="token number">24</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token function">cprintf</span><span class="token punctuation">(</span><span class="token string">"         %s:%d: %.*s+%d\n"</span><span class="token punctuation">,</span>dinfo<span class="token punctuation">.</span>eip_file<span class="token punctuation">,</span>dinfo<span class="token punctuation">.</span>eip_line<span class="token punctuation">,</span>dinfo<span class="token punctuation">.</span>eip_fn_namelen<span class="token punctuation">,</span>dinfo<span class="token punctuation">.</span>eip_fn_name<span class="token punctuation">,</span>eip<span class="token operator">-</span>dinfo<span class="token punctuation">.</span>eip_fn_addr<span class="token punctuation">)</span><span class="token punctuation">;</span>
@@ -230,65 +230,65 @@ $(OBJDIR)/kern/kernel.img: $(OBJDIR)/kern/kernel $(OBJDIR)/boot/boot
             eip <span class="token operator">=</span> <span class="token operator">*</span><span class="token punctuation">(</span>uint32_t<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>ebp<span class="token operator">+</span><span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token keyword">else</span>
             <span class="token keyword">break</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <p>其实没怎么弄明白.<br><a target="_blank" rel="noopener" href="https://sourceware.org/gdb/onlinedocs/stabs.html#Symbol-Tables">https://sourceware.org/gdb/onlinedocs/stabs.html#Symbol-Tables</a><br><a target="_blank" rel="noopener" href="https://sourceware.org/gdb/onlinedocs/stabs.html#Line-Numbers">https://sourceware.org/gdb/onlinedocs/stabs.html#Line-Numbers</a></p>
 <pre class=" language-c"><code class="language-c">    <span class="token function">stab_binsearch</span><span class="token punctuation">(</span>stabs<span class="token punctuation">,</span> <span class="token operator">&amp;</span>lline<span class="token punctuation">,</span> <span class="token operator">&amp;</span>rline<span class="token punctuation">,</span> N_SLINE<span class="token punctuation">,</span> addr<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token keyword">if</span> <span class="token punctuation">(</span>lline <span class="token operator">&lt;=</span> rline<span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
-        info<span class="token operator">-&gt;</span>eip_line <span class="token operator">=</span> stabs<span class="token punctuation">[</span>lline<span class="token punctuation">]</span><span class="token punctuation">.</span>n_desc<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span> <span class="token keyword">else</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
-        info<span class="token operator">-&gt;</span>eip_fn_addr <span class="token operator">=</span> addr<span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>lline <span class="token operator">&lt;=</span> rline<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        info<span class="token operator">-></span>eip_line <span class="token operator">=</span> stabs<span class="token punctuation">[</span>lline<span class="token punctuation">]</span><span class="token punctuation">.</span>n_desc<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+        info<span class="token operator">-></span>eip_fn_addr <span class="token operator">=</span> addr<span class="token punctuation">;</span>
         lline <span class="token operator">=</span> lfile<span class="token punctuation">;</span>
         rline <span class="token operator">=</span> rfile<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 </code></pre>
 <h1 id="LEC-3"><a href="#LEC-3" class="headerlink" title="LEC 3"></a>LEC 3</h1><h2 id="shell"><a href="#shell" class="headerlink" title="shell"></a>shell</h2><p>先学学pipe的用法.</p>
-<pre class=" language-c"><code class="language-c">       <span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;stdio.h&gt;</span></span>
-       <span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;stdlib.h&gt;</span></span>
-       <span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;string.h&gt;</span></span>
-       <span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;sys/wait.h&gt;</span></span>
-       <span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;unistd.h&gt;</span></span>
+<pre class=" language-c"><code class="language-c">       <span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;stdio.h></span></span>
+       <span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;stdlib.h></span></span>
+       <span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;string.h></span></span>
+       <span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;sys/wait.h></span></span>
+       <span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;unistd.h></span></span>
        <span class="token keyword">int</span>
        <span class="token function">main</span><span class="token punctuation">(</span><span class="token keyword">int</span> argc<span class="token punctuation">,</span> <span class="token keyword">char</span> <span class="token operator">*</span>argv<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
-       <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+       <span class="token punctuation">{</span>
            <span class="token keyword">int</span>    pipefd<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
            <span class="token keyword">char</span>   buf<span class="token punctuation">;</span>
            pid_t  cpid<span class="token punctuation">;</span>
-           <span class="token keyword">if</span> <span class="token punctuation">(</span>argc <span class="token operator">!=</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
-               <span class="token function">fprintf</span><span class="token punctuation">(</span><span class="token constant">stderr</span><span class="token punctuation">,</span> <span class="token string">"Usage: %s &lt;string&gt;\n"</span><span class="token punctuation">,</span> argv<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+           <span class="token keyword">if</span> <span class="token punctuation">(</span>argc <span class="token operator">!=</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+               <span class="token function">fprintf</span><span class="token punctuation">(</span><span class="token constant">stderr</span><span class="token punctuation">,</span> <span class="token string">"Usage: %s &lt;string>\n"</span><span class="token punctuation">,</span> argv<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
                <span class="token function">exit</span><span class="token punctuation">(</span>EXIT_FAILURE<span class="token punctuation">)</span><span class="token punctuation">;</span>
-           <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-           <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">pipe</span><span class="token punctuation">(</span>pipefd<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+           <span class="token punctuation">}</span>
+           <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">pipe</span><span class="token punctuation">(</span>pipefd<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
                <span class="token function">perror</span><span class="token punctuation">(</span><span class="token string">"pipe"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
                <span class="token function">exit</span><span class="token punctuation">(</span>EXIT_FAILURE<span class="token punctuation">)</span><span class="token punctuation">;</span>
-           <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+           <span class="token punctuation">}</span>
            cpid <span class="token operator">=</span> <span class="token function">fork</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-           <span class="token keyword">if</span> <span class="token punctuation">(</span>cpid <span class="token operator">==</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+           <span class="token keyword">if</span> <span class="token punctuation">(</span>cpid <span class="token operator">==</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
                <span class="token function">perror</span><span class="token punctuation">(</span><span class="token string">"fork"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
                <span class="token function">exit</span><span class="token punctuation">(</span>EXIT_FAILURE<span class="token punctuation">)</span><span class="token punctuation">;</span>
-           <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-           <span class="token keyword">if</span> <span class="token punctuation">(</span>cpid <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>    <span class="token comment" spellcheck="true">/* Child reads from pipe */</span>
+           <span class="token punctuation">}</span>
+           <span class="token keyword">if</span> <span class="token punctuation">(</span>cpid <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>    <span class="token comment" spellcheck="true">/* Child reads from pipe */</span>
                <span class="token function">close</span><span class="token punctuation">(</span>pipefd<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>          <span class="token comment" spellcheck="true">/* Close unused write end */</span>
-               <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token function">read</span><span class="token punctuation">(</span>pipefd<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token operator">&amp;</span>buf<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">&gt;</span> <span class="token number">0</span><span class="token punctuation">)</span>
+               <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token function">read</span><span class="token punctuation">(</span>pipefd<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token operator">&amp;</span>buf<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">)</span>
                    <span class="token function">write</span><span class="token punctuation">(</span>STDOUT_FILENO<span class="token punctuation">,</span> <span class="token operator">&amp;</span>buf<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
                <span class="token function">write</span><span class="token punctuation">(</span>STDOUT_FILENO<span class="token punctuation">,</span> <span class="token string">"\n"</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
                <span class="token function">close</span><span class="token punctuation">(</span>pipefd<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
                <span class="token function">_exit</span><span class="token punctuation">(</span>EXIT_SUCCESS<span class="token punctuation">)</span><span class="token punctuation">;</span>
-           <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span> <span class="token keyword">else</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>            <span class="token comment" spellcheck="true">/* Parent writes argv[1] to pipe */</span>
+           <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>            <span class="token comment" spellcheck="true">/* Parent writes argv[1] to pipe */</span>
                <span class="token function">close</span><span class="token punctuation">(</span>pipefd<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>          <span class="token comment" spellcheck="true">/* Close unused read end */</span>
                <span class="token function">write</span><span class="token punctuation">(</span>pipefd<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span> argv<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token function">strlen</span><span class="token punctuation">(</span>argv<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
                <span class="token function">close</span><span class="token punctuation">(</span>pipefd<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>          <span class="token comment" spellcheck="true">/* Reader will see EOF */</span>
                <span class="token function">wait</span><span class="token punctuation">(</span><span class="token constant">NULL</span><span class="token punctuation">)</span><span class="token punctuation">;</span>                <span class="token comment" spellcheck="true">/* Wait for child */</span>
                <span class="token function">exit</span><span class="token punctuation">(</span>EXIT_SUCCESS<span class="token punctuation">)</span><span class="token punctuation">;</span>
-           <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-       <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+           <span class="token punctuation">}</span>
+       <span class="token punctuation">}</span>
 </code></pre>
 <pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// Execute cmd.  Never returns.</span>
 <span class="token keyword">void</span>
 <span class="token function">runcmd</span><span class="token punctuation">(</span><span class="token keyword">struct</span> cmd <span class="token operator">*</span>cmd<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
   <span class="token keyword">int</span> p<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">,</span> r<span class="token punctuation">;</span>
   <span class="token keyword">struct</span> execcmd <span class="token operator">*</span>ecmd<span class="token punctuation">;</span>
   <span class="token keyword">struct</span> pipecmd <span class="token operator">*</span>pcmd<span class="token punctuation">;</span>
@@ -297,32 +297,32 @@ $(OBJDIR)/kern/kernel.img: $(OBJDIR)/kern/kernel $(OBJDIR)/boot/boot
   <span class="token keyword">if</span><span class="token punctuation">(</span>cmd <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span>
     <span class="token function">_exit</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
   
-  <span class="token keyword">switch</span><span class="token punctuation">(</span>cmd<span class="token operator">-&gt;</span>type<span class="token punctuation">)</span><span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+  <span class="token keyword">switch</span><span class="token punctuation">(</span>cmd<span class="token operator">-></span>type<span class="token punctuation">)</span><span class="token punctuation">{</span>
   <span class="token keyword">default</span><span class="token punctuation">:</span>
     <span class="token function">fprintf</span><span class="token punctuation">(</span><span class="token constant">stderr</span><span class="token punctuation">,</span> <span class="token string">"unknown runcmd\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token function">_exit</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
   <span class="token keyword">case</span> <span class="token string">' '</span><span class="token punctuation">:</span>
     ecmd <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">struct</span> execcmd<span class="token operator">*</span><span class="token punctuation">)</span>cmd<span class="token punctuation">;</span>
-    <span class="token keyword">if</span><span class="token punctuation">(</span>ecmd<span class="token operator">-&gt;</span>argv<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span>ecmd<span class="token operator">-></span>argv<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span>
       <span class="token function">_exit</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token comment" spellcheck="true">// Your code here ...</span>
-    <span class="token function">execve</span><span class="token punctuation">(</span>ecmd<span class="token operator">-&gt;</span>argv<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span>ecmd<span class="token operator">-&gt;</span>argv<span class="token punctuation">,</span><span class="token constant">NULL</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">execve</span><span class="token punctuation">(</span>ecmd<span class="token operator">-></span>argv<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span>ecmd<span class="token operator">-></span>argv<span class="token punctuation">,</span><span class="token constant">NULL</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">break</span><span class="token punctuation">;</span>
 
-  <span class="token keyword">case</span> <span class="token string">'&gt;'</span><span class="token punctuation">:</span>
+  <span class="token keyword">case</span> <span class="token string">'>'</span><span class="token punctuation">:</span>
   <span class="token keyword">case</span> <span class="token string">'&lt;'</span><span class="token punctuation">:</span>
     rcmd <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">struct</span> redircmd<span class="token operator">*</span><span class="token punctuation">)</span>cmd<span class="token punctuation">;</span>
     <span class="token comment" spellcheck="true">// Your code here ...</span>
-    r <span class="token operator">=</span> <span class="token function">open</span><span class="token punctuation">(</span>rcmd<span class="token operator">-&gt;</span>file<span class="token punctuation">,</span>rcmd<span class="token operator">-&gt;</span>flags<span class="token punctuation">,</span>S_IRUSR<span class="token operator">|</span>S_IWUSR<span class="token operator">|</span>S_IRGRP<span class="token operator">|</span>S_IROTH<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    r <span class="token operator">=</span> <span class="token function">open</span><span class="token punctuation">(</span>rcmd<span class="token operator">-></span>file<span class="token punctuation">,</span>rcmd<span class="token operator">-></span>flags<span class="token punctuation">,</span>S_IRUSR<span class="token operator">|</span>S_IWUSR<span class="token operator">|</span>S_IRGRP<span class="token operator">|</span>S_IROTH<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span>r<span class="token operator">==</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
       <span class="token function">perror</span><span class="token punctuation">(</span><span class="token string">"no such file"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token function">dup2</span><span class="token punctuation">(</span>r<span class="token punctuation">,</span>rcmd<span class="token operator">-&gt;</span>fd<span class="token punctuation">)</span><span class="token operator">==</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token function">dup2</span><span class="token punctuation">(</span>r<span class="token punctuation">,</span>rcmd<span class="token operator">-></span>fd<span class="token punctuation">)</span><span class="token operator">==</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span>
       <span class="token function">perror</span><span class="token punctuation">(</span><span class="token string">"dup2 fail"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token function">runcmd</span><span class="token punctuation">(</span>rcmd<span class="token operator">-&gt;</span>cmd<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token function">close</span><span class="token punctuation">(</span>rcmd<span class="token operator">-&gt;</span>fd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">runcmd</span><span class="token punctuation">(</span>rcmd<span class="token operator">-></span>cmd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">close</span><span class="token punctuation">(</span>rcmd<span class="token operator">-></span>fd<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">break</span><span class="token punctuation">;</span>
 
   <span class="token keyword">case</span> <span class="token string">'|'</span><span class="token punctuation">:</span>
@@ -330,29 +330,29 @@ $(OBJDIR)/kern/kernel.img: $(OBJDIR)/kern/kernel $(OBJDIR)/boot/boot
       <span class="token function">perror</span><span class="token punctuation">(</span><span class="token string">"pipe create error"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     pcmd <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">struct</span> pipecmd<span class="token operator">*</span><span class="token punctuation">)</span>cmd<span class="token punctuation">;</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token function">fork1</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">==</span><span class="token number">0</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
       <span class="token function">close</span><span class="token punctuation">(</span>p<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
       <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token function">dup2</span><span class="token punctuation">(</span>p<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span>STDOUT_FILENO<span class="token punctuation">)</span><span class="token operator">==</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span>
         <span class="token function">perror</span><span class="token punctuation">(</span><span class="token string">"dup2 fail"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-      <span class="token function">runcmd</span><span class="token punctuation">(</span>pcmd<span class="token operator">-&gt;</span>left<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+      <span class="token function">runcmd</span><span class="token punctuation">(</span>pcmd<span class="token operator">-></span>left<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">else</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
           <span class="token function">wait</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>r<span class="token punctuation">)</span><span class="token punctuation">;</span>
           <span class="token function">close</span><span class="token punctuation">(</span>p<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
       <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token function">dup2</span><span class="token punctuation">(</span>p<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span>STDIN_FILENO<span class="token punctuation">)</span><span class="token operator">==</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span>
         <span class="token function">perror</span><span class="token punctuation">(</span><span class="token string">"dup2 fail"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-      <span class="token function">runcmd</span><span class="token punctuation">(</span>pcmd<span class="token operator">-&gt;</span>right<span class="token punctuation">)</span><span class="token punctuation">;</span>   
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+      <span class="token function">runcmd</span><span class="token punctuation">(</span>pcmd<span class="token operator">-></span>right<span class="token punctuation">)</span><span class="token punctuation">;</span>   
+    <span class="token punctuation">}</span>
 
-  <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>    
+  <span class="token punctuation">}</span>    
   <span class="token function">_exit</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <h2 id="Lab-2-Memory-Management"><a href="#Lab-2-Memory-Management" class="headerlink" title="Lab 2: Memory Management"></a>Lab 2: Memory Management</h2><h3 id="mem-init流程分析"><a href="#mem-init流程分析" class="headerlink" title="mem_init流程分析"></a>mem_init流程分析</h3><p>可以先看完下面的部分再来看流程分析.<br>删去了注释和check.<br>先<code>i386_detect_memory</code>检测机器的物理空间大小,然后使用boot_alloc分配一个kern_pgdir的页目录表.<br>再次boot_alloc为每一个物理页分配一个PageInfo管理结构.<br>之后<code>page_init</code>完成对整个物理页的初始化.标记不可分配或正在使用的物理页为inuse,完成空闲页链表page_free_list的创建.<br>在之后调用三次boot_map_region在kern_pgdir中完成对用户页表UPAGES,内核栈,内核地址空间的映射.<br>安装kern_pgdir替换之前临时的entry_pgdir.</p>
 <pre class=" language-c"><code class="language-c"><span class="token keyword">void</span>
 <span class="token function">mem_init</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     uint32_t cr0<span class="token punctuation">;</span>
     size_t n<span class="token punctuation">;</span>
 
@@ -388,12 +388,12 @@ $(OBJDIR)/kern/kernel.img: $(OBJDIR)/kern/kernel $(OBJDIR)/boot/boot
     cr0 <span class="token operator">&amp;</span><span class="token operator">=</span> <span class="token operator">~</span><span class="token punctuation">(</span>CR0_TS<span class="token operator">|</span>CR0_EM<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token function">lcr0</span><span class="token punctuation">(</span>cr0<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <h3 id="Part-1-Physical-Page-Management"><a href="#Part-1-Physical-Page-Management" class="headerlink" title="Part 1: Physical Page Management"></a>Part 1: Physical Page Management</h3><p>写page_init之前回顾理解一下物理地址和虚拟地址的布局,在图中指出memlayout.h中各个宏定义表示的位置.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202309232009006.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202309232009885.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202309232010431.png"></p>
 <pre class=" language-c"><code class="language-c"><span class="token keyword">void</span>
 <span class="token function">page_init</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token comment" spellcheck="true">//设置第一页为inuse,保留实模式下的IDT和BIOS结构</span>
     size_t i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
     pages<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>pp_ref <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span>
@@ -401,34 +401,34 @@ $(OBJDIR)/kern/kernel.img: $(OBJDIR)/kern/kernel $(OBJDIR)/boot/boot
     <span class="token operator">++</span>i<span class="token punctuation">;</span>
 
     <span class="token comment" spellcheck="true">//将Base_memory全部设置为free.(basemem应该指低1MB的内存)</span>
-    <span class="token keyword">for</span> <span class="token punctuation">(</span>i <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> npages_basemem<span class="token punctuation">;</span> <span class="token operator">++</span>i<span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>i <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> npages_basemem<span class="token punctuation">;</span> <span class="token operator">++</span>i<span class="token punctuation">)</span> <span class="token punctuation">{</span>
         pages<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>pp_ref <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
         pages<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>pp_link <span class="token operator">=</span> page_free_list<span class="token punctuation">;</span>
         page_free_list <span class="token operator">=</span> <span class="token operator">&amp;</span>pages<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 
     <span class="token comment" spellcheck="true">//将IO hole设置为inuse,避免被分配.</span>
     <span class="token keyword">for</span><span class="token punctuation">(</span>i <span class="token operator">=</span> <span class="token function">pa2page</span><span class="token punctuation">(</span>IOPHYSMEM<span class="token punctuation">)</span><span class="token punctuation">,</span>i<span class="token operator">&lt;</span><span class="token function">pa2page</span><span class="token punctuation">(</span>EXTPHYSMEM<span class="token punctuation">)</span><span class="token punctuation">,</span><span class="token operator">++</span>i<span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         pages<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>pp_ref <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span>
         pages<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>pp_link <span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 
     <span class="token comment" spellcheck="true">//将1MB以上的Kernel映像,kern_pgdir以及pages的页设置为inuse.</span>
     <span class="token keyword">for</span><span class="token punctuation">(</span>i <span class="token operator">=</span> <span class="token function">pa2page</span><span class="token punctuation">(</span>EXTPHYSMEM<span class="token punctuation">)</span><span class="token punctuation">;</span>i<span class="token operator">&lt;</span><span class="token function">pa2page</span><span class="token punctuation">(</span><span class="token function">PADDR</span><span class="token punctuation">(</span><span class="token function">boot_alloc</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token operator">++</span>i<span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         pages<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>pp_ref <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span>
         pages<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>pp_link <span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>	
+    <span class="token punctuation">}</span>	
 
     <span class="token comment" spellcheck="true">//将上方所有物理地址设置为free</span>
     <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token punctuation">;</span>i<span class="token operator">&lt;</span>npages<span class="token punctuation">;</span><span class="token operator">++</span>i<span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         pages<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>pp_ref <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
         pages<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>pp_link <span class="token operator">=</span> page_free_list<span class="token punctuation">;</span>
         page_free_list <span class="token operator">=</span> <span class="token operator">&amp;</span>pages<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <p>之后就是page_alloc(),page_free().<br>如下是初看时的一些疑惑,我知道很蠢hh<br><del>我暂时并不理解这两个功能存在的必要,特别是把释放的物理页对应的pageinfo链入page_free_list链表中的操作.</del><br><del>我们在meminit中已经调用bootalloc为所有的物理页分配了一个对应的pageinfo结构,这些结构即使被page_free释放之后也不会被其他用途的内存分配重用,不存在像常见的内存分配机制的设立是为了提高内存利用率的原因.</del><br>解答:释放pageinfo结构,其实是表示对pageinfo对应物理页的释放与分配,用于操作系统的追踪管理,与提高内存利用率无关.</p>
 <blockquote>
@@ -443,30 +443,30 @@ $(OBJDIR)/kern/kernel.img: $(OBJDIR)/kern/kernel $(OBJDIR)/boot/boot
 <p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202309271914406.png"></p>
 <h4 id="一些小插曲"><a href="#一些小插曲" class="headerlink" title="一些小插曲"></a>一些小插曲</h4><p>memset崩了,刚开始猜测是引用到了当前页目录映射之外的物理地址,到崩溃现场之后发现又没问题,找了半天发现原来页目录表中虚拟地址低4MB没有写的权限。。。<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202309232256150.png"></p>
 <pre class=" language-c"><code class="language-c"><span class="token function">__attribute__</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token function">__aligned__</span><span class="token punctuation">(</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-pde_t entry_pgdir<span class="token punctuation">[</span>NPDENTRIES<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+pde_t entry_pgdir<span class="token punctuation">[</span>NPDENTRIES<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
     <span class="token comment" spellcheck="true">// Map VA's [0, 4MB) to PA's [0, 4MB)</span>
     <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
         <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>entry_pgtable <span class="token operator">-</span> KERNBASE<span class="token punctuation">)</span> <span class="token operator">+</span> PTE_P<span class="token punctuation">,</span>
     <span class="token comment" spellcheck="true">// Map VA's [KERNBASE, KERNBASE+4MB) to PA's [0, 4MB)</span>
-    <span class="token punctuation">[</span>KERNBASE<span class="token operator">&gt;&gt;</span>PDXSHIFT<span class="token punctuation">]</span>
+    <span class="token punctuation">[</span>KERNBASE<span class="token operator">>></span>PDXSHIFT<span class="token punctuation">]</span>
         <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>entry_pgtable <span class="token operator">-</span> KERNBASE<span class="token punctuation">)</span> <span class="token operator">+</span> PTE_P <span class="token operator">+</span> PTE_W
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
 </code></pre>
 <p>又突然想到page_init后,page_free_list指向的头部页应该位于物理内存的最高处,确实是在当前页目录映射之外的,确实应该崩.检查之后发现在check_page_free_list函数中有这样一个处理free_list的操作.</p>
-<pre class=" language-c"><code class="language-c">    <span class="token keyword">if</span> <span class="token punctuation">(</span>only_low_memory<span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<pre class=" language-c"><code class="language-c">    <span class="token keyword">if</span> <span class="token punctuation">(</span>only_low_memory<span class="token punctuation">)</span> <span class="token punctuation">{</span>
         <span class="token comment" spellcheck="true">// Move pages with lower addresses first in the free</span>
         <span class="token comment" spellcheck="true">// list, since entry_pgdir does not map all pages.</span>
         <span class="token keyword">struct</span> PageInfo <span class="token operator">*</span>pp1<span class="token punctuation">,</span> <span class="token operator">*</span>pp2<span class="token punctuation">;</span>
-        <span class="token keyword">struct</span> PageInfo <span class="token operator">*</span><span class="token operator">*</span>tp<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span> <span class="token operator">&amp;</span>pp1<span class="token punctuation">,</span> <span class="token operator">&amp;</span>pp2 <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span><span class="token punctuation">;</span>
-        <span class="token keyword">for</span> <span class="token punctuation">(</span>pp <span class="token operator">=</span> page_free_list<span class="token punctuation">;</span> pp<span class="token punctuation">;</span> pp <span class="token operator">=</span> pp<span class="token operator">-&gt;</span>pp_link<span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
-            <span class="token keyword">int</span> pagetype <span class="token operator">=</span> <span class="token function">PDX</span><span class="token punctuation">(</span><span class="token function">page2pa</span><span class="token punctuation">(</span>pp<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&gt;=</span> pdx_limit<span class="token punctuation">;</span>
+        <span class="token keyword">struct</span> PageInfo <span class="token operator">*</span><span class="token operator">*</span>tp<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span> <span class="token operator">&amp;</span>pp1<span class="token punctuation">,</span> <span class="token operator">&amp;</span>pp2 <span class="token punctuation">}</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span>pp <span class="token operator">=</span> page_free_list<span class="token punctuation">;</span> pp<span class="token punctuation">;</span> pp <span class="token operator">=</span> pp<span class="token operator">-></span>pp_link<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">int</span> pagetype <span class="token operator">=</span> <span class="token function">PDX</span><span class="token punctuation">(</span><span class="token function">page2pa</span><span class="token punctuation">(</span>pp<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">>=</span> pdx_limit<span class="token punctuation">;</span>
             <span class="token operator">*</span>tp<span class="token punctuation">[</span>pagetype<span class="token punctuation">]</span> <span class="token operator">=</span> pp<span class="token punctuation">;</span>
-            tp<span class="token punctuation">[</span>pagetype<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token operator">&amp;</span>pp<span class="token operator">-&gt;</span>pp_link<span class="token punctuation">;</span>
-        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+            tp<span class="token punctuation">[</span>pagetype<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token operator">&amp;</span>pp<span class="token operator">-></span>pp_link<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
         <span class="token operator">*</span>tp<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
         <span class="token operator">*</span>tp<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">=</span> pp2<span class="token punctuation">;</span>
         page_free_list <span class="token operator">=</span> pp1<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 </code></pre>
  
       <!-- reward -->

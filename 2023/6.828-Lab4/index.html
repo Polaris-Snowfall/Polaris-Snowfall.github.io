@@ -43,9 +43,9 @@
           font-size: 1.6rem;
         }
       </style>
-    <link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end -->
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
-</head>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
   </html>
 </html>
 
@@ -88,7 +88,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">4.6k</span>
+            <span class="post-count">4.2k</span>
         </span>
     </span>
 
@@ -97,7 +97,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">24 分钟</span>
+            <span class="post-count">21 分钟</span>
         </span>
     </span>
 </div>
@@ -138,19 +138,19 @@
 <span class="token comment" spellcheck="true">//</span>
 <span class="token keyword">void</span> <span class="token operator">*</span>
 <span class="token function">mmio_map_region</span><span class="token punctuation">(</span>physaddr_t pa<span class="token punctuation">,</span> size_t size<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token keyword">static</span> uintptr_t base <span class="token operator">=</span> MMIOBASE<span class="token punctuation">;</span>
     
     size <span class="token operator">=</span> <span class="token function">ROUNDUP</span><span class="token punctuation">(</span>size<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">;</span>
     pa <span class="token operator">=</span> <span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>pa<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    <span class="token keyword">if</span> <span class="token punctuation">(</span>base <span class="token operator">+</span> size <span class="token operator">&gt;</span> MMIOLIM<span class="token punctuation">)</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>base <span class="token operator">+</span> size <span class="token operator">></span> MMIOLIM<span class="token punctuation">)</span>
         <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"mmio_map_region: cannot go higher than MMIOLIM!\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
     <span class="token function">boot_map_region</span><span class="token punctuation">(</span>kern_pgdir<span class="token punctuation">,</span>base<span class="token punctuation">,</span>size<span class="token punctuation">,</span>pa<span class="token punctuation">,</span>PTE_PCD<span class="token operator">|</span>PTE_PWT<span class="token operator">|</span>PTE_W<span class="token punctuation">)</span><span class="token punctuation">;</span>
     base <span class="token operator">+</span><span class="token operator">=</span> size<span class="token punctuation">;</span>
     <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>base<span class="token operator">-</span>size<span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <p>为每一个cpu映射栈空间.<br>注意下方是NCPU而不是ncpu,因为ncpu此时还未初始化.</p>
 <pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// Modify mappings in kern_pgdir to support SMP</span>
@@ -158,32 +158,32 @@
 <span class="token comment" spellcheck="true">//</span>
 <span class="token keyword">static</span> <span class="token keyword">void</span>
 <span class="token function">mem_init_mp</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>i<span class="token operator">&lt;</span>NCPU<span class="token punctuation">;</span><span class="token operator">++</span>i<span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         uint32_t kstacktop_i <span class="token operator">=</span> KSTACKTOP<span class="token operator">-</span>i<span class="token operator">*</span><span class="token punctuation">(</span>KSTKSIZE<span class="token operator">+</span>KSTKGAP<span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token function">boot_map_region</span><span class="token punctuation">(</span>kern_pgdir<span class="token punctuation">,</span>kstacktop_i<span class="token operator">-</span>KSTKSIZE<span class="token punctuation">,</span>KSTKSIZE<span class="token punctuation">,</span><span class="token function">PADDR</span><span class="token punctuation">(</span>percpu_kstacks<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">,</span>PTE_W<span class="token operator">|</span>PTE_P<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <p>为每个CPU设置tss,idr.</p>
 <pre class=" language-c"><code class="language-c"><span class="token keyword">void</span>
 <span class="token function">trap_init_percpu</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token keyword">int</span> id <span class="token operator">=</span> <span class="token function">cpunum</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    thiscpu<span class="token operator">-&gt;</span>cpu_ts<span class="token punctuation">.</span>ts_esp0 <span class="token operator">=</span> KSTACKTOP<span class="token operator">-</span>id<span class="token operator">*</span><span class="token punctuation">(</span>KSTKGAP<span class="token operator">+</span>KSTKSIZE<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    thiscpu<span class="token operator">-&gt;</span>cpu_ts<span class="token punctuation">.</span>ts_ss0 <span class="token operator">=</span> GD_KD<span class="token punctuation">;</span>
-    thiscpu<span class="token operator">-&gt;</span>cpu_ts<span class="token punctuation">.</span>ts_iomb <span class="token operator">=</span> <span class="token keyword">sizeof</span><span class="token punctuation">(</span><span class="token keyword">struct</span> Taskstate<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    thiscpu<span class="token operator">-></span>cpu_ts<span class="token punctuation">.</span>ts_esp0 <span class="token operator">=</span> KSTACKTOP<span class="token operator">-</span>id<span class="token operator">*</span><span class="token punctuation">(</span>KSTKGAP<span class="token operator">+</span>KSTKSIZE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    thiscpu<span class="token operator">-></span>cpu_ts<span class="token punctuation">.</span>ts_ss0 <span class="token operator">=</span> GD_KD<span class="token punctuation">;</span>
+    thiscpu<span class="token operator">-></span>cpu_ts<span class="token punctuation">.</span>ts_iomb <span class="token operator">=</span> <span class="token keyword">sizeof</span><span class="token punctuation">(</span><span class="token keyword">struct</span> Taskstate<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    gdt<span class="token punctuation">[</span><span class="token punctuation">(</span>GD_TSS0<span class="token operator">&gt;&gt;</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token operator">+</span>id<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token function">SEG16</span><span class="token punctuation">(</span>STS_T32A<span class="token punctuation">,</span> <span class="token punctuation">(</span>uint32_t<span class="token punctuation">)</span> <span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token punctuation">(</span>thiscpu<span class="token operator">-&gt;</span>cpu_ts<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    gdt<span class="token punctuation">[</span><span class="token punctuation">(</span>GD_TSS0<span class="token operator">>></span><span class="token number">3</span><span class="token punctuation">)</span><span class="token operator">+</span>id<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token function">SEG16</span><span class="token punctuation">(</span>STS_T32A<span class="token punctuation">,</span> <span class="token punctuation">(</span>uint32_t<span class="token punctuation">)</span> <span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token punctuation">(</span>thiscpu<span class="token operator">-></span>cpu_ts<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
                     <span class="token keyword">sizeof</span><span class="token punctuation">(</span><span class="token keyword">struct</span> Taskstate<span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    gdt<span class="token punctuation">[</span><span class="token punctuation">(</span>GD_TSS0<span class="token operator">&gt;&gt;</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token operator">+</span>id<span class="token punctuation">]</span><span class="token punctuation">.</span>sd_s <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> 
+    gdt<span class="token punctuation">[</span><span class="token punctuation">(</span>GD_TSS0<span class="token operator">>></span><span class="token number">3</span><span class="token punctuation">)</span><span class="token operator">+</span>id<span class="token punctuation">]</span><span class="token punctuation">.</span>sd_s <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> 
 
-    <span class="token comment" spellcheck="true">// ltr(((GD_TSS0&gt;&gt;3)+id)&lt;&lt;3);</span>
+    <span class="token comment" spellcheck="true">// ltr(((GD_TSS0>>3)+id)&lt;&lt;3);</span>
     <span class="token function">ltr</span><span class="token punctuation">(</span>GD_TSS0 <span class="token operator">+</span> id<span class="token operator">*</span><span class="token keyword">sizeof</span><span class="token punctuation">(</span><span class="token keyword">struct</span> Gatedesc<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token function">lidt</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>idt_pd<span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <p>下图有助于理解为什么gdt中使用cpt_ts的逻辑地址而不是物理地址，以及ltr操作的tss选择子.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310082204791.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310082204847.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310082226355.png"></p>
 <h4 id="Locking"><a href="#Locking" class="headerlink" title="Locking"></a>Locking</h4><h4 id="System-Calls-for-Environment-Creation"><a href="#System-Calls-for-Environment-Creation" class="headerlink" title="System Calls for Environment Creation"></a>System Calls for Environment Creation</h4><p>几个系统调用,需要检查的东西都列出来了,挨着做就行了.</p>
@@ -193,18 +193,18 @@
 <span class="token comment" spellcheck="true">//	-E_NO_MEM on memory exhaustion.</span>
 <span class="token keyword">static</span> envid_t
 <span class="token function">sys_exofork</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token keyword">struct</span> Env<span class="token operator">*</span> e<span class="token punctuation">;</span>
     <span class="token keyword">int</span> result<span class="token punctuation">;</span>
-    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">env_alloc</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>e<span class="token punctuation">,</span>curenv<span class="token operator">-&gt;</span>env_id<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">env_alloc</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>e<span class="token punctuation">,</span>curenv<span class="token operator">-></span>env_id<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> result<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-    <span class="token function">memcpy</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>e<span class="token operator">-&gt;</span>env_tf<span class="token punctuation">,</span><span class="token operator">&amp;</span>curenv<span class="token operator">-&gt;</span>env_tf<span class="token punctuation">,</span><span class="token keyword">sizeof</span><span class="token punctuation">(</span><span class="token keyword">struct</span> Trapframe<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    e<span class="token operator">-&gt;</span>env_status <span class="token operator">=</span> ENV_NOT_RUNNABLE<span class="token punctuation">;</span>
-    e<span class="token operator">-&gt;</span>env_tf<span class="token punctuation">.</span>tf_regs<span class="token punctuation">.</span>reg_eax <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
-    <span class="token keyword">return</span> e<span class="token operator">-&gt;</span>env_id<span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token function">memcpy</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>e<span class="token operator">-></span>env_tf<span class="token punctuation">,</span><span class="token operator">&amp;</span>curenv<span class="token operator">-></span>env_tf<span class="token punctuation">,</span><span class="token keyword">sizeof</span><span class="token punctuation">(</span><span class="token keyword">struct</span> Trapframe<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    e<span class="token operator">-></span>env_status <span class="token operator">=</span> ENV_NOT_RUNNABLE<span class="token punctuation">;</span>
+    e<span class="token operator">-></span>env_tf<span class="token punctuation">.</span>tf_regs<span class="token punctuation">.</span>reg_eax <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> e<span class="token operator">-></span>env_id<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 
 <span class="token comment" spellcheck="true">// Set envid's env_status to status, which must be ENV_RUNNABLE</span>
 <span class="token comment" spellcheck="true">// or ENV_NOT_RUNNABLE.</span>
@@ -215,21 +215,21 @@
 <span class="token comment" spellcheck="true">//	-E_INVAL if status is not a valid status for an environment.</span>
 <span class="token keyword">static</span> <span class="token keyword">int</span>
 <span class="token function">sys_env_set_status</span><span class="token punctuation">(</span>envid_t envid<span class="token punctuation">,</span> <span class="token keyword">int</span> status<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token keyword">int</span> result<span class="token punctuation">;</span>
     <span class="token keyword">struct</span> Env<span class="token operator">*</span> e<span class="token punctuation">;</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>result<span class="token operator">=</span><span class="token function">envid2env</span><span class="token punctuation">(</span>envid<span class="token punctuation">,</span><span class="token operator">&amp;</span>e<span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> result<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span>status<span class="token operator">!=</span>ENV_RUNNABLE<span class="token operator">&amp;&amp;</span>status<span class="token operator">!=</span>ENV_NOT_RUNNABLE<span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> <span class="token operator">-</span>E_INVAL<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-    e<span class="token operator">-&gt;</span>env_status <span class="token operator">=</span> status<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    e<span class="token operator">-></span>env_status <span class="token operator">=</span> status<span class="token punctuation">;</span>
     <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
 
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 
 <span class="token comment" spellcheck="true">// Allocate a page of memory and map it at 'va' with permission</span>
 <span class="token comment" spellcheck="true">// 'perm' in the address space of 'envid'.</span>
@@ -243,36 +243,36 @@
 <span class="token comment" spellcheck="true">// Return 0 on success, &lt; 0 on error.  Errors are:</span>
 <span class="token comment" spellcheck="true">//	-E_BAD_ENV if environment envid doesn't currently exist,</span>
 <span class="token comment" spellcheck="true">//		or the caller doesn't have permission to change envid.</span>
-<span class="token comment" spellcheck="true">//	-E_INVAL if va &gt;= UTOP, or va is not page-aligned.</span>
+<span class="token comment" spellcheck="true">//	-E_INVAL if va >= UTOP, or va is not page-aligned.</span>
 <span class="token comment" spellcheck="true">//	-E_INVAL if perm is inappropriate (see above).</span>
 <span class="token comment" spellcheck="true">//	-E_NO_MEM if there's no memory to allocate the new page,</span>
 <span class="token comment" spellcheck="true">//		or to allocate any necessary page tables.</span>
 <span class="token keyword">static</span> <span class="token keyword">int</span>
 <span class="token function">sys_page_alloc</span><span class="token punctuation">(</span>envid_t envid<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>va<span class="token punctuation">,</span> <span class="token keyword">int</span> perm<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token keyword">int</span> result<span class="token punctuation">;</span>
     <span class="token keyword">struct</span> PageInfo<span class="token operator">*</span> page<span class="token punctuation">;</span>
     <span class="token keyword">struct</span> Env<span class="token operator">*</span> e<span class="token punctuation">;</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>perm<span class="token operator">|</span>PTE_SYSCALL<span class="token punctuation">)</span><span class="token operator">!=</span>PTE_SYSCALL<span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> <span class="token operator">-</span>E_INVAL<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-    <span class="token keyword">if</span><span class="token punctuation">(</span>va<span class="token operator">&gt;=</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>UTOP<span class="token operator">||</span>va<span class="token operator">!=</span><span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>va<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span>va<span class="token operator">>=</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>UTOP<span class="token operator">||</span>va<span class="token operator">!=</span><span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>va<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> E_INVAL<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">envid2env</span><span class="token punctuation">(</span>envid<span class="token punctuation">,</span><span class="token operator">&amp;</span>e<span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> result<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span>page <span class="token operator">=</span> <span class="token function">page_alloc</span><span class="token punctuation">(</span>ALLOC_ZERO<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> <span class="token operator">-</span>E_NO_MEM<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-    <span class="token function">page_insert</span><span class="token punctuation">(</span>e<span class="token operator">-&gt;</span>env_pgdir<span class="token punctuation">,</span>page<span class="token punctuation">,</span>va<span class="token punctuation">,</span>perm<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token function">page_insert</span><span class="token punctuation">(</span>e<span class="token operator">-></span>env_pgdir<span class="token punctuation">,</span>page<span class="token punctuation">,</span>va<span class="token punctuation">,</span>perm<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 
 <span class="token comment" spellcheck="true">// Map the page of memory at 'srcva' in srcenvid's address space</span>
 <span class="token comment" spellcheck="true">// at 'dstva' in dstenvid's address space with permission 'perm'.</span>
@@ -283,8 +283,8 @@
 <span class="token comment" spellcheck="true">// Return 0 on success, &lt; 0 on error.  Errors are:</span>
 <span class="token comment" spellcheck="true">//	-E_BAD_ENV if srcenvid and/or dstenvid doesn't currently exist,</span>
 <span class="token comment" spellcheck="true">//		or the caller doesn't have permission to change one of them.</span>
-<span class="token comment" spellcheck="true">//	-E_INVAL if srcva &gt;= UTOP or srcva is not page-aligned,</span>
-<span class="token comment" spellcheck="true">//		or dstva &gt;= UTOP or dstva is not page-aligned.</span>
+<span class="token comment" spellcheck="true">//	-E_INVAL if srcva >= UTOP or srcva is not page-aligned,</span>
+<span class="token comment" spellcheck="true">//		or dstva >= UTOP or dstva is not page-aligned.</span>
 <span class="token comment" spellcheck="true">//	-E_INVAL is srcva is not mapped in srcenvid's address space.</span>
 <span class="token comment" spellcheck="true">//	-E_INVAL if perm is inappropriate (see sys_page_alloc).</span>
 <span class="token comment" spellcheck="true">//	-E_INVAL if (perm &amp; PTE_W), but srcva is read-only in srcenvid's</span>
@@ -293,45 +293,45 @@
 <span class="token keyword">static</span> <span class="token keyword">int</span>
 <span class="token function">sys_page_map</span><span class="token punctuation">(</span>envid_t srcenvid<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>srcva<span class="token punctuation">,</span>
          envid_t dstenvid<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>dstva<span class="token punctuation">,</span> <span class="token keyword">int</span> perm<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token keyword">struct</span> Env<span class="token operator">*</span> srcenv<span class="token punctuation">,</span><span class="token operator">*</span>dstenv <span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span>
     pte_t<span class="token operator">*</span> srcpte<span class="token punctuation">,</span><span class="token operator">*</span>dstpte<span class="token punctuation">;</span>
     <span class="token keyword">struct</span> PageInfo<span class="token operator">*</span> srcpage <span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span>
     <span class="token keyword">int</span> result<span class="token punctuation">;</span>
-    <span class="token keyword">if</span><span class="token punctuation">(</span>srcva<span class="token operator">&gt;=</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>UTOP<span class="token operator">||</span>srcva<span class="token operator">!=</span><span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>srcva<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token operator">||</span>dstva<span class="token operator">&gt;=</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>UTOP<span class="token operator">||</span>dstva<span class="token operator">!=</span><span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>dstva<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span>srcva<span class="token operator">>=</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>UTOP<span class="token operator">||</span>srcva<span class="token operator">!=</span><span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>srcva<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token operator">||</span>dstva<span class="token operator">>=</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>UTOP<span class="token operator">||</span>dstva<span class="token operator">!=</span><span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>dstva<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> E_INVAL<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>perm<span class="token operator">|</span>PTE_SYSCALL<span class="token punctuation">)</span><span class="token operator">!=</span>PTE_SYSCALL<span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> <span class="token operator">-</span>E_INVAL<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">envid2env</span><span class="token punctuation">(</span>srcenvid<span class="token punctuation">,</span><span class="token operator">&amp;</span>srcenv<span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> result<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">envid2env</span><span class="token punctuation">(</span>dstenvid<span class="token punctuation">,</span><span class="token operator">&amp;</span>dstenv<span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> result<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 
-    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span>srcpage <span class="token operator">=</span> <span class="token function">page_lookup</span><span class="token punctuation">(</span>srcenv<span class="token operator">-&gt;</span>env_pgdir<span class="token punctuation">,</span>srcva<span class="token punctuation">,</span><span class="token operator">&amp;</span>srcpte<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span>srcpage <span class="token operator">=</span> <span class="token function">page_lookup</span><span class="token punctuation">(</span>srcenv<span class="token operator">-></span>env_pgdir<span class="token punctuation">,</span>srcva<span class="token punctuation">,</span><span class="token operator">&amp;</span>srcpte<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> <span class="token operator">-</span>E_INVAL<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token operator">*</span>srcpte<span class="token punctuation">)</span><span class="token operator">&amp;</span>PTE_W<span class="token punctuation">)</span><span class="token operator">==</span><span class="token number">0</span><span class="token operator">&amp;&amp;</span><span class="token punctuation">(</span><span class="token punctuation">(</span>perm<span class="token operator">&amp;</span>PTE_W<span class="token punctuation">)</span><span class="token operator">!=</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> <span class="token operator">-</span>E_INVAL<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 
-    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">page_insert</span><span class="token punctuation">(</span>dstenv<span class="token operator">-&gt;</span>env_pgdir<span class="token punctuation">,</span>srcpage<span class="token punctuation">,</span>dstva<span class="token punctuation">,</span>perm<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">page_insert</span><span class="token punctuation">(</span>dstenv<span class="token operator">-></span>env_pgdir<span class="token punctuation">,</span>srcpage<span class="token punctuation">,</span>dstva<span class="token punctuation">,</span>perm<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> result<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
 
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 
 <span class="token comment" spellcheck="true">// Unmap the page of memory at 'va' in the address space of 'envid'.</span>
 <span class="token comment" spellcheck="true">// If no page is mapped, the function silently succeeds.</span>
@@ -339,24 +339,24 @@
 <span class="token comment" spellcheck="true">// Return 0 on success, &lt; 0 on error.  Errors are:</span>
 <span class="token comment" spellcheck="true">//	-E_BAD_ENV if environment envid doesn't currently exist,</span>
 <span class="token comment" spellcheck="true">//		or the caller doesn't have permission to change envid.</span>
-<span class="token comment" spellcheck="true">//	-E_INVAL if va &gt;= UTOP, or va is not page-aligned.</span>
+<span class="token comment" spellcheck="true">//	-E_INVAL if va >= UTOP, or va is not page-aligned.</span>
 <span class="token keyword">static</span> <span class="token keyword">int</span>
 <span class="token function">sys_page_unmap</span><span class="token punctuation">(</span>envid_t envid<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>va<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token keyword">struct</span> Env<span class="token operator">*</span> e<span class="token punctuation">;</span>
     <span class="token keyword">int</span> result<span class="token punctuation">;</span>
 
-    <span class="token keyword">if</span><span class="token punctuation">(</span>va<span class="token operator">&gt;=</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>UTOP<span class="token operator">||</span>va<span class="token operator">!=</span><span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>va<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span>va<span class="token operator">>=</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>UTOP<span class="token operator">||</span>va<span class="token operator">!=</span><span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>va<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> <span class="token operator">-</span>E_INVAL<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">envid2env</span><span class="token punctuation">(</span>envid<span class="token punctuation">,</span><span class="token operator">&amp;</span>e<span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> result<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-    <span class="token function">page_remove</span><span class="token punctuation">(</span>e<span class="token operator">-&gt;</span>env_pgdir<span class="token punctuation">,</span>va<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token function">page_remove</span><span class="token punctuation">(</span>e<span class="token operator">-></span>env_pgdir<span class="token punctuation">,</span>va<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <h3 id="Part-B-Copy-on-Write-Fork"><a href="#Part-B-Copy-on-Write-Fork" class="headerlink" title="Part B: Copy-on-Write Fork"></a>Part B: Copy-on-Write Fork</h3><h4 id="User-level-page-fault-handling"><a href="#User-level-page-fault-handling" class="headerlink" title="User-level page fault handling"></a>User-level page fault handling</h4><h5 id="Setting-the-Page-Fault-Handler"><a href="#Setting-the-Page-Fault-Handler" class="headerlink" title="Setting the Page Fault Handler"></a>Setting the Page Fault Handler</h5><pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// Set the page fault upcall for 'envid' by modifying the corresponding struct</span>
 <span class="token comment" spellcheck="true">// Env's 'env_pgfault_upcall' field.  When 'envid' causes a page fault, the</span>
@@ -368,66 +368,66 @@
 <span class="token comment" spellcheck="true">//		or the caller doesn't have permission to change envid.</span>
 <span class="token keyword">static</span> <span class="token keyword">int</span>
 <span class="token function">sys_env_set_pgfault_upcall</span><span class="token punctuation">(</span>envid_t envid<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>func<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token comment" spellcheck="true">// LAB 4: Your code here.</span>
     <span class="token keyword">struct</span> Env<span class="token operator">*</span> e<span class="token punctuation">;</span>
     <span class="token keyword">int</span> result<span class="token punctuation">;</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">envid2env</span><span class="token punctuation">(</span>envid<span class="token punctuation">,</span><span class="token operator">&amp;</span>e<span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> result<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-    e<span class="token operator">-&gt;</span>env_pgfault_upcall <span class="token operator">=</span> func<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    e<span class="token operator">-></span>env_pgfault_upcall <span class="token operator">=</span> func<span class="token punctuation">;</span>
     <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <h5 id="Invoking-the-User-Page-Fault-Handler"><a href="#Invoking-the-User-Page-Fault-Handler" class="headerlink" title="Invoking the User Page Fault Handler"></a>Invoking the User Page Fault Handler</h5><pre class=" language-c"><code class="language-c"><span class="token keyword">void</span>
 <span class="token function">page_fault_handler</span><span class="token punctuation">(</span><span class="token keyword">struct</span> Trapframe <span class="token operator">*</span>tf<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     uint32_t fault_va<span class="token punctuation">;</span>
     fault_va <span class="token operator">=</span> <span class="token function">rcr2</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>tf<span class="token operator">-&gt;</span>tf_cs<span class="token operator">&amp;</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token operator">==</span><span class="token number">0</span><span class="token punctuation">)</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>tf<span class="token operator">-></span>tf_cs<span class="token operator">&amp;</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token operator">==</span><span class="token number">0</span><span class="token punctuation">)</span>
         <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"kernel pagefalut\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    <span class="token keyword">if</span><span class="token punctuation">(</span>curenv<span class="token operator">-&gt;</span>env_pgfault_upcall<span class="token operator">==</span><span class="token constant">NULL</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span>curenv<span class="token operator">-></span>env_pgfault_upcall<span class="token operator">==</span><span class="token constant">NULL</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">goto</span> bad<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 
-    <span class="token keyword">int</span> recursive <span class="token operator">=</span> <span class="token punctuation">(</span>tf<span class="token operator">-&gt;</span>tf_esp <span class="token operator">&gt;=</span> UXSTACKTOP <span class="token operator">-</span> PGSIZE<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token punctuation">(</span>tf<span class="token operator">-&gt;</span>tf_esp <span class="token operator">&lt;</span> UXSTACKTOP<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">int</span> recursive <span class="token operator">=</span> <span class="token punctuation">(</span>tf<span class="token operator">-></span>tf_esp <span class="token operator">>=</span> UXSTACKTOP <span class="token operator">-</span> PGSIZE<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token punctuation">(</span>tf<span class="token operator">-></span>tf_esp <span class="token operator">&lt;</span> UXSTACKTOP<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">struct</span> UTrapframe<span class="token operator">*</span> utf<span class="token punctuation">;</span>
 
     <span class="token keyword">if</span><span class="token punctuation">(</span>recursive<span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
-        utf <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">struct</span> UTrapframe<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>tf<span class="token operator">-&gt;</span>tf_esp<span class="token operator">-</span><span class="token keyword">sizeof</span><span class="token punctuation">(</span><span class="token keyword">struct</span> UTrapframe<span class="token punctuation">)</span><span class="token operator">-</span><span class="token keyword">sizeof</span><span class="token punctuation">(</span>uint32_t<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
+        utf <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">struct</span> UTrapframe<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>tf<span class="token operator">-></span>tf_esp<span class="token operator">-</span><span class="token keyword">sizeof</span><span class="token punctuation">(</span><span class="token keyword">struct</span> UTrapframe<span class="token punctuation">)</span><span class="token operator">-</span><span class="token keyword">sizeof</span><span class="token punctuation">(</span>uint32_t<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token comment" spellcheck="true">// cprintf("recursive\n");</span>
-        <span class="token function">user_mem_assert</span><span class="token punctuation">(</span>curenv<span class="token punctuation">,</span>utf<span class="token punctuation">,</span>tf<span class="token operator">-&gt;</span>tf_esp<span class="token operator">-</span><span class="token punctuation">(</span>uint32_t<span class="token punctuation">)</span>utf<span class="token punctuation">,</span>PTE_W<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+        <span class="token function">user_mem_assert</span><span class="token punctuation">(</span>curenv<span class="token punctuation">,</span>utf<span class="token punctuation">,</span>tf<span class="token operator">-></span>tf_esp<span class="token operator">-</span><span class="token punctuation">(</span>uint32_t<span class="token punctuation">)</span>utf<span class="token punctuation">,</span>PTE_W<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">else</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         utf <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">struct</span> UTrapframe<span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>UXSTACKTOP<span class="token operator">-</span><span class="token keyword">sizeof</span><span class="token punctuation">(</span><span class="token keyword">struct</span> UTrapframe<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token comment" spellcheck="true">// cprintf("non-recursive\n");</span>
         <span class="token function">user_mem_assert</span><span class="token punctuation">(</span>curenv<span class="token punctuation">,</span>utf<span class="token punctuation">,</span>UXSTACKTOP<span class="token operator">-</span><span class="token punctuation">(</span>uint32_t<span class="token punctuation">)</span>utf<span class="token punctuation">,</span>PTE_W<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 
-    utf<span class="token operator">-&gt;</span>utf_esp <span class="token operator">=</span> tf<span class="token operator">-&gt;</span>tf_esp<span class="token punctuation">;</span> 
-    utf<span class="token operator">-&gt;</span>utf_eflags <span class="token operator">=</span> tf<span class="token operator">-&gt;</span>tf_eflags<span class="token punctuation">;</span>
-    utf<span class="token operator">-&gt;</span>utf_regs <span class="token operator">=</span> tf<span class="token operator">-&gt;</span>tf_regs<span class="token punctuation">;</span>
-    utf<span class="token operator">-&gt;</span>utf_err <span class="token operator">=</span> tf<span class="token operator">-&gt;</span>tf_err<span class="token punctuation">;</span>
-    utf<span class="token operator">-&gt;</span>utf_eip <span class="token operator">=</span> tf<span class="token operator">-&gt;</span>tf_eip<span class="token punctuation">;</span>
-    utf<span class="token operator">-&gt;</span>utf_fault_va <span class="token operator">=</span> fault_va<span class="token punctuation">;</span>
+    utf<span class="token operator">-></span>utf_esp <span class="token operator">=</span> tf<span class="token operator">-></span>tf_esp<span class="token punctuation">;</span> 
+    utf<span class="token operator">-></span>utf_eflags <span class="token operator">=</span> tf<span class="token operator">-></span>tf_eflags<span class="token punctuation">;</span>
+    utf<span class="token operator">-></span>utf_regs <span class="token operator">=</span> tf<span class="token operator">-></span>tf_regs<span class="token punctuation">;</span>
+    utf<span class="token operator">-></span>utf_err <span class="token operator">=</span> tf<span class="token operator">-></span>tf_err<span class="token punctuation">;</span>
+    utf<span class="token operator">-></span>utf_eip <span class="token operator">=</span> tf<span class="token operator">-></span>tf_eip<span class="token punctuation">;</span>
+    utf<span class="token operator">-></span>utf_fault_va <span class="token operator">=</span> fault_va<span class="token punctuation">;</span>
 
-    tf<span class="token operator">-&gt;</span>tf_esp <span class="token operator">=</span> <span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>utf<span class="token punctuation">;</span>
-    tf<span class="token operator">-&gt;</span>tf_eip <span class="token operator">=</span> <span class="token punctuation">(</span>uint32_t<span class="token punctuation">)</span>curenv<span class="token operator">-&gt;</span>env_pgfault_upcall<span class="token punctuation">;</span>
+    tf<span class="token operator">-></span>tf_esp <span class="token operator">=</span> <span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>utf<span class="token punctuation">;</span>
+    tf<span class="token operator">-></span>tf_eip <span class="token operator">=</span> <span class="token punctuation">(</span>uint32_t<span class="token punctuation">)</span>curenv<span class="token operator">-></span>env_pgfault_upcall<span class="token punctuation">;</span>
     <span class="token function">env_run</span><span class="token punctuation">(</span>curenv<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 bad<span class="token punctuation">:</span>
     <span class="token comment" spellcheck="true">// Destroy the environment that caused the fault.</span>
     <span class="token function">cprintf</span><span class="token punctuation">(</span><span class="token string">"[%08x] user fault va %08x ip %08x\n"</span><span class="token punctuation">,</span>
-        curenv<span class="token operator">-&gt;</span>env_id<span class="token punctuation">,</span> fault_va<span class="token punctuation">,</span> tf<span class="token operator">-&gt;</span>tf_eip<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        curenv<span class="token operator">-></span>env_id<span class="token punctuation">,</span> fault_va<span class="token punctuation">,</span> tf<span class="token operator">-></span>tf_eip<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token function">print_trapframe</span><span class="token punctuation">(</span>tf<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token function">env_destroy</span><span class="token punctuation">(</span>curenv<span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <h5 id="User-mode-Page-Fault-Entrypoint"><a href="#User-mode-Page-Fault-Entrypoint" class="headerlink" title="User-mode Page Fault Entrypoint"></a>User-mode Page Fault Entrypoint</h5><pre class=" language-asm"><code class="language-asm">.text
 .globl _pgfault_upcall
@@ -455,29 +455,29 @@ _pgfault_upcall:
 </code></pre>
 <pre class=" language-c"><code class="language-c"><span class="token keyword">void</span>
 <span class="token function">set_pgfault_handler</span><span class="token punctuation">(</span><span class="token keyword">void</span> <span class="token punctuation">(</span><span class="token operator">*</span>handler<span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token keyword">struct</span> UTrapframe <span class="token operator">*</span>utf<span class="token punctuation">)</span><span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token keyword">int</span> r<span class="token punctuation">;</span>
 
-    <span class="token keyword">if</span> <span class="token punctuation">(</span>_pgfault_handler <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>_pgfault_handler <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
         <span class="token comment" spellcheck="true">// First time through!</span>
         <span class="token comment" spellcheck="true">// LAB 4: Your code here.</span>
         envid_t eid <span class="token operator">=</span> <span class="token function">sys_getenvid</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token function">sys_page_alloc</span><span class="token punctuation">(</span>eid<span class="token punctuation">,</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>UXSTACKTOP<span class="token operator">-</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">,</span>PTE_W<span class="token operator">|</span>PTE_U<span class="token operator">|</span>PTE_P<span class="token punctuation">)</span><span class="token punctuation">)</span>
-        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+        <span class="token punctuation">{</span>
             <span class="token comment" spellcheck="true">//panic("fail\n"); User系统调用失败,凭啥让内核panic?</span>
-        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
         <span class="token function">sys_env_set_pgfault_upcall</span><span class="token punctuation">(</span>eid<span class="token punctuation">,</span>_pgfault_upcall<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 
     <span class="token comment" spellcheck="true">// Save handler pointer for assembly to call.</span>
     _pgfault_handler <span class="token operator">=</span> handler<span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <h4 id="Implementing-Copy-on-Write-Fork"><a href="#Implementing-Copy-on-Write-Fork" class="headerlink" title="Implementing Copy-on-Write Fork"></a>Implementing Copy-on-Write Fork</h4><h5 id="页表-页目录表的映射分析"><a href="#页表-页目录表的映射分析" class="headerlink" title="页表,页目录表的映射分析"></a>页表,页目录表的映射分析</h5><p>实现完用户级页面错误处理例程的安装工作后,下面进入Fork函数的实现.<br>在此之前,先来理解一个<code>clever mapping trick</code>.</p>
 <p>在为环境建立映射的时候,有这样一个操作.</p>
 <pre class=" language-c"><code class="language-c">    <span class="token comment" spellcheck="true">// UVPT maps the env's own page table read-only.</span>
     <span class="token comment" spellcheck="true">// Permissions: kernel R, user R</span>
-    e<span class="token operator">-&gt;</span>env_pgdir<span class="token punctuation">[</span><span class="token function">PDX</span><span class="token punctuation">(</span>UVPT<span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token function">PADDR</span><span class="token punctuation">(</span>e<span class="token operator">-&gt;</span>env_pgdir<span class="token punctuation">)</span> <span class="token operator">|</span> PTE_P <span class="token operator">|</span> PTE_U<span class="token punctuation">;</span>
+    e<span class="token operator">-></span>env_pgdir<span class="token punctuation">[</span><span class="token function">PDX</span><span class="token punctuation">(</span>UVPT<span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token function">PADDR</span><span class="token punctuation">(</span>e<span class="token operator">-></span>env_pgdir<span class="token punctuation">)</span> <span class="token operator">|</span> PTE_P <span class="token operator">|</span> PTE_U<span class="token punctuation">;</span>
 </code></pre>
 <p>UVPT的定义如下</p>
 <pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// User read-only virtual page table (see 'uvpt' below)</span>
@@ -497,7 +497,7 @@ _pgfault_upcall:
 <pre class=" language-c"><code class="language-c">    <span class="token punctuation">.</span>globl uvpt
     <span class="token punctuation">.</span>set uvpt<span class="token punctuation">,</span> UVPT
     <span class="token punctuation">.</span>globl uvpd
-    <span class="token punctuation">.</span>set uvpd<span class="token punctuation">,</span> <span class="token punctuation">(</span>UVPT<span class="token operator">+</span><span class="token punctuation">(</span>UVPT<span class="token operator">&gt;&gt;</span><span class="token number">12</span><span class="token punctuation">)</span><span class="token operator">*</span><span class="token number">4</span><span class="token punctuation">)</span>
+    <span class="token punctuation">.</span>set uvpd<span class="token punctuation">,</span> <span class="token punctuation">(</span>UVPT<span class="token operator">+</span><span class="token punctuation">(</span>UVPT<span class="token operator">>></span><span class="token number">12</span><span class="token punctuation">)</span><span class="token operator">*</span><span class="token number">4</span><span class="token punctuation">)</span>
 </code></pre>
 <h5 id="Fork代码实现"><a href="#Fork代码实现" class="headerlink" title="Fork代码实现"></a>Fork代码实现</h5><p>pgfault是Custom page fault handler,如果发生页面错误的是对COW页面的写入操作,分配一个物理页拷贝原数据并设定可写</p>
 <pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">//</span>
@@ -506,36 +506,36 @@ _pgfault_upcall:
 <span class="token comment" spellcheck="true">//</span>
 <span class="token keyword">static</span> <span class="token keyword">void</span>
 <span class="token function">pgfault</span><span class="token punctuation">(</span><span class="token keyword">struct</span> UTrapframe <span class="token operator">*</span>utf<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
-    <span class="token keyword">void</span> <span class="token operator">*</span>addr <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">void</span> <span class="token operator">*</span><span class="token punctuation">)</span> utf<span class="token operator">-&gt;</span>utf_fault_va<span class="token punctuation">;</span>
-    uint32_t err <span class="token operator">=</span> utf<span class="token operator">-&gt;</span>utf_err<span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">void</span> <span class="token operator">*</span>addr <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">void</span> <span class="token operator">*</span><span class="token punctuation">)</span> utf<span class="token operator">-></span>utf_fault_va<span class="token punctuation">;</span>
+    uint32_t err <span class="token operator">=</span> utf<span class="token operator">-></span>utf_err<span class="token punctuation">;</span>
     <span class="token keyword">int</span> r<span class="token punctuation">;</span>
 
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>err<span class="token operator">&amp;</span>FEC_WR<span class="token punctuation">)</span><span class="token operator">==</span><span class="token number">0</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"pgfault: the faulting access was not a write\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     pte_t pte <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>pte_t<span class="token operator">*</span><span class="token punctuation">)</span>UVPT<span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token function">PGNUM</span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>pte<span class="token operator">&amp;</span>PTE_COW<span class="token punctuation">)</span><span class="token operator">==</span><span class="token number">0</span><span class="token punctuation">)</span>
         <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"pgfault: the faulting access was not to a copy-on-write page\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>r <span class="token operator">=</span> <span class="token function">sys_page_alloc</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span>PFTEMP<span class="token punctuation">,</span>PTE_W<span class="token operator">|</span>PTE_U<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"pgfault: page_alloc error when COW\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token function">memcpy</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>PFTEMP<span class="token punctuation">,</span><span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>addr<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token function">sys_page_map</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span>PFTEMP<span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>addr<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">,</span>PTE_W<span class="token operator">|</span><span class="token punctuation">(</span>pte<span class="token operator">&amp;</span>PTE_SYSCALL<span class="token operator">&amp;</span><span class="token operator">~</span>PTE_COW<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"pgfault: page_map error when COW\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>r <span class="token operator">=</span> <span class="token function">sys_page_unmap</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">void</span> <span class="token operator">*</span><span class="token punctuation">)</span>PFTEMP<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span>
         <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"pgfault: sys_page_unmap() failed: %e\n"</span><span class="token punctuation">,</span> r<span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <p>duppage映射页面pn到envid(子)进程,若为可写页面或COW则将自身(父进程)和envid进程中该页均映射为COW(因为父进程可能也是fork出来的且并没有得到独立的页面,仅是COW).</p>
 <pre class=" language-c"><code class="language-c"><span class="token keyword">static</span> <span class="token keyword">int</span>
 <span class="token function">duppage</span><span class="token punctuation">(</span>envid_t envid<span class="token punctuation">,</span> <span class="token keyword">unsigned</span> pn<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token keyword">int</span> r<span class="token punctuation">;</span>
     <span class="token comment" spellcheck="true">// LAB 4: Your code here.</span>
     uintptr_t addr <span class="token operator">=</span> pn<span class="token operator">*</span>PGSIZE<span class="token punctuation">;</span>
@@ -543,30 +543,30 @@ _pgfault_upcall:
     pte_t pte <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>pte_t<span class="token operator">*</span><span class="token punctuation">)</span>UVPT<span class="token punctuation">)</span><span class="token punctuation">[</span>pn<span class="token punctuation">]</span><span class="token punctuation">;</span>
 
     <span class="token keyword">if</span><span class="token punctuation">(</span>pte<span class="token operator">&amp;</span><span class="token punctuation">(</span>PTE_W<span class="token operator">|</span>PTE_COW<span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
 
         <span class="token comment" spellcheck="true">//为子进程映射页面并设置PTE_COW</span>
         <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>r <span class="token operator">=</span> <span class="token function">sys_page_map</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>addr<span class="token punctuation">,</span>envid<span class="token punctuation">,</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>addr<span class="token punctuation">,</span>PTE_COW<span class="token operator">|</span>PTE_U<span class="token operator">|</span><span class="token punctuation">(</span>pte<span class="token operator">&amp;</span>PTE_SYSCALL<span class="token operator">&amp;</span><span class="token operator">~</span>PTE_W<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">&lt;</span><span class="token number">0</span><span class="token punctuation">)</span>
-        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+        <span class="token punctuation">{</span>
             <span class="token keyword">return</span> r<span class="token punctuation">;</span>
-        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
     
         <span class="token comment" spellcheck="true">//清除父进程的PTE_W并设置PTE_COW</span>
         <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>r <span class="token operator">=</span> <span class="token function">sys_page_map</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>addr<span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>addr<span class="token punctuation">,</span>PTE_COW<span class="token operator">|</span>PTE_U<span class="token operator">|</span><span class="token punctuation">(</span>pte<span class="token operator">&amp;</span>PTE_SYSCALL<span class="token operator">&amp;</span><span class="token operator">~</span>PTE_W<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">&lt;</span><span class="token number">0</span><span class="token punctuation">)</span>
-        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+        <span class="token punctuation">{</span>
             <span class="token keyword">return</span> r<span class="token punctuation">;</span>
-        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
 
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">else</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>r <span class="token operator">=</span> <span class="token function">sys_page_map</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>addr<span class="token punctuation">,</span>envid<span class="token punctuation">,</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span>addr<span class="token punctuation">,</span>PTE_U<span class="token operator">|</span><span class="token punctuation">(</span>pte<span class="token operator">&amp;</span>PTE_SYSCALL<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">&lt;</span><span class="token number">0</span><span class="token punctuation">)</span>
-        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+        <span class="token punctuation">{</span>
             <span class="token keyword">return</span> r<span class="token punctuation">;</span>
-        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <p>fork创建子进程,为子进程映射(duppage)地址空间.为自身和子进程安装错误处理函数.<br>注意子进程的错误处理函数一定要由父进程安装,因为子进程在调用函数或系统调用时的压栈操作会触发页面错误(目前子进程的栈还是COW的),而错误处理函数还未安装,无法处理.</p>
 <pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">//</span>
@@ -587,50 +587,50 @@ _pgfault_upcall:
 <span class="token comment" spellcheck="true">//</span>
 envid_t
 <span class="token function">fork</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token comment" spellcheck="true">// LAB 4: Your code here.</span>
     envid_t ceid<span class="token punctuation">;</span>
     <span class="token keyword">int</span> result<span class="token punctuation">;</span>
     <span class="token function">set_pgfault_handler</span><span class="token punctuation">(</span>pgfault<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>ceid <span class="token operator">=</span> <span class="token function">sys_exofork</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">&lt;</span><span class="token number">0</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> ceid<span class="token punctuation">;</span> 
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">else</span> <span class="token keyword">if</span><span class="token punctuation">(</span>ceid <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token comment" spellcheck="true">//child</span>
         thisenv <span class="token operator">=</span> <span class="token operator">&amp;</span><span class="token punctuation">(</span>envs<span class="token punctuation">[</span><span class="token function">sys_getenvid</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">&amp;</span><span class="token number">0x3FF</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">else</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">for</span> <span class="token punctuation">(</span>uintptr_t va <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> va <span class="token operator">&lt;</span> UTOP<span class="token punctuation">;</span><span class="token punctuation">)</span> 
-        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+        <span class="token punctuation">{</span>
         	<span class="token keyword">extern</span> <span class="token keyword">volatile</span> pde_t uvpd<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
             <span class="token keyword">extern</span> <span class="token keyword">volatile</span> pte_t uvpt<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
-            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>uvpd<span class="token punctuation">[</span>va <span class="token operator">&gt;&gt;</span> PDXSHIFT<span class="token punctuation">]</span> <span class="token operator">&amp;</span> PTE_P<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> 
-            <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>    <span class="token comment" spellcheck="true">// page table page not found.</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>uvpd<span class="token punctuation">[</span>va <span class="token operator">>></span> PDXSHIFT<span class="token punctuation">]</span> <span class="token operator">&amp;</span> PTE_P<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> 
+            <span class="token punctuation">{</span>    <span class="token comment" spellcheck="true">// page table page not found.</span>
                 va <span class="token operator">+</span><span class="token operator">=</span> NPTENTRIES <span class="token operator">*</span> PGSIZE<span class="token punctuation">;</span>
                 <span class="token keyword">continue</span><span class="token punctuation">;</span>
-            <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>uvpt<span class="token punctuation">[</span>va <span class="token operator">&gt;&gt;</span> PTXSHIFT<span class="token punctuation">]</span> <span class="token operator">&amp;</span> PTE_P<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> 
-            <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>    <span class="token comment" spellcheck="true">// page table entry not found.</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>uvpt<span class="token punctuation">[</span>va <span class="token operator">>></span> PTXSHIFT<span class="token punctuation">]</span> <span class="token operator">&amp;</span> PTE_P<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> 
+            <span class="token punctuation">{</span>    <span class="token comment" spellcheck="true">// page table entry not found.</span>
                 va <span class="token operator">+</span><span class="token operator">=</span> PGSIZE<span class="token punctuation">;</span>
                 <span class="token keyword">continue</span><span class="token punctuation">;</span>
-            <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
             <span class="token keyword">if</span> <span class="token punctuation">(</span>va <span class="token operator">==</span> UXSTACKTOP <span class="token operator">-</span> PGSIZE<span class="token punctuation">)</span> 
-            <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>    <span class="token comment" spellcheck="true">// UXSTACKTOP is not remmaped!</span>
+            <span class="token punctuation">{</span>    <span class="token comment" spellcheck="true">// UXSTACKTOP is not remmaped!</span>
                 va <span class="token operator">+</span><span class="token operator">=</span> PGSIZE<span class="token punctuation">;</span>
                 <span class="token keyword">continue</span><span class="token punctuation">;</span>
-            <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
             <span class="token comment" spellcheck="true">// this page should be duppage()d.</span>
             <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">duppage</span><span class="token punctuation">(</span>ceid<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">unsigned</span><span class="token punctuation">)</span><span class="token punctuation">(</span>va<span class="token operator">/</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span>
-            <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+            <span class="token punctuation">{</span>
                 <span class="token keyword">return</span> result<span class="token punctuation">;</span>
-            <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
             va <span class="token operator">+</span><span class="token operator">=</span> PGSIZE<span class="token punctuation">;</span>
-        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
 
             <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">sys_page_alloc</span><span class="token punctuation">(</span>ceid<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">void</span> <span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">(</span>UXSTACKTOP<span class="token operator">-</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">(</span>PTE_U<span class="token operator">|</span>PTE_W<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span>
         <span class="token keyword">return</span> result<span class="token punctuation">;</span>
@@ -638,8 +638,8 @@ envid_t
     <span class="token function">sys_env_set_pgfault_upcall</span><span class="token punctuation">(</span>ceid<span class="token punctuation">,</span>_pgfault_upcall<span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token function">sys_env_set_status</span><span class="token punctuation">(</span>ceid<span class="token punctuation">,</span>ENV_RUNNABLE<span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token keyword">return</span> ceid<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <h5 id="Copy-On-Write流程分析"><a href="#Copy-On-Write流程分析" class="headerlink" title="Copy-On-Write流程分析"></a>Copy-On-Write流程分析</h5><h6 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h6><p>为了开启Copy-On-Write,要为环境安装_pgfault_upcall函数和_pgfault_handler.前者是汇编实现的page fault处理例程的入口点,会调用后者进行page fault的处理并完成traptime状态的恢复.该安装过程由set_pgfault_handler函数完成,且由于上文提过的原因,子进程_pgfault_upcall函数必须由父进程安装.set_pgfault_handler同时为进程分配单独的错误处理堆栈,子进程的错误处理堆栈由父进程分配.</p>
 <h6 id="触发Copy-On-Write"><a href="#触发Copy-On-Write" class="headerlink" title="触发Copy-On-Write"></a>触发Copy-On-Write</h6><p>当进程对带有PTE_COW标志的页进行写入操作时,由于没有PTE_W权限,处理器触发pagefault,陷入内核态,由常规的异常处理流程,最终到达内核态的page_fault_handler函数.该函数检查环境的_pgfault_upcall是否安装,是否是递归页面错误,为页面处理准备UTrapFrame结构,最后env_run返回到用户态从_pgfault_upcall开始执行.</p>
@@ -652,117 +652,117 @@ envid_t
 </ol>
 <pre class=" language-c"><code class="language-c"><span class="token keyword">static</span> <span class="token keyword">int</span>
 <span class="token function">sys_ipc_try_send</span><span class="token punctuation">(</span>envid_t envid<span class="token punctuation">,</span> uint32_t value<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>srcva<span class="token punctuation">,</span> <span class="token keyword">unsigned</span> perm<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token comment" spellcheck="true">// LAB 4: Your code here.</span>
     <span class="token keyword">int</span> result<span class="token punctuation">;</span>
     <span class="token keyword">struct</span> Env<span class="token operator">*</span> e<span class="token punctuation">;</span>
     pte_t<span class="token operator">*</span> pte<span class="token punctuation">;</span>
     <span class="token keyword">struct</span> PageInfo<span class="token operator">*</span> page<span class="token punctuation">;</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">envid2env</span><span class="token punctuation">(</span>envid<span class="token punctuation">,</span><span class="token operator">&amp;</span>e<span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> result<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>e<span class="token operator">-&gt;</span>env_status <span class="token operator">!=</span> ENV_NOT_RUNNABLE<span class="token punctuation">)</span> <span class="token operator">||</span> <span class="token punctuation">(</span>e<span class="token operator">-&gt;</span>env_ipc_recving<span class="token operator">==</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>e<span class="token operator">-></span>env_status <span class="token operator">!=</span> ENV_NOT_RUNNABLE<span class="token punctuation">)</span> <span class="token operator">||</span> <span class="token punctuation">(</span>e<span class="token operator">-></span>env_ipc_recving<span class="token operator">==</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">return</span> <span class="token operator">-</span>E_IPC_NOT_RECV<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>srcva<span class="token operator">!=</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span><span class="token punctuation">(</span><span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>e<span class="token operator">-&gt;</span>env_ipc_dstva<span class="token operator">!=</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
-        <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>srcva<span class="token operator">&gt;=</span>UTOP<span class="token operator">||</span><span class="token punctuation">(</span>srcva<span class="token operator">!=</span><span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>srcva<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">||</span><span class="token punctuation">(</span><span class="token punctuation">(</span>perm<span class="token operator">&amp;</span>PTE_SYSCALL<span class="token punctuation">)</span><span class="token operator">!=</span>perm<span class="token punctuation">)</span><span class="token punctuation">)</span>
-        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>srcva<span class="token operator">!=</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span><span class="token punctuation">(</span><span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>e<span class="token operator">-></span>env_ipc_dstva<span class="token operator">!=</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>srcva<span class="token operator">>=</span>UTOP<span class="token operator">||</span><span class="token punctuation">(</span>srcva<span class="token operator">!=</span><span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>srcva<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">||</span><span class="token punctuation">(</span><span class="token punctuation">(</span>perm<span class="token operator">&amp;</span>PTE_SYSCALL<span class="token punctuation">)</span><span class="token operator">!=</span>perm<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{</span>
             <span class="token keyword">return</span> <span class="token operator">-</span>E_INVAL<span class="token punctuation">;</span>
-        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
 
-        <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span>page <span class="token operator">=</span> <span class="token function">page_lookup</span><span class="token punctuation">(</span>curenv<span class="token operator">-&gt;</span>env_pgdir<span class="token punctuation">,</span>srcva<span class="token punctuation">,</span><span class="token operator">&amp;</span>pte<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span>page <span class="token operator">=</span> <span class="token function">page_lookup</span><span class="token punctuation">(</span>curenv<span class="token operator">-></span>env_pgdir<span class="token punctuation">,</span>srcva<span class="token punctuation">,</span><span class="token operator">&amp;</span>pte<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{</span>
             <span class="token keyword">return</span> <span class="token operator">-</span>E_INVAL<span class="token punctuation">;</span>
-        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
         <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token operator">*</span>pte<span class="token operator">&amp;</span>PTE_W<span class="token punctuation">)</span><span class="token operator">==</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span><span class="token punctuation">(</span><span class="token punctuation">(</span>perm<span class="token operator">&amp;</span>PTE_W<span class="token punctuation">)</span><span class="token operator">==</span>PTE_W<span class="token punctuation">)</span><span class="token punctuation">)</span>
-        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+        <span class="token punctuation">{</span>
             <span class="token keyword">return</span> <span class="token operator">-</span>E_INVAL<span class="token punctuation">;</span>
-        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-        <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">page_insert</span><span class="token punctuation">(</span>e<span class="token operator">-&gt;</span>env_pgdir<span class="token punctuation">,</span>page<span class="token punctuation">,</span>e<span class="token operator">-&gt;</span>env_ipc_dstva<span class="token punctuation">,</span>perm<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">page_insert</span><span class="token punctuation">(</span>e<span class="token operator">-></span>env_pgdir<span class="token punctuation">,</span>page<span class="token punctuation">,</span>e<span class="token operator">-></span>env_ipc_dstva<span class="token punctuation">,</span>perm<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{</span>
             <span class="token keyword">return</span> result<span class="token punctuation">;</span>
-        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-        e<span class="token operator">-&gt;</span>env_ipc_perm <span class="token operator">=</span> perm<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        e<span class="token operator">-></span>env_ipc_perm <span class="token operator">=</span> perm<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">else</span>
-        e<span class="token operator">-&gt;</span>env_ipc_perm <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
-    e<span class="token operator">-&gt;</span>env_ipc_recving <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
-    e<span class="token operator">-&gt;</span>env_ipc_from <span class="token operator">=</span> curenv<span class="token operator">-&gt;</span>env_id<span class="token punctuation">;</span>
-    e<span class="token operator">-&gt;</span>env_ipc_value <span class="token operator">=</span> value<span class="token punctuation">;</span>
+        e<span class="token operator">-></span>env_ipc_perm <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    e<span class="token operator">-></span>env_ipc_recving <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    e<span class="token operator">-></span>env_ipc_from <span class="token operator">=</span> curenv<span class="token operator">-></span>env_id<span class="token punctuation">;</span>
+    e<span class="token operator">-></span>env_ipc_value <span class="token operator">=</span> value<span class="token punctuation">;</span>
 
-    e<span class="token operator">-&gt;</span>env_status <span class="token operator">=</span> ENV_RUNNABLE<span class="token punctuation">;</span>
+    e<span class="token operator">-></span>env_status <span class="token operator">=</span> ENV_RUNNABLE<span class="token punctuation">;</span>
     <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
 
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 
 <span class="token keyword">static</span> <span class="token keyword">int</span>
 <span class="token function">sys_ipc_recv</span><span class="token punctuation">(</span><span class="token keyword">void</span> <span class="token operator">*</span>dstva<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token comment" spellcheck="true">// LAB 4: Your code here.</span>
     <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>uint32_t<span class="token punctuation">)</span>dstva <span class="token operator">!=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> 
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
-        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>dstva <span class="token operator">&gt;=</span> UTOP<span class="token punctuation">)</span> <span class="token operator">||</span> <span class="token punctuation">(</span>dstva<span class="token operator">!=</span><span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>dstva<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span>uintptr_t<span class="token punctuation">)</span>dstva <span class="token operator">>=</span> UTOP<span class="token punctuation">)</span> <span class="token operator">||</span> <span class="token punctuation">(</span>dstva<span class="token operator">!=</span><span class="token function">ROUNDDOWN</span><span class="token punctuation">(</span>dstva<span class="token punctuation">,</span>PGSIZE<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
             <span class="token keyword">return</span> <span class="token operator">-</span>E_INVAL<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-    curenv<span class="token operator">-&gt;</span>env_ipc_recving <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span>
-    curenv<span class="token operator">-&gt;</span>env_ipc_dstva <span class="token operator">=</span> dstva<span class="token punctuation">;</span>
-    curenv<span class="token operator">-&gt;</span>env_status <span class="token operator">=</span> ENV_NOT_RUNNABLE<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    curenv<span class="token operator">-></span>env_ipc_recving <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    curenv<span class="token operator">-></span>env_ipc_dstva <span class="token operator">=</span> dstva<span class="token punctuation">;</span>
+    curenv<span class="token operator">-></span>env_status <span class="token operator">=</span> ENV_NOT_RUNNABLE<span class="token punctuation">;</span>
     
-    curenv<span class="token operator">-&gt;</span>env_tf<span class="token punctuation">.</span>tf_regs<span class="token punctuation">.</span>reg_eax <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    curenv<span class="token operator">-></span>env_tf<span class="token punctuation">.</span>tf_regs<span class="token punctuation">.</span>reg_eax <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
     <span class="token function">sys_yield</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <pre class=" language-c"><code class="language-c">int32_t
 <span class="token function">ipc_recv</span><span class="token punctuation">(</span>envid_t <span class="token operator">*</span>from_env_store<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>pg<span class="token punctuation">,</span> <span class="token keyword">int</span> <span class="token operator">*</span>perm_store<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token comment" spellcheck="true">// LAB 4: Your code here.</span>
     <span class="token keyword">int</span> result<span class="token punctuation">;</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span>pg<span class="token operator">==</span><span class="token constant">NULL</span><span class="token punctuation">)</span>
         pg <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>result <span class="token operator">=</span> <span class="token function">sys_ipc_recv</span><span class="token punctuation">(</span>pg<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">&lt;</span><span class="token number">0</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">if</span><span class="token punctuation">(</span>from_env_store<span class="token operator">!=</span><span class="token constant">NULL</span><span class="token punctuation">)</span>
             <span class="token operator">*</span>from_env_store <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
         <span class="token keyword">if</span><span class="token punctuation">(</span>perm_store<span class="token operator">!=</span><span class="token constant">NULL</span><span class="token punctuation">)</span>
             <span class="token operator">*</span>perm_store<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">;</span>
         <span class="token keyword">return</span> result<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     <span class="token keyword">else</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         <span class="token keyword">if</span><span class="token punctuation">(</span>from_env_store<span class="token operator">!=</span><span class="token constant">NULL</span><span class="token punctuation">)</span>
-            <span class="token operator">*</span>from_env_store <span class="token operator">=</span> thisenv<span class="token operator">-&gt;</span>env_ipc_from<span class="token punctuation">;</span>
+            <span class="token operator">*</span>from_env_store <span class="token operator">=</span> thisenv<span class="token operator">-></span>env_ipc_from<span class="token punctuation">;</span>
         <span class="token keyword">if</span><span class="token punctuation">(</span>perm_store<span class="token operator">!=</span><span class="token constant">NULL</span><span class="token punctuation">)</span>
-            <span class="token operator">*</span>perm_store<span class="token operator">=</span>thisenv<span class="token operator">-&gt;</span>env_ipc_perm<span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-    <span class="token keyword">return</span> thisenv<span class="token operator">-&gt;</span>env_ipc_value<span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+            <span class="token operator">*</span>perm_store<span class="token operator">=</span>thisenv<span class="token operator">-></span>env_ipc_perm<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> thisenv<span class="token operator">-></span>env_ipc_value<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 
 <span class="token keyword">void</span>
 <span class="token function">ipc_send</span><span class="token punctuation">(</span>envid_t to_env<span class="token punctuation">,</span> uint32_t val<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>pg<span class="token punctuation">,</span> <span class="token keyword">int</span> perm<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token punctuation">{</span>
     <span class="token comment" spellcheck="true">// LAB 4: Your code here.</span>
     <span class="token keyword">int</span> result<span class="token punctuation">;</span>
     <span class="token keyword">if</span><span class="token punctuation">(</span>pg <span class="token operator">==</span> <span class="token constant">NULL</span><span class="token punctuation">)</span>
         pg <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">void</span><span class="token operator">*</span><span class="token punctuation">)</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
     <span class="token keyword">while</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
-    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token punctuation">{</span>
         result <span class="token operator">=</span> <span class="token function">sys_ipc_try_send</span><span class="token punctuation">(</span>to_env<span class="token punctuation">,</span>val<span class="token punctuation">,</span>pg<span class="token punctuation">,</span>perm<span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token operator">!</span>result<span class="token punctuation">)</span>
-        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+        <span class="token punctuation">{</span>
             <span class="token keyword">break</span><span class="token punctuation">;</span>
-        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
         <span class="token keyword">if</span><span class="token punctuation">(</span>result <span class="token operator">==</span> <span class="token operator">-</span>E_IPC_NOT_RECV<span class="token punctuation">)</span>
-        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+        <span class="token punctuation">{</span>
             <span class="token function">sys_yield</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
             <span class="token keyword">continue</span><span class="token punctuation">;</span>
-        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
         <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"ipc_send: fail in send--%e\n"</span><span class="token punctuation">,</span>result<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
 </code></pre>
  
       <!-- reward -->

