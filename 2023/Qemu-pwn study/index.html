@@ -264,7 +264,7 @@ TypeImpl <span class="token operator">*</span><span class="token function">type_
         DeviceClass parent_class<span class="token punctuation">;</span>
         <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
 </code></pre>
-<p>本题是ObjectClass-&gt;DeviceClass-&gt;PCIDeviceClass-&gt;Strng这样的继承关系.</p>
+<p>对应还有一个代表基类对象的Object.<br>本题是Object-&gt;Device-&gt;PCIDevice-&gt;Strng这样的继承关系.</p>
 <pre class=" language-c"><code class="language-c"><span class="token keyword">typedef</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
     PCIDevice pdev<span class="token punctuation">;</span>
     MemoryRegion mmio<span class="token punctuation">;</span>

@@ -111,6 +111,64 @@
     
     
     <article
+  id="post-6.828-Lab4"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/6.828-Lab4/"
+    >MIT6.828 Lab4</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/6.828-Lab4/" class="article-date">
+  <time datetime="2023-10-13T16:00:00.000Z" itemprop="datePublished">2023-10-14</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/">操作系统</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/6-828/">6.828</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="Lec-9"><a href="#Lec-9" class="headerlink" title="Lec 9"></a>Lec 9</h1><h2 id="“Locking”"><a href="#“Locking”" class="headerlink" title="“Locking”"></a>“Locking”</h2><blockquote>
+<p>When we say that a lock protects data, we really mean that the lock protects some<br>collection of invariants that apply to the data. Invariants are properties of data struc-<br>tures that are maintained across operations. Typically, an operation’s correct behavior<br>depends on the invariants being true when the operation begins. The operation may<br>temporarily violate the invariants but must reestablish them before finishing. For ex-<br>ample, in the linked list case, the invariant is that list points at the first node in the<br>list and that each node’s next field points at the next node. The implementation of<br>insert violates this invariant temporarily: in line 15, l points to the next list element,<br>but list does not point at l yet (reestablished at line 16). The race condition we ex-<br>amined above happened because a second CPU executed code that depended on the<br>list invariants while they were (temporarily) violated. Proper use of a lock ensures that<br>only one CPU at a time can operate on the data structure in the critical section, so<br>that no CPU will execute a data structure operation when the data structure’s invari-<br>ants do not hold.</p>
+</blockquote> 
+      <a class="article-more-link" href="/2023/6.828-Lab4/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/6%C2%B7828/" rel="tag">6·828</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
   id="post-Lexical-Analysis"
   class="article article-type-post"
   itemscope
@@ -755,60 +813,6 @@ char* content_ptr;
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/IO-FILE/" rel="tag">IO_FILE</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
 
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
-  id="post-Flower-of-Love"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/Flower-of-Love/"
-    >一生所爱</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/Flower-of-Love/" class="article-date">
-  <time datetime="2022-07-19T16:00:00.000Z" itemprop="datePublished">2022-07-20</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E9%9A%8F%E7%AC%94/">随笔</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  Here's something encrypted, password is required to continue reading. 
-      <a class="article-more-link" href="/2022/Flower-of-Love/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
     </footer>
   </div>
 
