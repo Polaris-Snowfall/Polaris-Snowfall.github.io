@@ -43,9 +43,9 @@
           font-size: 1.6rem;
         }
       </style>
-    <link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end -->
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
-</head>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
   </html>
 </html>
 
@@ -201,12 +201,7 @@
        
   <p>Pwnhub 2023 3月公开赛 WP</p>
 <h2 id="sh-v1-1"><a href="#sh-v1-1" class="headerlink" title="sh_v1_1"></a>sh_v1_1</h2><p>glibc2.31堆题<br>一堆莫名其妙的全局变量运算,白看了半天最后发现一点用都没有.<br>恢复一下结构体</p>
-<pre><code class="c">struct file{
-long flag;
-char filename[32];
-char* content_ptr;
-}
-</code></pre>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">file</span>{</span></span><br><span class="line"><span class="type">long</span> flag;</span><br><span class="line"><span class="type">char</span> filename[<span class="number">32</span>];</span><br><span class="line"><span class="type">char</span>* content_ptr;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>程序逻辑就是模拟的一个linux终端,输入命令进行相应处理.<br>漏洞在ln的时候可以备份指针造成uaf</p> 
       <a class="article-more-link" href="/2023/Pwnhub-2023-March-WP/"
         >阅读更多...</a

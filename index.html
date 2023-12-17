@@ -43,9 +43,9 @@
           font-size: 1.6rem;
         }
       </style>
-    <link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end -->
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
-</head>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
   </html>
 </html>
 
@@ -538,9 +538,7 @@
     <div class="article-entry" itemprop="articleBody">
        
   <p>(<del>Qemu pwn == Kernel Mode的交互 + User Mode的利用</del></p>
-<h2 id="gva-gt-hva"><a href="#gva-gt-hva" class="headerlink" title="gva -> hva"></a>gva -&gt; hva</h2><pre><code>gva -&gt; gpa: 读/proc/self/pagemap获取gva对应的gpa
-gpa + hva_start == hva: 理解一下: Guset的物理内存是Host(Qemu进程)虚拟地址空间中一段连续的区域 
-</code></pre> 
+<h2 id="gva-hva"><a href="#gva-hva" class="headerlink" title="gva -> hva"></a>gva -&gt; hva</h2><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">gva -&gt; gpa: 读/proc/self/pagemap获取gva对应的gpa</span><br><span class="line">gpa + hva_start == hva: 理解一下: Guset的物理内存是Host(Qemu进程)虚拟地址空间中一段连续的区域 </span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure> 
       <a class="article-more-link" href="/2023/Qemu-pwn%20study/"
         >阅读更多...</a
       >
@@ -660,13 +658,7 @@ gpa + hva_start == hva: 理解一下: Guset的物理内存是Host(Qemu进程)虚
     <div class="article-entry" itemprop="articleBody">
        
   <h2 id="Lab-6-Network-Driver"><a href="#Lab-6-Network-Driver" class="headerlink" title="Lab 6: Network Driver"></a>Lab 6: Network Driver</h2><h3 id="Part-A-Initialization-and-transmitting-packets"><a href="#Part-A-Initialization-and-transmitting-packets" class="headerlink" title="Part A: Initialization and transmitting packets"></a>Part A: Initialization and transmitting packets</h3><h4 id="time"><a href="#time" class="headerlink" title="time"></a>time</h4><p>在之前的时钟中断调度前加一个对time_tick函数的调用,注意时钟中断每个CPU都会收到,而我们的目的是计时,所以选择固定选择一个CPU来处理就好,bootcpu当然是最合适的.</p>
-<pre><code class="c">        case IRQ_OFFSET+IRQ_TIMER:
-            lapic_eoi();
-            if(thiscpu==bootcpu)
-                time_tick();
-            sched_yield();
-            return;
-</code></pre> 
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> IRQ_OFFSET+IRQ_TIMER:</span><br><span class="line">	lapic_eoi();</span><br><span class="line">	<span class="keyword">if</span>(thiscpu==bootcpu)</span><br><span class="line">		time_tick();</span><br><span class="line">	sched_yield();</span><br><span class="line">	<span class="keyword">return</span>;</span><br></pre></td></tr></tbody></table></figure> 
       <a class="article-more-link" href="/2023/6.828-Lab6/"
         >阅读更多...</a
       >

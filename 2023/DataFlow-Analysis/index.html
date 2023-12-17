@@ -43,9 +43,9 @@
           font-size: 1.6rem;
         }
       </style>
-    <link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end -->
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
-</head>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
   </html>
 </html>
 
@@ -116,7 +116,7 @@
 <h2 id="中间表示-IR"><a href="#中间表示-IR" class="headerlink" title="中间表示 IR"></a>中间表示 IR</h2><h3 id="静态单赋值-SSA"><a href="#静态单赋值-SSA" class="headerlink" title="静态单赋值 SSA"></a>静态单赋值 SSA</h3><p>静态单赋值（SSA），就是让每次对变量x赋值都重新使用一个新的变量xi，并在后续使用中选择最新的变量.<br>在控制流汇入同一个块时,导致多个变量备选,则使用合并操作符(phi-function),根据控制流的信息来决定选择哪个变量.</p>
 <span id="more"></span>
 <p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312101125383.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312101127135.png"></p>
-<h3 id="Basic-Blocks-amp-Control-Flow-Graphs"><a href="#Basic-Blocks-amp-Control-Flow-Graphs" class="headerlink" title="Basic Blocks &amp; Control Flow Graphs"></a>Basic Blocks &amp; Control Flow Graphs</h3><p>控制流分析（Control Flow Analysis）通常指的是构建控制流图（Control Flow Graph, CFG），并以 CFG 作为基础结构进行静态分析的过程。<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312101129080.png"></p>
+<h3 id="Basic-Blocks-Control-Flow-Graphs"><a href="#Basic-Blocks-Control-Flow-Graphs" class="headerlink" title="Basic Blocks &amp; Control Flow Graphs"></a>Basic Blocks &amp; Control Flow Graphs</h3><p>控制流分析（Control Flow Analysis）通常指的是构建控制流图（Control Flow Graph, CFG），并以 CFG 作为基础结构进行静态分析的过程。<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312101129080.png"></p>
 <p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312101132709.png"></p>
 <h2 id="可用表达式-活跃变量-到达定值"><a href="#可用表达式-活跃变量-到达定值" class="headerlink" title="可用表达式,活跃变量,到达定值"></a>可用表达式,活跃变量,到达定值</h2><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312132214325.png"></p>
 <p>一个易错的例子.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312101557021.png"></p>
@@ -141,7 +141,7 @@
 <p>Transfer function是单调的,因为其的kill集和gen集仅与指令本身有关而与Input无关,单调方向与Input变化相同.Input变化由join/meet function决定.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312132319576.png"></p>
 <h3 id="When-Will-The-Algorithm-The-Fixed-Point"><a href="#When-Will-The-Algorithm-The-Fixed-Point" class="headerlink" title="When Will The Algorithm The Fixed Point?"></a>When Will The Algorithm The Fixed Point?</h3><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312131537103.png"></p>
 <p>最坏情况h*k是假设每次迭代只使得一个结点的OUT下降或上升一个高度,但其实不是很理解这种情况如何产生,如何在一次迭代中仅影响到一个结点的OUT?OUT改变意为IN改变,而IN不就是另一个结点的OUT么?<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312140058700.png"></p>
-<h3 id="May-x2F-Must-Analysis-A-Lattice-View"><a href="#May-x2F-Must-Analysis-A-Lattice-View" class="headerlink" title="May/Must Analysis, A Lattice View"></a>May/Must Analysis, A Lattice View</h3><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312141124723.png"></p>
+<h3 id="May-Must-Analysis-A-Lattice-View"><a href="#May-Must-Analysis-A-Lattice-View" class="headerlink" title="May/Must Analysis, A Lattice View"></a>May/Must Analysis, A Lattice View</h3><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312141124723.png"></p>
 <h3 id="MOP"><a href="#MOP" class="headerlink" title="MOP"></a>MOP</h3><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312141137764.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312141137223.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312131537363.png"></p>
 <h2 id="常量传播-稀疏条件常量传播"><a href="#常量传播-稀疏条件常量传播" class="headerlink" title="常量传播,稀疏条件常量传播"></a>常量传播,稀疏条件常量传播</h2><p>单个变量可能值域的Lattice设计为这个样子(回想一下,之前使用的Bool的值域其实也是一个Lattice)<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312141242129.png"></p>
 <p>Transferfunc像这样.有一点需要注意,之前所说的数据流分析中TranferFunc的单调性依赖于其gen集,kill集与输入无关这一性质,所以OUT与IN成正相关(相对于偏序关系来说).但这里的TransferFunc的gen集明显受到IN的影响,不过分析一下可以发现gen集同样与IN正相关,所以最终的OUT还是正相关的.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312141244522.png"></p>

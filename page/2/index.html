@@ -43,9 +43,9 @@
           font-size: 1.6rem;
         }
       </style>
-    <link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end -->
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
-</head>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
   </html>
 </html>
 
@@ -147,9 +147,7 @@
 <p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310241258348.png"><br>在GNUmakefile中加上-Wno-address-of-packed-member</p>
 <p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310241423170.png"></p>
 <p>将fs.h中定义的全局变量改为外部变量,并在fs.c中定义.</p>
-<pre><code class="c">extern struct Super *super;		// superblock
-extern uint32_t *bitmap;		// bitmap blocks mapped in memory
-</code></pre>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="class"><span class="keyword">struct</span> <span class="title">Super</span> *<span class="title">super</span>;</span>		<span class="comment">// superblock</span></span><br><span class="line"><span class="keyword">extern</span> <span class="type">uint32_t</span> *bitmap;		<span class="comment">// bitmap blocks mapped in memory</span></span><br></pre></td></tr></tbody></table></figure>
 <p>改下输出,lab4满分通过.</p>
 <h3 id="File-system-preliminaries"><a href="#File-system-preliminaries" class="headerlink" title="File system preliminaries"></a>File system preliminaries</h3><p>文件系统的设计就不在这里说了,详见《HQOS 设计与实现》.</p> 
       <a class="article-more-link" href="/2023/6.828-Lab5/"
@@ -558,17 +556,7 @@ extern uint32_t *bitmap;		// bitmap blocks mapped in memory
        
   <p>heap没出没进线下…</p>
 <h2 id="login"><a href="#login" class="headerlink" title="login"></a>login</h2><p>qemu-riscv64 -g 2333 ./pwn<br>gdbinit这样设置方便调试,然后gdb-multiarch -x gdbinit就能调了</p>
-<pre><code class="gdb">set arch riscv:rv64
-target remote 127.0.0.1:2333
-define hook-stop
-    info reg
-    echo "\n\n\n\n\n"
-    x/10i $pc
-end
-
-b *0x123457EA
-c
-</code></pre> 
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">set arch riscv:rv64</span><br><span class="line">target remote 127.0.0.1:2333</span><br><span class="line">define hook-stop</span><br><span class="line">    info reg</span><br><span class="line">    echo "\n\n\n\n\n"</span><br><span class="line">    x/10i $pc</span><br><span class="line">end</span><br><span class="line"></span><br><span class="line">b *0x123457EA</span><br><span class="line">c</span><br></pre></td></tr></tbody></table></figure> 
       <a class="article-more-link" href="/2023/ycb2023/"
         >阅读更多...</a
       >
