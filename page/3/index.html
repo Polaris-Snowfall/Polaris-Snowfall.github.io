@@ -232,64 +232,6 @@ char* content_ptr;
 
     
     <article
-  id="post-IO-Arbitrary-Memory-ReadWrite"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2023/IO-Arbitrary-Memory-ReadWrite/"
-    >IO任意地址读写</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2023/IO-Arbitrary-Memory-ReadWrite/" class="article-date">
-  <time datetime="2023-03-02T16:00:00.000Z" itemprop="datePublished">2023-03-03</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/glibc/">glibc</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="stdout任意地址读"><a href="#stdout任意地址读" class="headerlink" title="stdout任意地址读"></a>stdout任意地址读</h2><ol>
-<li>通过篡改_IO_2_1_stdout_结构体中的flags字段和_IO_write_base字段，通过篡改flags字段来绕过一些检查，一般覆盖_IO_write_base的最低字节为\x00,改flag为0xfbad1800(0xfbad1887).通过篡改_IO_write_base字段使得系统调用write打印_IO_write_base字段与_IO_write_ptr字段之间的内容泄露出libc地址.</li>
-<li>修改_IO_2_1_stdout_的_IO_write_base和_IO_read_end使其相等,在puts函数时泄露libc地址.</li></ol> 
-      <a class="article-more-link" href="/2023/IO-Arbitrary-Memory-ReadWrite/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/IO-FILE/" rel="tag">IO_FILE</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
   id="post-Flower-of-Love"
   class="article article-type-post"
   itemscope
