@@ -113,7 +113,10 @@
     <div class="article-entry" itemprop="articleBody">
        
   <p>理论部分学习: <a target="_blank" rel="noopener" href="https://hanqi-blogs.cn/2023/DataFlow-Analysis">数据流分析笔记</a><br>只展示部分代码,完整代码见github.</p>
-<h2 id="数据流分析框架"><a href="#数据流分析框架" class="headerlink" title="数据流分析框架"></a>数据流分析框架</h2><h3 id="类"><a href="#类" class="headerlink" title="类"></a>类</h3><p>设计一个数据流分析框架,需要先清楚数据流分析有哪些部分.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312171514663.png"><br>再细分一下就是:<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312171512849.png"></p>
+<span id="more"></span>
+<h2 id="数据流分析框架"><a href="#数据流分析框架" class="headerlink" title="数据流分析框架"></a>数据流分析框架</h2><h3 id="类"><a href="#类" class="headerlink" title="类"></a>类</h3><p>设计一个数据流分析框架,需要先清楚数据流分析有哪些部分.</p>
+<!--more-->
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312171514663.png"><br>再细分一下就是:<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312171512849.png"></p>
 <h4 id="Domain"><a href="#Domain" class="headerlink" title="Domain"></a>Domain</h4><p>Domain是数据流分析所关心的对象,比如到达定值的对象是定值,活跃变量的对象是变量……</p>
 <p>写好一些常用的分析对象,表达式和变量.<br>一个分析对象应该提供从IR指令中创建的方法和比较相等的方法.</p>
 <pre class=" language-cpp"><code class="language-cpp"><span class="token keyword">struct</span> Expression final <span class="token operator">:</span> DomainBase<span class="token operator">&lt;</span>Expression<span class="token operator">></span> <span class="token punctuation">{</span>

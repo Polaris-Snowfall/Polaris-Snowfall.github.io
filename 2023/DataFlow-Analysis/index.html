@@ -113,7 +113,9 @@
     <div class="article-entry" itemprop="articleBody">
        
   <p>学习CSCD70 和 南京大学《软件分析》课程中数据流分析部分的笔记与思考.<br>ps: 本篇有许多个人观点,如有错误虚心求教.</p>
-<h2 id="中间表示-IR"><a href="#中间表示-IR" class="headerlink" title="中间表示 IR"></a>中间表示 IR</h2><h3 id="静态单赋值-SSA"><a href="#静态单赋值-SSA" class="headerlink" title="静态单赋值 SSA"></a>静态单赋值 SSA</h3><p>静态单赋值（SSA），就是让每次对变量x赋值都重新使用一个新的变量xi，并在后续使用中选择最新的变量.<br>在控制流汇入同一个块时,导致多个变量备选,则使用合并操作符(phi-function),根据控制流的信息来决定选择哪个变量.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312101125383.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312101127135.png"></p>
+<h2 id="中间表示-IR"><a href="#中间表示-IR" class="headerlink" title="中间表示 IR"></a>中间表示 IR</h2><h3 id="静态单赋值-SSA"><a href="#静态单赋值-SSA" class="headerlink" title="静态单赋值 SSA"></a>静态单赋值 SSA</h3><p>静态单赋值（SSA），就是让每次对变量x赋值都重新使用一个新的变量xi，并在后续使用中选择最新的变量.<br>在控制流汇入同一个块时,导致多个变量备选,则使用合并操作符(phi-function),根据控制流的信息来决定选择哪个变量.</p>
+<span id="more"></span>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312101125383.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312101127135.png"></p>
 <h3 id="Basic-Blocks-amp-Control-Flow-Graphs"><a href="#Basic-Blocks-amp-Control-Flow-Graphs" class="headerlink" title="Basic Blocks &amp; Control Flow Graphs"></a>Basic Blocks &amp; Control Flow Graphs</h3><p>控制流分析（Control Flow Analysis）通常指的是构建控制流图（Control Flow Graph, CFG），并以 CFG 作为基础结构进行静态分析的过程。<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312101129080.png"></p>
 <p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312101132709.png"></p>
 <h2 id="可用表达式-活跃变量-到达定值"><a href="#可用表达式-活跃变量-到达定值" class="headerlink" title="可用表达式,活跃变量,到达定值"></a>可用表达式,活跃变量,到达定值</h2><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312132214325.png"></p>
