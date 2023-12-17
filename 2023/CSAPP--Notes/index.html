@@ -43,9 +43,9 @@
           font-size: 1.6rem;
         }
       </style>
-    
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
-<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+    <link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
   </html>
 </html>
 
@@ -121,7 +121,7 @@
 <li>共享目标文件:特殊类型的可重定位目标文件,可以在加载或者运行时被动态地加载进内存并链接.</li>
 </ol>
 <h2 id="7-5-符号和符号表"><a href="#7-5-符号和符号表" class="headerlink" title="7.5 符号和符号表"></a>7.5 符号和符号表</h2><p>static属性的C函数和全局变量为局部符号,仅为定义该符号的模块(源文件)所私有,其他模块无法通过extern声明使用.用static来保护变量和函数是良好的编程习惯.</p>
-<h3 id="符号表条目"><a href="#符号表条目" class="headerlink" title="符号表条目"></a>符号表条目</h3><pre class=" language-c"><code class="language-c"><span class="token keyword">typedef</span> <span class="token keyword">struct</span><span class="token punctuation">{</span>
+<h3 id="符号表条目"><a href="#符号表条目" class="headerlink" title="符号表条目"></a>符号表条目</h3><pre class=" language-c"><code class="language-c"><span class="token keyword">typedef</span> <span class="token keyword">struct</span><span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
     <span class="token keyword">int</span> name<span class="token punctuation">;</span>
     <span class="token keyword">char</span> type<span class="token punctuation">:</span><span class="token number">4</span><span class="token punctuation">,</span>
             binding<span class="token punctuation">:</span><span class="token number">4</span><span class="token punctuation">;</span>
@@ -129,7 +129,7 @@
     <span class="token keyword">short</span> section<span class="token punctuation">;</span>
     <span class="token keyword">long</span> value<span class="token punctuation">;</span>
     <span class="token keyword">long</span> size<span class="token punctuation">;</span>
-<span class="token punctuation">}</span>Elf64_Symbol<span class="token punctuation">;</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>Elf64_Symbol<span class="token punctuation">;</span>
 </code></pre>
 <p>name是字符串表(.strtab)中对应符号的字节偏移,type是数据或函数.binding指示符号是本地还是全局.value是距定义目标的节的起始位置的偏移(相对地址,<code>对于可执行目标文件来说,该值是一个绝对运行时地址</code>.<del>不是很理解呢?</del>)<br>每个符号被分配到目标文件的某个节,由section表示.<br>有三个特殊的伪节(仅存在于可重定位目标文件中):<br>    1.ABS 不该被重定位的符号<br>    2.UNDEF 未定义的符号<br>    3.COMMON 未初始化的全局变量<br>区别于COMMON节,bss分配未初始化的静态变量,以及初始化为0的全局或静态变量.</p>
 <h2 id="7-6符号解析"><a href="#7-6符号解析" class="headerlink" title="7.6符号解析"></a>7.6符号解析</h2><p>将每个引用于它输入的可重定位目标文件的符号表中的一个确定符号定义关联</p>
@@ -140,12 +140,12 @@
 <h3 id="7-6-3-链接器解析引用"><a href="#7-6-3-链接器解析引用" class="headerlink" title="7.6.3 链接器解析引用"></a>7.6.3 链接器解析引用</h3><p>在符号解析阶段,链接器从左到右按照静态库在命令行中出现的顺序扫描可重定位目标文件和存档文件(自动将.c翻译为.o).在这次扫描中,链接器维护一个可重定位文件的集合E(这个集合中的文件会被合并起来形成可执行文件),一个未解析的符号(引用了但未定义)集合U,一个在前面输入文件中已定义的符号集合D.初始时EUD均为空。<br>对于命令行中每一个输入文件f,若为目标文件,则把f添加到E,修改U和D反应f中的符号定义和引用.若为存档文件,遍历目录尝试寻找可重定位目标文件m匹配U中的未定义符号,将m添加到E中,修改U和D反应f中的符号定义和引用,直到U和D不再发生变化.此时不在E中的目标文件都被简单的丢弃.<br>若完成所有f的扫描后,U是非空的,则报错.否则就合并和重定位E中的目标文件,构建输出的可执行文件.<br>这样的算法决定了链接时文件需要排序.</p>
 <h2 id="7-7-重定位"><a href="#7-7-重定位" class="headerlink" title="7.7 重定位"></a>7.7 重定位</h2><p>重定位将合并输入模块,为每个符号分配运行时地址.<br>重定位由两步组成:<br>    1.重定位节和符号定义.链接器将所有相同类型的节合并为同一类型的聚合节.然后将运行时的内存地址赋给新的聚合节,赋给输入模块定义的每个节,赋给输入模块定义的每个符号<br>    2.重定位节中的符号引用.依赖重定位条目,修改对每个符号的引用,使得它们指向正确的运行时地址.</p>
 <h3 id="7-7-1-重定位条目"><a href="#7-7-1-重定位条目" class="headerlink" title="7.7.1 重定位条目"></a>7.7.1 重定位条目</h3><p>汇编器对最终位置未知的目标引用,生成一个重定位条目,指示链接器在合并时如何修改这个引用.代码的重定位条目放在.rel.text中,已初始化数据的重定位条目放在.rel.data中.</p>
-<pre class=" language-c"><code class="language-c"><span class="token keyword">typedef</span> <span class="token keyword">struct</span><span class="token punctuation">{</span>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">typedef</span> <span class="token keyword">struct</span><span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
     <span class="token keyword">long</span> offset<span class="token punctuation">;</span> <span class="token comment" spellcheck="true">//符号引用距该节的字节偏移(节偏移)</span>
     <span class="token keyword">long</span> type<span class="token punctuation">:</span><span class="token number">32</span><span class="token punctuation">,</span><span class="token comment" spellcheck="true">//指示如何修改引用</span>
             symbol<span class="token punctuation">:</span><span class="token number">32</span><span class="token punctuation">;</span><span class="token comment" spellcheck="true">//符号表中的index</span>
     <span class="token keyword">long</span> addend<span class="token punctuation">;</span><span class="token comment" spellcheck="true">//有符号常数,指示对地址做偏移调整</span>
-<span class="token punctuation">}</span>Elf64_Rela
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>Elf64_Rela
 </code></pre>
 <p>链接器在每个节以及每个与该节相关联的重定位条目上迭代执行,根据不同重定位类型对修改引用为运行时地址相关数据.(绝对寻址、PC相对寻址…)</p>
 <h2 id="7-10-动态链接库"><a href="#7-10-动态链接库" class="headerlink" title="7.10 动态链接库"></a>7.10 动态链接库</h2><h3 id="静态库的缺点"><a href="#静态库的缺点" class="headerlink" title="静态库的缺点"></a>静态库的缺点</h3><p>若静态库更新,必须显示的将程序与新的静态库重新链接.<br>且对一些大量使用的函数,这些函数的代码将会被复制到每个运行进程的文本段中,浪费内存.</p>
@@ -175,7 +175,7 @@
 <h2 id="8-3-系统调用错误处理"><a href="#8-3-系统调用错误处理" class="headerlink" title="8.3 系统调用错误处理"></a>8.3 系统调用错误处理</h2><p>当系统级函数遇到错误时,通常会设置全局整型变量errno,可以通过错误报告函数(输出错误信息,处理错误或退出程序)以及错误处理包装函数(将可能发生错误的函数和错误处理函数封装到一起)来处理错误同时防止代码臃肿.</p>
 <h2 id="8-4-进程控制"><a href="#8-4-进程控制" class="headerlink" title="8.4 进程控制"></a>8.4 进程控制</h2><h3 id="8-4-3-回收子进程"><a href="#8-4-3-回收子进程" class="headerlink" title="8.4.3 回收子进程"></a>8.4.3 回收子进程</h3><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202305050013956.png"></p>
 <h3 id="8-4-5加载并运行程序"><a href="#8-4-5加载并运行程序" class="headerlink" title="8.4.5加载并运行程序"></a>8.4.5加载并运行程序</h3><p>execve函数在当前进程的上下文中加载并运行一个新程序</p>
-<pre class=" language-c"><code class="language-c"><span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt; unistd.h></span></span>
+<pre class=" language-c"><code class="language-c"><span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt; unistd.h&gt;</span></span>
 <span class="token keyword">int</span> <span class="token function">execve</span><span class="token punctuation">(</span><span class="token keyword">const</span> <span class="token keyword">char</span><span class="token operator">*</span> filename<span class="token punctuation">,</span><span class="token keyword">const</span> <span class="token keyword">char</span><span class="token operator">*</span> argv<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token keyword">const</span> <span class="token keyword">char</span><span class="token operator">*</span> envp<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <p>execve函数调用一次且只在发生错误(如找不到filename对应文件)才返回到调用程序.<br>argv变量指向一个以null结尾的指针数组,每个指针指向一个参数字符串,argv[0]为可执行目标文件的名字.envp指向一个以null结尾的指针数组,每个指针指向一个环境变量字符串,每个串都是形如”name=value”的名字-值对.<br>在execve加载了filename后,调用启动代码,将控制传递给新程序的主函数.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202305050022890.png"></p>

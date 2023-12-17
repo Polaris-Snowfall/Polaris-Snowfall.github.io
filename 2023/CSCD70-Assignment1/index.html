@@ -43,9 +43,9 @@
           font-size: 1.6rem;
         }
       </style>
-    
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
-<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+    <link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
   </html>
 </html>
 
@@ -88,7 +88,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">1.7k</span>
+            <span class="post-count">1.9k</span>
         </span>
     </span>
 
@@ -97,7 +97,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">9 分钟</span>
+            <span class="post-count">10 分钟</span>
         </span>
     </span>
 </div>
@@ -112,52 +112,52 @@
   
     <div class="article-entry" itemprop="articleBody">
        
-  <span id="more"></span>
-<h1 id="函数信息"><a href="#函数信息" class="headerlink" title="函数信息"></a>函数信息</h1><p>没啥好说的.</p>
-<pre class=" language-cpp"><code class="language-cpp"><span class="token keyword">class</span> <span class="token class-name">FunctionInfoPass</span> final <span class="token operator">:</span> <span class="token keyword">public</span> PassInfoMixin<span class="token operator">&lt;</span>FunctionInfoPass<span class="token operator">></span> <span class="token punctuation">{</span>
+  <h1 id="函数信息"><a href="#函数信息" class="headerlink" title="函数信息"></a>函数信息</h1><span id="more"></span>
+<p>没啥好说的.</p>
+<pre class=" language-cpp"><code class="language-cpp"><span class="token keyword">class</span> <span class="token class-name">FunctionInfoPass</span> final <span class="token operator">:</span> <span class="token keyword">public</span> PassInfoMixin<span class="token operator">&lt;</span>FunctionInfoPass<span class="token operator">&gt;</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
 <span class="token keyword">public</span><span class="token operator">:</span>
-  PreservedAnalyses <span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">[</span>maybe_unused<span class="token punctuation">]</span><span class="token punctuation">]</span> Module <span class="token operator">&amp;</span>M<span class="token punctuation">,</span> ModuleAnalysisManager <span class="token operator">&amp;</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  PreservedAnalyses <span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">[</span>maybe_unused<span class="token punctuation">]</span><span class="token punctuation">]</span> Module <span class="token operator">&amp;</span>M<span class="token punctuation">,</span> ModuleAnalysisManager <span class="token operator">&amp;</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
     <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"CSCD70 Function Information Pass"</span>
            <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
 
     <span class="token comment" spellcheck="true">/// @todo(CSCD70) Please complete this method.</span>
 
     <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">auto</span><span class="token operator">&amp;</span> F <span class="token operator">:</span> M<span class="token punctuation">.</span><span class="token function">functions</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token punctuation">{</span>
+    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
       <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"Function Name: "</span> <span class="token operator">&lt;&lt;</span> F<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
       <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"Number of Arguments: "</span> <span class="token operator">&lt;&lt;</span> F<span class="token punctuation">.</span><span class="token function">arg_size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
       <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"Number of Calls: "</span> <span class="token operator">&lt;&lt;</span> F<span class="token punctuation">.</span><span class="token function">getNumUses</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
       <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"Number OF BBs: "</span> <span class="token operator">&lt;&lt;</span> F<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
       <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"Number of Instructions: "</span> <span class="token operator">&lt;&lt;</span> F<span class="token punctuation">.</span><span class="token function">getInstructionCount</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
     <span class="token keyword">return</span> PreservedAnalyses<span class="token operator">::</span><span class="token function">all</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-  <span class="token punctuation">}</span>
-<span class="token punctuation">}</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// class FunctionInfoPass</span>
+  <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// class FunctionInfoPass</span>
 </code></pre>
 <h1 id="局部优化"><a href="#局部优化" class="headerlink" title="局部优化"></a>局部优化</h1><h2 id="代数恒等式"><a href="#代数恒等式" class="headerlink" title="代数恒等式"></a>代数恒等式</h2><h3 id="识别"><a href="#识别" class="headerlink" title="识别"></a>识别</h3><p>加减运算中,其中一个操作数为常量0;乘除运算中,其中一个操作数为常量1.</p>
 <p>在判别常量的值的时候,需要这样的转化:</p>
 <pre class=" language-cpp"><code class="language-cpp">Value<span class="token operator">*</span> oper1 <span class="token operator">=</span>In<span class="token punctuation">.</span><span class="token function">getOperand</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>
-ConstVal1 <span class="token operator">=</span> dyn_cast<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">></span><span class="token function">getSExtValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+ConstVal1 <span class="token operator">=</span> dyn_cast<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">getSExtValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 </code></pre>
 <p>但是在二元运算中,操作数不一定是ConstantInt,所以需要先判别一下:</p>
-<pre class=" language-cpp"><code class="language-cpp"><span class="token keyword">if</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token punctuation">)</span>
+<pre class=" language-cpp"><code class="language-cpp"><span class="token keyword">if</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token punctuation">)</span>
 </code></pre>
 <h3 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h3><p>用代数恒等式的最终值代替所有引用该指令结果的地方,然后删除该指令.</p>
 <pre class=" language-cpp"><code class="language-cpp">In<span class="token punctuation">.</span><span class="token function">replaceAllUsesWith</span><span class="token punctuation">(</span>AlgebraicIdentity<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <p>删除指令应该在遍历完所有指令之后,否则可能会导致迭代器失效.<br>一个相关的demo如下:</p>
-<pre class=" language-cpp"><code class="language-cpp"><span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;iostream></span></span>
-<span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;vector></span></span>
+<pre class=" language-cpp"><code class="language-cpp"><span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;iostream&gt;</span></span>
+<span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;vector&gt;</span></span>
 
 <span class="token keyword">int</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-<span class="token punctuation">{</span>
-    std<span class="token operator">::</span>vector<span class="token operator">&lt;</span><span class="token keyword">int</span><span class="token operator">></span> <span class="token function">vec</span><span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token keyword">for</span><span class="token punctuation">(</span>std<span class="token operator">::</span>vector<span class="token operator">&lt;</span><span class="token keyword">int</span><span class="token operator">></span><span class="token operator">::</span>iterator iter <span class="token operator">=</span> vec<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>iter<span class="token operator">!=</span>vec<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token operator">++</span>iter<span class="token punctuation">)</span>
-    <span class="token punctuation">{</span>
+<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    std<span class="token operator">::</span>vector<span class="token operator">&lt;</span><span class="token keyword">int</span><span class="token operator">&gt;</span> <span class="token function">vec</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span><span class="token punctuation">(</span>std<span class="token operator">::</span>vector<span class="token operator">&lt;</span><span class="token keyword">int</span><span class="token operator">&gt;</span><span class="token operator">::</span>iterator iter <span class="token operator">=</span> vec<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>iter<span class="token operator">!=</span>vec<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token operator">++</span>iter<span class="token punctuation">)</span>
+    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         std<span class="token operator">::</span>cout <span class="token operator">&lt;&lt;</span> <span class="token operator">*</span>iter <span class="token operator">&lt;&lt;</span><span class="token string">" "</span><span class="token punctuation">;</span>
         vec<span class="token punctuation">.</span><span class="token function">erase</span><span class="token punctuation">(</span>iter<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
-<span class="token punctuation">}</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 </code></pre>
 <pre><code>g++ test.cpp &amp;&amp; ./a.out
 22145664082593 0872 180082552 2 6101240994215 82538  19428801684252 4048 9411899120 87594 220361632 217 91908160516051605 88948 81625610688 288 288 288 211024042 80848 8242 242 242 242 0 80094 85240422961 961 961 961 87619 85558 23824 894 894 894 89286254005 213 959527952795279527221 52042352892352045204520452049 87673 54062283040 040 040 040 84094 84344 840972344 844 844 844 844 844 844 844 844 840972344 840972344 891303733 94279427942794279427942794279427942748211 876164408 540161074 540161016101610161074 540161074 540161074 
@@ -165,16 +165,16 @@ ConstVal1 <span class="token operator">=</span> dyn_cast<span class="token opera
 段错误
 </code></pre>
 <p>将所有要删除的指令加入一个vector,最后统一删除.</p>
-<pre class=" language-cpp"><code class="language-cpp"><span class="token keyword">void</span> <span class="token function">delIns</span><span class="token punctuation">(</span>std<span class="token operator">::</span>vector<span class="token operator">&lt;</span>Instruction<span class="token operator">*</span><span class="token operator">></span> InsList<span class="token punctuation">)</span>
-<span class="token punctuation">{</span>
+<pre class=" language-cpp"><code class="language-cpp"><span class="token keyword">void</span> <span class="token function">delIns</span><span class="token punctuation">(</span>std<span class="token operator">::</span>vector<span class="token operator">&lt;</span>Instruction<span class="token operator">*</span><span class="token operator">&gt;</span> InsList<span class="token punctuation">)</span>
+<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
   <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">auto</span><span class="token operator">&amp;</span> ins <span class="token operator">:</span> InsList<span class="token punctuation">)</span>
-  <span class="token punctuation">{</span>
-    <span class="token keyword">if</span><span class="token punctuation">(</span>ins<span class="token operator">-</span><span class="token operator">></span><span class="token function">isSafeToRemove</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token punctuation">{</span>
-      ins<span class="token operator">-</span><span class="token operator">></span><span class="token function">eraseFromParent</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
-  <span class="token punctuation">}</span>
-<span class="token punctuation">}</span>
+  <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span>ins<span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">isSafeToRemove</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+      ins<span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">eraseFromParent</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+  <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 </code></pre>
 <p>注意这里使用的是eraseFromParent,使用removeFromParent会导致如下错误:</p>
 <pre class=" language-c"><code class="language-c">Instruction referencing instruction not embedded in a basic block<span class="token operator">!</span>
@@ -187,67 +187,67 @@ ConstVal1 <span class="token operator">=</span> dyn_cast<span class="token opera
   <span class="token comment" spellcheck="true">/// This method unlinks 'this' from the containing basic block and deletes it.</span>
   <span class="token comment" spellcheck="true">///</span>
   <span class="token comment" spellcheck="true">/// \returns an iterator pointing to the element after the erased one</span>
-  SymbolTableList<span class="token operator">&lt;</span>Instruction<span class="token operator">></span><span class="token operator">::</span>iterator <span class="token function">eraseFromParent</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  SymbolTableList<span class="token operator">&lt;</span>Instruction<span class="token operator">&gt;</span><span class="token operator">::</span>iterator <span class="token function">eraseFromParent</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <h3 id="完整代码"><a href="#完整代码" class="headerlink" title="完整代码"></a>完整代码</h3><pre class=" language-cpp"><code class="language-cpp">PreservedAnalyses AlgebraicIdentityPass<span class="token operator">::</span><span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">[</span>maybe_unused<span class="token punctuation">]</span><span class="token punctuation">]</span> Function <span class="token operator">&amp;</span>F<span class="token punctuation">,</span>
-                                             FunctionAnalysisManager <span class="token operator">&amp;</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                             FunctionAnalysisManager <span class="token operator">&amp;</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
 
   <span class="token comment" spellcheck="true">/// @todo(CSCD70) Please complete this method.</span>
   <span class="token keyword">int</span> cnt <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
-  std<span class="token operator">::</span>vector<span class="token operator">&lt;</span>Instruction<span class="token operator">*</span><span class="token operator">></span> del_InsList<span class="token punctuation">;</span>
+  std<span class="token operator">::</span>vector<span class="token operator">&lt;</span>Instruction<span class="token operator">*</span><span class="token operator">&gt;</span> del_InsList<span class="token punctuation">;</span>
   <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">auto</span><span class="token operator">&amp;</span> BB <span class="token operator">:</span> F<span class="token punctuation">)</span>
-  <span class="token punctuation">{</span>
+  <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
     <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">auto</span><span class="token operator">&amp;</span> In <span class="token operator">:</span> BB<span class="token punctuation">)</span>
-    <span class="token punctuation">{</span>
+    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
       <span class="token keyword">if</span><span class="token punctuation">(</span>In<span class="token punctuation">.</span><span class="token function">isBinaryOp</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-      <span class="token punctuation">{</span>
+      <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         Value<span class="token operator">*</span> AlgebraicIdentity <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
         <span class="token keyword">bool</span> flag <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
         <span class="token keyword">auto</span> oper1 <span class="token operator">=</span>In<span class="token punctuation">.</span><span class="token function">getOperand</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token keyword">auto</span> oper2 <span class="token operator">=</span>In<span class="token punctuation">.</span><span class="token function">getOperand</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         int64_t ConstVal1<span class="token punctuation">,</span>ConstVal2<span class="token punctuation">;</span>
-        <span class="token keyword">if</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token punctuation">)</span>
-          ConstVal1 <span class="token operator">=</span> dyn_cast<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">></span><span class="token function">getSExtValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-        <span class="token keyword">if</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper2<span class="token punctuation">)</span><span class="token punctuation">)</span>
-          ConstVal2 <span class="token operator">=</span> dyn_cast<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper2<span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">></span><span class="token function">getSExtValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token punctuation">)</span>
+          ConstVal1 <span class="token operator">=</span> dyn_cast<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">getSExtValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper2<span class="token punctuation">)</span><span class="token punctuation">)</span>
+          ConstVal2 <span class="token operator">=</span> dyn_cast<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper2<span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">getSExtValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
         <span class="token keyword">switch</span> <span class="token punctuation">(</span>In<span class="token punctuation">.</span><span class="token function">getOpcode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-        <span class="token punctuation">{</span>
-          <span class="token comment" spellcheck="true">//x+0 x-0 --> x</span>
+        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+          <span class="token comment" spellcheck="true">//x+0 x-0 --&gt; x</span>
         <span class="token keyword">case</span> Instruction<span class="token operator">::</span>Add<span class="token operator">:</span>
         <span class="token keyword">case</span> Instruction<span class="token operator">::</span>Sub<span class="token operator">:</span>
-          <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span><span class="token operator">!</span>ConstVal1<span class="token punctuation">)</span><span class="token operator">||</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper2<span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span><span class="token operator">!</span>ConstVal2<span class="token punctuation">)</span><span class="token punctuation">)</span>
-          <span class="token punctuation">{</span>
+          <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span><span class="token operator">!</span>ConstVal1<span class="token punctuation">)</span><span class="token operator">||</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper2<span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span><span class="token operator">!</span>ConstVal2<span class="token punctuation">)</span><span class="token punctuation">)</span>
+          <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
             AlgebraicIdentity <span class="token operator">=</span> oper1 <span class="token operator">?</span> oper1 <span class="token operator">:</span> oper2<span class="token punctuation">;</span>
             flag <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
-          <span class="token punctuation">}</span>
+          <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
           <span class="token keyword">break</span><span class="token punctuation">;</span>
         
         <span class="token keyword">case</span> Instruction<span class="token operator">::</span>Mul<span class="token operator">:</span>
         <span class="token keyword">case</span> Instruction<span class="token operator">::</span>SDiv<span class="token operator">:</span>
-          <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span>ConstVal1<span class="token operator">==</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">||</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper2<span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span>ConstVal2<span class="token operator">==</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-          <span class="token punctuation">{</span>
+          <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span>ConstVal1<span class="token operator">==</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">||</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper2<span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span>ConstVal2<span class="token operator">==</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+          <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
             AlgebraicIdentity <span class="token operator">=</span> ConstVal1<span class="token operator">==</span><span class="token number">1</span><span class="token operator">?</span> oper2 <span class="token operator">:</span> oper1<span class="token punctuation">;</span>
             flag <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span> 
-          <span class="token punctuation">}</span>
+          <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
         <span class="token keyword">break</span><span class="token punctuation">;</span>
         <span class="token keyword">default</span><span class="token operator">:</span>
           <span class="token keyword">break</span><span class="token punctuation">;</span>
-        <span class="token punctuation">}</span>
+        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
         <span class="token keyword">if</span><span class="token punctuation">(</span>flag<span class="token punctuation">)</span>
-        <span class="token punctuation">{</span>
+        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
           In<span class="token punctuation">.</span><span class="token function">replaceAllUsesWith</span><span class="token punctuation">(</span>AlgebraicIdentity<span class="token punctuation">)</span><span class="token punctuation">;</span>
           del_InsList<span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>In<span class="token punctuation">)</span><span class="token punctuation">;</span>
           <span class="token operator">++</span>cnt<span class="token punctuation">;</span>
-        <span class="token punctuation">}</span>
-      <span class="token punctuation">}</span>
-    <span class="token punctuation">}</span>
-  <span class="token punctuation">}</span>
+        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+      <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+  <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
   <span class="token function">delIns</span><span class="token punctuation">(</span>del_InsList<span class="token punctuation">)</span><span class="token punctuation">;</span>
-  <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"define dso_local void @AlgebraicIdentity(i32 noundef %0) {"</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
+  <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"define dso_local void @AlgebraicIdentity(i32 noundef %0) &amp;#123;"</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
   <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"Algebraic Identity: "</span> <span class="token operator">&lt;&lt;</span> cnt <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
   <span class="token keyword">return</span> PreservedAnalyses<span class="token operator">::</span><span class="token function">none</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 </code></pre>
 <h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3><pre><code>make &amp;&amp; opt -load-pass-plugin=./libLocalOpts.so -passes=algebraic-identity ./test/TestCase1.ll -o ./TestCase.bc &amp;&amp; llvm-dis TestCase.bc -o TestCase.ll
 </code></pre>
@@ -271,63 +271,63 @@ ConstVal1 <span class="token operator">=</span> dyn_cast<span class="token opera
 </code></pre>
 <h2 id="强度削弱"><a href="#强度削弱" class="headerlink" title="强度削弱"></a>强度削弱</h2><h3 id="识别-1"><a href="#识别-1" class="headerlink" title="识别"></a>识别</h3><p>乘除运算,其中一个操作数为2的幂.</p>
 <h3 id="优化-1"><a href="#优化-1" class="headerlink" title="优化"></a>优化</h3><p>在原指令下方增加一条移位指令,移除并删除原指令.这里要用到IRBuilder.<br>用当前指令来初始化builder,为其设置指令的插入点.</p>
-<pre class=" language-cpp"><code class="language-cpp">IRBuilder<span class="token operator">&lt;</span><span class="token operator">></span> <span class="token function">builder</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>In<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<pre class=" language-cpp"><code class="language-cpp">IRBuilder<span class="token operator">&lt;</span><span class="token operator">&gt;</span> <span class="token function">builder</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>In<span class="token punctuation">)</span><span class="token punctuation">;</span>
 Value<span class="token operator">*</span> NewIns <span class="token operator">=</span> builder<span class="token punctuation">.</span><span class="token function">CreateShl</span><span class="token punctuation">(</span>oper<span class="token punctuation">,</span>shift<span class="token punctuation">)</span><span class="token punctuation">;</span>
 In<span class="token punctuation">.</span><span class="token function">replaceAllUsesWith</span><span class="token punctuation">(</span>NewIns<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <h3 id="完整代码-1"><a href="#完整代码-1" class="headerlink" title="完整代码"></a>完整代码</h3><pre class=" language-cpp"><code class="language-cpp"><span class="token keyword">int</span> <span class="token function">getshift</span><span class="token punctuation">(</span><span class="token keyword">int</span> x<span class="token punctuation">)</span>
-<span class="token punctuation">{</span>
-  <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span><span class="token punctuation">(</span>x <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span><span class="token punctuation">(</span>x <span class="token operator">&amp;</span> <span class="token punctuation">(</span>x <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+  <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span><span class="token punctuation">(</span>x <span class="token operator">&gt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span><span class="token punctuation">(</span>x <span class="token operator">&amp;</span> <span class="token punctuation">(</span>x <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
     <span class="token keyword">return</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
   <span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
   <span class="token keyword">while</span><span class="token punctuation">(</span>x<span class="token punctuation">)</span>
-  <span class="token punctuation">{</span>
-    x <span class="token operator">=</span> x<span class="token operator">>></span><span class="token number">1</span><span class="token punctuation">;</span>
+  <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    x <span class="token operator">=</span> x<span class="token operator">&gt;&gt;</span><span class="token number">1</span><span class="token punctuation">;</span>
     <span class="token operator">++</span>i<span class="token punctuation">;</span>
-  <span class="token punctuation">}</span>
+  <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
   <span class="token keyword">return</span> i<span class="token punctuation">;</span>
 
-<span class="token punctuation">}</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 
 PreservedAnalyses StrengthReductionPass<span class="token operator">::</span><span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">[</span>maybe_unused<span class="token punctuation">]</span><span class="token punctuation">]</span> Function <span class="token operator">&amp;</span>F<span class="token punctuation">,</span>
-                                             FunctionAnalysisManager <span class="token operator">&amp;</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                             FunctionAnalysisManager <span class="token operator">&amp;</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
 
   <span class="token comment" spellcheck="true">/// @todo(CSCD70) Please complete this method.</span>
   <span class="token keyword">int</span> cnt <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
-  std<span class="token operator">::</span>vector<span class="token operator">&lt;</span>Instruction<span class="token operator">*</span><span class="token operator">></span> del_InsList<span class="token punctuation">;</span>
+  std<span class="token operator">::</span>vector<span class="token operator">&lt;</span>Instruction<span class="token operator">*</span><span class="token operator">&gt;</span> del_InsList<span class="token punctuation">;</span>
   <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">auto</span><span class="token operator">&amp;</span> BB <span class="token operator">:</span> F<span class="token punctuation">)</span>
-  <span class="token punctuation">{</span>
+  <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
     <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">auto</span><span class="token operator">&amp;</span> In <span class="token operator">:</span> BB<span class="token punctuation">)</span>
-    <span class="token punctuation">{</span>
+    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
       <span class="token keyword">if</span><span class="token punctuation">(</span>In<span class="token punctuation">.</span><span class="token function">isBinaryOp</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-      <span class="token punctuation">{</span>
+      <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         <span class="token keyword">int</span> shift <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
         Value<span class="token operator">*</span> oper<span class="token punctuation">;</span>
         <span class="token keyword">auto</span> oper1 <span class="token operator">=</span>In<span class="token punctuation">.</span><span class="token function">getOperand</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token keyword">auto</span> oper2 <span class="token operator">=</span>In<span class="token punctuation">.</span><span class="token function">getOperand</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token keyword">int</span> shift1 <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span>shift2 <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
-        <span class="token keyword">if</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token punctuation">)</span>
-          shift1 <span class="token operator">=</span> <span class="token function">getshift</span><span class="token punctuation">(</span>dyn_cast<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">></span><span class="token function">getSExtValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-        <span class="token keyword">if</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper2<span class="token punctuation">)</span><span class="token punctuation">)</span>
-          shift2 <span class="token operator">=</span> <span class="token function">getshift</span><span class="token punctuation">(</span>dyn_cast<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper2<span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">></span><span class="token function">getSExtValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token punctuation">)</span>
+          shift1 <span class="token operator">=</span> <span class="token function">getshift</span><span class="token punctuation">(</span>dyn_cast<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">getSExtValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper2<span class="token punctuation">)</span><span class="token punctuation">)</span>
+          shift2 <span class="token operator">=</span> <span class="token function">getshift</span><span class="token punctuation">(</span>dyn_cast<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper2<span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">getSExtValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 
 
         <span class="token keyword">switch</span> <span class="token punctuation">(</span>In<span class="token punctuation">.</span><span class="token function">getOpcode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-        <span class="token punctuation">{</span>
+        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         <span class="token keyword">case</span> Instruction<span class="token operator">::</span>Mul<span class="token operator">:</span>
         <span class="token keyword">case</span> Instruction<span class="token operator">::</span>SDiv<span class="token operator">:</span>
         <span class="token keyword">case</span> Instruction<span class="token operator">::</span>UDiv<span class="token operator">:</span>
-          <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span>shift1<span class="token operator">!=</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">||</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">></span><span class="token punctuation">(</span>oper2<span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span>shift2<span class="token operator">!=</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-          <span class="token punctuation">{</span>
+          <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper1<span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span>shift1<span class="token operator">!=</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">||</span><span class="token punctuation">(</span>isa<span class="token operator">&lt;</span>ConstantInt<span class="token operator">&gt;</span><span class="token punctuation">(</span>oper2<span class="token punctuation">)</span><span class="token operator">&amp;&amp;</span>shift2<span class="token operator">!=</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+          <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
             shift <span class="token operator">=</span> shift1<span class="token operator">==</span><span class="token operator">-</span><span class="token number">1</span> <span class="token operator">?</span> shift2 <span class="token operator">:</span> shift1<span class="token punctuation">;</span>
             oper <span class="token operator">=</span> shift1<span class="token operator">==</span><span class="token operator">-</span><span class="token number">1</span><span class="token operator">?</span> oper1 <span class="token operator">:</span> oper2<span class="token punctuation">;</span>
             
-            IRBuilder<span class="token operator">&lt;</span><span class="token operator">></span> <span class="token function">builder</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>In<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            IRBuilder<span class="token operator">&lt;</span><span class="token operator">&gt;</span> <span class="token function">builder</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>In<span class="token punctuation">)</span><span class="token punctuation">;</span>
             
             Value<span class="token operator">*</span> NewIns<span class="token punctuation">;</span>
             <span class="token keyword">switch</span> <span class="token punctuation">(</span>In<span class="token punctuation">.</span><span class="token function">getOpcode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-            <span class="token punctuation">{</span>
+            <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
             <span class="token keyword">case</span> Instruction<span class="token operator">::</span>Mul<span class="token operator">:</span>
               NewIns <span class="token operator">=</span> builder<span class="token punctuation">.</span><span class="token function">CreateShl</span><span class="token punctuation">(</span>oper<span class="token punctuation">,</span>shift<span class="token punctuation">)</span><span class="token punctuation">;</span>
               <span class="token keyword">break</span><span class="token punctuation">;</span>
@@ -335,24 +335,24 @@ PreservedAnalyses StrengthReductionPass<span class="token operator">::</span><sp
             <span class="token keyword">case</span> Instruction<span class="token operator">::</span>UDiv<span class="token operator">:</span>
               NewIns <span class="token operator">=</span>builder<span class="token punctuation">.</span><span class="token function">CreateAShr</span><span class="token punctuation">(</span>oper<span class="token punctuation">,</span>shift<span class="token punctuation">)</span><span class="token punctuation">;</span>
               <span class="token keyword">break</span><span class="token punctuation">;</span>            
-            <span class="token punctuation">}</span>
+            <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 
             In<span class="token punctuation">.</span><span class="token function">replaceAllUsesWith</span><span class="token punctuation">(</span>NewIns<span class="token punctuation">)</span><span class="token punctuation">;</span>
             del_InsList<span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>In<span class="token punctuation">)</span><span class="token punctuation">;</span>
             cnt<span class="token operator">++</span><span class="token punctuation">;</span>
-          <span class="token punctuation">}</span>
+          <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
           <span class="token keyword">break</span><span class="token punctuation">;</span>
         <span class="token keyword">default</span><span class="token operator">:</span>
           <span class="token keyword">break</span><span class="token punctuation">;</span>
-        <span class="token punctuation">}</span>
-      <span class="token punctuation">}</span>
-    <span class="token punctuation">}</span>
-  <span class="token punctuation">}</span>
+        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+      <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+  <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
   <span class="token function">delIns</span><span class="token punctuation">(</span>del_InsList<span class="token punctuation">)</span><span class="token punctuation">;</span>
-  <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"define dso_local void @StrengthReduction(i32 noundef %0) {"</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
+  <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"define dso_local void @StrengthReduction(i32 noundef %0) &amp;#123;"</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
   <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"strength-reduction: "</span> <span class="token operator">&lt;&lt;</span> cnt <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
   <span class="token keyword">return</span> PreservedAnalyses<span class="token operator">::</span><span class="token function">none</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 </code></pre>
 <h3 id="测试-1"><a href="#测试-1" class="headerlink" title="测试"></a>测试</h3><pre><code> make &amp;&amp; opt -load-pass-plugin=./libLocalOpts.so -passes=algebraic-identity,strength-reduction ./test/TestCase2.ll -o ./TestCase.bc &amp;&amp; llvm-dis TestCase.bc -o TestCase.ll
 </code></pre>
@@ -383,61 +383,61 @@ PreservedAnalyses StrengthReductionPass<span class="token operator">::</span><sp
 <p>其实就是UserIn正好抵消In的运算,具体是否可消除模式的识别与操作符本身有关,这里仅以上述先加后减的模式进行优化.</p>
 <h3 id="优化-2"><a href="#优化-2" class="headerlink" title="优化"></a>优化</h3><p>以之前的值替换即可.</p>
 <h3 id="完整代码-2"><a href="#完整代码-2" class="headerlink" title="完整代码"></a>完整代码</h3><pre class=" language-cpp"><code class="language-cpp">PreservedAnalyses MultiInstOptPass<span class="token operator">::</span><span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">[</span>maybe_unused<span class="token punctuation">]</span><span class="token punctuation">]</span> Function <span class="token operator">&amp;</span>F<span class="token punctuation">,</span>
-                                        FunctionAnalysisManager <span class="token operator">&amp;</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                        FunctionAnalysisManager <span class="token operator">&amp;</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
 
   <span class="token comment" spellcheck="true">/// @todo(CSCD70) Please complete this method.</span>
   <span class="token keyword">int</span> cnt <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
-  std<span class="token operator">::</span>vector<span class="token operator">&lt;</span>Instruction<span class="token operator">*</span><span class="token operator">></span> del_InsList<span class="token punctuation">;</span>
+  std<span class="token operator">::</span>vector<span class="token operator">&lt;</span>Instruction<span class="token operator">*</span><span class="token operator">&gt;</span> del_InsList<span class="token punctuation">;</span>
   <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">auto</span><span class="token operator">&amp;</span> BB <span class="token operator">:</span> F<span class="token punctuation">)</span>
-  <span class="token punctuation">{</span>
+  <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
     <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">auto</span><span class="token operator">&amp;</span> In <span class="token operator">:</span> BB<span class="token punctuation">)</span>
-    <span class="token punctuation">{</span>
+    <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
       <span class="token keyword">if</span><span class="token punctuation">(</span>In<span class="token punctuation">.</span><span class="token function">isBinaryOp</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-      <span class="token punctuation">{</span>
-        <span class="token keyword">int</span> op <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span> <span class="token punctuation">;</span> <span class="token comment" spellcheck="true">//1 -> + ; 0 -> -;</span>
+      <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> op <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span> <span class="token punctuation">;</span> <span class="token comment" spellcheck="true">//1 -&gt; + ; 0 -&gt; -;</span>
         <span class="token keyword">int</span> Incnt <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
         <span class="token keyword">auto</span> oper1 <span class="token operator">=</span> In<span class="token punctuation">.</span><span class="token function">getOperand</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token keyword">auto</span> oper2 <span class="token operator">=</span> In<span class="token punctuation">.</span><span class="token function">getOperand</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token keyword">switch</span> <span class="token punctuation">(</span>In<span class="token punctuation">.</span><span class="token function">getOpcode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-        <span class="token punctuation">{</span>
+        <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         <span class="token keyword">case</span> Instruction<span class="token operator">::</span>Add<span class="token operator">:</span>
           <span class="token keyword">for</span><span class="token punctuation">(</span>User<span class="token operator">*</span> user<span class="token operator">:</span>In<span class="token punctuation">.</span><span class="token function">users</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-          <span class="token punctuation">{</span>
-            <span class="token keyword">if</span><span class="token punctuation">(</span>Instruction<span class="token operator">*</span> UserIn <span class="token operator">=</span> dyn_cast<span class="token operator">&lt;</span>Instruction<span class="token operator">></span><span class="token punctuation">(</span>user<span class="token punctuation">)</span><span class="token punctuation">)</span>
-            <span class="token punctuation">{</span>
+          <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>Instruction<span class="token operator">*</span> UserIn <span class="token operator">=</span> dyn_cast<span class="token operator">&lt;</span>Instruction<span class="token operator">&gt;</span><span class="token punctuation">(</span>user<span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
               Value<span class="token operator">*</span> Val <span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span>
               <span class="token keyword">if</span><span class="token punctuation">(</span>In<span class="token punctuation">.</span><span class="token function">isBinaryOp</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-              <span class="token punctuation">{</span>
-                <span class="token keyword">if</span><span class="token punctuation">(</span>UserIn<span class="token operator">-</span><span class="token operator">></span><span class="token function">getOpcode</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> Instruction<span class="token operator">::</span>Sub<span class="token punctuation">)</span>
-                <span class="token punctuation">{</span>
-                  <span class="token keyword">if</span><span class="token punctuation">(</span>UserIn<span class="token operator">-</span><span class="token operator">></span><span class="token function">getOperand</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">==</span> oper1<span class="token punctuation">)</span>
+              <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+                <span class="token keyword">if</span><span class="token punctuation">(</span>UserIn<span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">getOpcode</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> Instruction<span class="token operator">::</span>Sub<span class="token punctuation">)</span>
+                <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+                  <span class="token keyword">if</span><span class="token punctuation">(</span>UserIn<span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">getOperand</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">==</span> oper1<span class="token punctuation">)</span>
                     Val <span class="token operator">=</span> oper2<span class="token punctuation">;</span>
-                  <span class="token keyword">else</span> <span class="token keyword">if</span><span class="token punctuation">(</span>UserIn<span class="token operator">-</span><span class="token operator">></span><span class="token function">getOperand</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">==</span> oper2<span class="token punctuation">)</span>
+                  <span class="token keyword">else</span> <span class="token keyword">if</span><span class="token punctuation">(</span>UserIn<span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">getOperand</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">==</span> oper2<span class="token punctuation">)</span>
                     Val <span class="token operator">=</span> oper1<span class="token punctuation">;</span>
 
                   <span class="token keyword">if</span><span class="token punctuation">(</span>Val<span class="token punctuation">)</span>
-                  <span class="token punctuation">{</span>
-                    UserIn<span class="token operator">-</span><span class="token operator">></span><span class="token function">replaceAllUsesWith</span><span class="token punctuation">(</span>Val<span class="token punctuation">)</span><span class="token punctuation">;</span>  
+                  <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+                    UserIn<span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">replaceAllUsesWith</span><span class="token punctuation">(</span>Val<span class="token punctuation">)</span><span class="token punctuation">;</span>  
                     del_InsList<span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span>UserIn<span class="token punctuation">)</span><span class="token punctuation">;</span>
                     <span class="token operator">++</span>cnt<span class="token punctuation">;</span>
-                  <span class="token punctuation">}</span>
-                <span class="token punctuation">}</span>
-              <span class="token punctuation">}</span>
-            <span class="token punctuation">}</span>
-          <span class="token punctuation">}</span>
+                  <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+                <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+              <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+            <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+          <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
           <span class="token keyword">break</span><span class="token punctuation">;</span>
         
         <span class="token keyword">default</span><span class="token operator">:</span>
           <span class="token keyword">break</span><span class="token punctuation">;</span>
-        <span class="token punctuation">}</span>
-      <span class="token punctuation">}</span>
-    <span class="token punctuation">}</span>
-  <span class="token punctuation">}</span>
+        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+      <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+  <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
   <span class="token function">delIns</span><span class="token punctuation">(</span>del_InsList<span class="token punctuation">)</span><span class="token punctuation">;</span>
-  <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"define dso_local void @MultiInstOpt(i32 noundef %0, i32 noundef %1) {"</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
+  <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"define dso_local void @MultiInstOpt(i32 noundef %0, i32 noundef %1) &amp;#123;"</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
   <span class="token function">outs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> <span class="token string">"multi-inst-opt: "</span> <span class="token operator">&lt;&lt;</span> cnt <span class="token operator">&lt;&lt;</span> <span class="token string">"\n"</span><span class="token punctuation">;</span>
   <span class="token keyword">return</span> PreservedAnalyses<span class="token operator">::</span><span class="token function">none</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 </code></pre>
 <h3 id="测试-2"><a href="#测试-2" class="headerlink" title="测试"></a>测试</h3><pre><code>make &amp;&amp; opt -load-pass-plugin=./libLocalOpts.so -passes=algebraic-identity,strength-reduction,multi-inst-opt ./test/TestCaseBasic.ll -o ./TestCase.bc &amp;&amp; llvm-dis TestCase.bc -o TestCase.ll
 </code></pre>

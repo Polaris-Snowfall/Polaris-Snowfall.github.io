@@ -43,9 +43,9 @@
           font-size: 1.6rem;
         }
       </style>
-    
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
-<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+    <link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
   </html>
 </html>
 
@@ -88,7 +88,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">1.8k</span>
+            <span class="post-count">2k</span>
         </span>
     </span>
 
@@ -97,7 +97,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">8 分钟</span>
+            <span class="post-count">10 分钟</span>
         </span>
     </span>
 </div>
@@ -116,7 +116,7 @@
 <p>但又多想了一点,cp_timer的回调函数是在pci_FastCP_realize中调用timer_init_full注册(初始化)过的,说不定callback指针已经在另一个位置保存并作为之后回调使用,并不会调用该结构中的指针.</p>
 <span id="more"></span>
 <pre class=" language-c"><code class="language-c"><span class="token keyword">struct</span> FastCPState
-<span class="token punctuation">{</span>
+<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
   PCIDevice_0 pdev<span class="token punctuation">;</span>
   MemoryRegion_0 mmio<span class="token punctuation">;</span>
   CP_state cp_state<span class="token punctuation">;</span>
@@ -124,11 +124,11 @@
   uint32_t irq_status<span class="token punctuation">;</span>
   <span class="token keyword">char</span> CP_buffer<span class="token punctuation">[</span><span class="token number">4096</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
   QEMUTimer_0 cp_timer<span class="token punctuation">;</span>
-<span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span><span class="token punctuation">;</span>
 
 
 <span class="token keyword">struct</span> QEMUTimer
-<span class="token punctuation">{</span>
+<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
   int64_t expire_time<span class="token punctuation">;</span>
   QEMUTimerList_0 <span class="token operator">*</span>timer_list<span class="token punctuation">;</span>
   QEMUTimerCB <span class="token operator">*</span>cb<span class="token punctuation">;</span>
@@ -136,42 +136,42 @@
   QEMUTimer_0 <span class="token operator">*</span>next<span class="token punctuation">;</span>
   <span class="token keyword">int</span> attributes<span class="token punctuation">;</span>
   <span class="token keyword">int</span> scale<span class="token punctuation">;</span>
-<span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span><span class="token punctuation">;</span>
 </code></pre>
 <p>虽然只需打个断点动调一下就能验证,但当我看到timer_init_full的实现,一脸震惊.</p>
 <pre class=" language-c"><code class="language-c"><span class="token keyword">void</span> <span class="token function">timer_init_full</span><span class="token punctuation">(</span>QEMUTimer <span class="token operator">*</span>ts<span class="token punctuation">,</span>
                      QEMUTimerListGroup <span class="token operator">*</span>timer_list_group<span class="token punctuation">,</span> QEMUClockType type<span class="token punctuation">,</span>
                      <span class="token keyword">int</span> scale<span class="token punctuation">,</span> <span class="token keyword">int</span> attributes<span class="token punctuation">,</span>
                      QEMUTimerCB <span class="token operator">*</span>cb<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>opaque<span class="token punctuation">)</span>
-<span class="token punctuation">{</span>
-    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>timer_list_group<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>timer_list_group<span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         timer_list_group <span class="token operator">=</span> <span class="token operator">&amp;</span>main_loop_tlg<span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
-    ts<span class="token operator">-></span>timer_list <span class="token operator">=</span> timer_list_group<span class="token operator">-></span>tl<span class="token punctuation">[</span>type<span class="token punctuation">]</span><span class="token punctuation">;</span>
-    ts<span class="token operator">-></span>cb <span class="token operator">=</span> cb<span class="token punctuation">;</span>
-    ts<span class="token operator">-></span>opaque <span class="token operator">=</span> opaque<span class="token punctuation">;</span>
-    ts<span class="token operator">-></span>scale <span class="token operator">=</span> scale<span class="token punctuation">;</span>
-    ts<span class="token operator">-></span>attributes <span class="token operator">=</span> attributes<span class="token punctuation">;</span>
-    ts<span class="token operator">-></span>expire_time <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    ts<span class="token operator">-&gt;</span>timer_list <span class="token operator">=</span> timer_list_group<span class="token operator">-&gt;</span>tl<span class="token punctuation">[</span>type<span class="token punctuation">]</span><span class="token punctuation">;</span>
+    ts<span class="token operator">-&gt;</span>cb <span class="token operator">=</span> cb<span class="token punctuation">;</span>
+    ts<span class="token operator">-&gt;</span>opaque <span class="token operator">=</span> opaque<span class="token punctuation">;</span>
+    ts<span class="token operator">-&gt;</span>scale <span class="token operator">=</span> scale<span class="token punctuation">;</span>
+    ts<span class="token operator">-&gt;</span>attributes <span class="token operator">=</span> attributes<span class="token punctuation">;</span>
+    ts<span class="token operator">-&gt;</span>expire_time <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 </code></pre>
 <p>想象中的注册函数肯定要将ts链入timer_list链表中,但这里却仅是将ts-&gt;timer_list指向了对应的timer_list.形成了下图的结构,那当时间到达,如何找到ts?在内存中搜索timer_list指针?肯定不可能.于是便开始看Qemu源码.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202311282258582.png"></p>
 <h2 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h2><p>最后发现没有那么玄乎,加入链表的操作是在timer_mod中完成的.从某个点切入来看源码就是会有无数个莫名其妙: “这里为什么要调这个?这个条件是什么意思?”,为了解决一连串的问题,完整的跟了一遍QemuTimer Callback机制的源码.</p>
 <pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">/*util/qemu-timer.c*/</span>
 
 <span class="token keyword">void</span> <span class="token function">timer_mod</span><span class="token punctuation">(</span>QEMUTimer <span class="token operator">*</span>ts<span class="token punctuation">,</span> int64_t expire_time<span class="token punctuation">)</span>
-<span class="token punctuation">{</span>
-    <span class="token function">timer_mod_ns</span><span class="token punctuation">(</span>ts<span class="token punctuation">,</span> expire_time <span class="token operator">*</span> ts<span class="token operator">-></span>scale<span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span>
+<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token function">timer_mod_ns</span><span class="token punctuation">(</span>ts<span class="token punctuation">,</span> expire_time <span class="token operator">*</span> ts<span class="token operator">-&gt;</span>scale<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 
 <span class="token comment" spellcheck="true">/* modify the current timer so that it will be fired when current_time
-   >= expire_time. The corresponding callback will be called. */</span>
+   &gt;= expire_time. The corresponding callback will be called. */</span>
 <span class="token keyword">void</span> <span class="token function">timer_mod_ns</span><span class="token punctuation">(</span>QEMUTimer <span class="token operator">*</span>ts<span class="token punctuation">,</span> int64_t expire_time<span class="token punctuation">)</span>
-<span class="token punctuation">{</span>
-    QEMUTimerList <span class="token operator">*</span>timer_list <span class="token operator">=</span> ts<span class="token operator">-></span>timer_list<span class="token punctuation">;</span>
+<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    QEMUTimerList <span class="token operator">*</span>timer_list <span class="token operator">=</span> ts<span class="token operator">-&gt;</span>timer_list<span class="token punctuation">;</span>
     bool rearm<span class="token punctuation">;</span>
 
-    <span class="token function">qemu_mutex_lock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">qemu_mutex_lock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-&gt;</span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token comment" spellcheck="true">//将ts从timer_list中移除(?什么时候加进来过,估计是防止二次加入)</span>
     <span class="token function">timer_del_locked</span><span class="token punctuation">(</span>timer_list<span class="token punctuation">,</span> ts<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token comment" spellcheck="true">/*将ts根据expire_time插入到active_timer链表中,
@@ -180,81 +180,81 @@
     返回值rearm代表插入后ts是否在头部,
     即timer_list中最近的deadline改变.*/</span>
     rearm <span class="token operator">=</span> <span class="token function">timer_mod_ns_locked</span><span class="token punctuation">(</span>timer_list<span class="token punctuation">,</span> ts<span class="token punctuation">,</span> expire_time<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token function">qemu_mutex_unlock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">qemu_mutex_unlock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-&gt;</span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
     <span class="token comment" spellcheck="true">/*若timer_list中最近的deadline改变,调用
     timerlist_rearm.原因后续解释*/</span>
-    <span class="token keyword">if</span> <span class="token punctuation">(</span>rearm<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>rearm<span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         <span class="token function">timerlist_rearm</span><span class="token punctuation">(</span>timer_list<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
-<span class="token punctuation">}</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 
 <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">timer_del_locked</span><span class="token punctuation">(</span>QEMUTimerList <span class="token operator">*</span>timer_list<span class="token punctuation">,</span> QEMUTimer <span class="token operator">*</span>ts<span class="token punctuation">)</span>
-<span class="token punctuation">{</span>
+<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
     QEMUTimer <span class="token operator">*</span><span class="token operator">*</span>pt<span class="token punctuation">,</span> <span class="token operator">*</span>t<span class="token punctuation">;</span>
 
-    ts<span class="token operator">-></span>expire_time <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
-    pt <span class="token operator">=</span> <span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>active_timers<span class="token punctuation">;</span>
-    <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token punctuation">;</span><span class="token punctuation">;</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    ts<span class="token operator">-&gt;</span>expire_time <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+    pt <span class="token operator">=</span> <span class="token operator">&amp;</span>timer_list<span class="token operator">-&gt;</span>active_timers<span class="token punctuation">;</span>
+    <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token punctuation">;</span><span class="token punctuation">;</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         t <span class="token operator">=</span> <span class="token operator">*</span>pt<span class="token punctuation">;</span>
         <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>t<span class="token punctuation">)</span>
             <span class="token keyword">break</span><span class="token punctuation">;</span>
-        <span class="token keyword">if</span> <span class="token punctuation">(</span>t <span class="token operator">==</span> ts<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-            <span class="token function">qatomic_set</span><span class="token punctuation">(</span>pt<span class="token punctuation">,</span> t<span class="token operator">-></span>next<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>t <span class="token operator">==</span> ts<span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+            <span class="token function">qatomic_set</span><span class="token punctuation">(</span>pt<span class="token punctuation">,</span> t<span class="token operator">-&gt;</span>next<span class="token punctuation">)</span><span class="token punctuation">;</span>
             <span class="token keyword">break</span><span class="token punctuation">;</span>
-        <span class="token punctuation">}</span>
-        pt <span class="token operator">=</span> <span class="token operator">&amp;</span>t<span class="token operator">-></span>next<span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
-<span class="token punctuation">}</span>
+        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+        pt <span class="token operator">=</span> <span class="token operator">&amp;</span>t<span class="token operator">-&gt;</span>next<span class="token punctuation">;</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 
 <span class="token keyword">static</span> bool <span class="token function">timer_mod_ns_locked</span><span class="token punctuation">(</span>QEMUTimerList <span class="token operator">*</span>timer_list<span class="token punctuation">,</span>
                                 QEMUTimer <span class="token operator">*</span>ts<span class="token punctuation">,</span> int64_t expire_time<span class="token punctuation">)</span>
-<span class="token punctuation">{</span>
+<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
     QEMUTimer <span class="token operator">*</span><span class="token operator">*</span>pt<span class="token punctuation">,</span> <span class="token operator">*</span>t<span class="token punctuation">;</span>
 
     <span class="token comment" spellcheck="true">/* add the timer in the sorted list */</span>
-    pt <span class="token operator">=</span> <span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>active_timers<span class="token punctuation">;</span>
-    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token punctuation">;</span><span class="token punctuation">;</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    pt <span class="token operator">=</span> <span class="token operator">&amp;</span>timer_list<span class="token operator">-&gt;</span>active_timers<span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token punctuation">;</span><span class="token punctuation">;</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         t <span class="token operator">=</span> <span class="token operator">*</span>pt<span class="token punctuation">;</span>
-        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">timer_expired_ns</span><span class="token punctuation">(</span>t<span class="token punctuation">,</span> expire_time<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">timer_expired_ns</span><span class="token punctuation">(</span>t<span class="token punctuation">,</span> expire_time<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
             <span class="token keyword">break</span><span class="token punctuation">;</span>
-        <span class="token punctuation">}</span>
-        pt <span class="token operator">=</span> <span class="token operator">&amp;</span>t<span class="token operator">-></span>next<span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
-    ts<span class="token operator">-></span>expire_time <span class="token operator">=</span> <span class="token function">MAX</span><span class="token punctuation">(</span>expire_time<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    ts<span class="token operator">-></span>next <span class="token operator">=</span> <span class="token operator">*</span>pt<span class="token punctuation">;</span>
+        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+        pt <span class="token operator">=</span> <span class="token operator">&amp;</span>t<span class="token operator">-&gt;</span>next<span class="token punctuation">;</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    ts<span class="token operator">-&gt;</span>expire_time <span class="token operator">=</span> <span class="token function">MAX</span><span class="token punctuation">(</span>expire_time<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    ts<span class="token operator">-&gt;</span>next <span class="token operator">=</span> <span class="token operator">*</span>pt<span class="token punctuation">;</span>
     <span class="token function">qatomic_set</span><span class="token punctuation">(</span>pt<span class="token punctuation">,</span> ts<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    <span class="token keyword">return</span> pt <span class="token operator">==</span> <span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>active_timers<span class="token punctuation">;</span>
-<span class="token punctuation">}</span>
+    <span class="token keyword">return</span> pt <span class="token operator">==</span> <span class="token operator">&amp;</span>timer_list<span class="token operator">-&gt;</span>active_timers<span class="token punctuation">;</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 
 <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">timerlist_rearm</span><span class="token punctuation">(</span>QEMUTimerList <span class="token operator">*</span>timer_list<span class="token punctuation">)</span>
-<span class="token punctuation">{</span>
+<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
     <span class="token comment" spellcheck="true">/* Interrupt execution to force deadline recalculation.  */</span>
-    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">icount_enabled</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> timer_list<span class="token operator">-></span>clock<span class="token operator">-></span>type <span class="token operator">==</span> QEMU_CLOCK_VIRTUAL<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">icount_enabled</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> timer_list<span class="token operator">-&gt;</span>clock<span class="token operator">-&gt;</span>type <span class="token operator">==</span> QEMU_CLOCK_VIRTUAL<span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         <span class="token function">icount_start_warp_timer</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
     <span class="token function">timerlist_notify</span><span class="token punctuation">(</span>timer_list<span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 </code></pre>
 <p>timerlist_rearm最终会调用qemu_notify_event函数,</p>
 <pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">/*softmmu/cpu-timers.c*/</span>
 
 <span class="token keyword">void</span> <span class="token function">qemu_timer_notify_cb</span><span class="token punctuation">(</span><span class="token keyword">void</span> <span class="token operator">*</span>opaque<span class="token punctuation">,</span> QEMUClockType type<span class="token punctuation">)</span>
-<span class="token punctuation">{</span>
-    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">icount_enabled</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">||</span> type <span class="token operator">!=</span> QEMU_CLOCK_VIRTUAL<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">icount_enabled</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">||</span> type <span class="token operator">!=</span> QEMU_CLOCK_VIRTUAL<span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         <span class="token function">qemu_notify_event</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token keyword">return</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 
-    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">qemu_in_vcpu_thread</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">qemu_in_vcpu_thread</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         <span class="token comment" spellcheck="true">/*
          * A CPU is currently running; kick it back out to the
          * tcg_cpu_exec() loop so it will recalculate its
          * icount deadline immediately.
          */</span>
         <span class="token function">qemu_cpu_kick</span><span class="token punctuation">(</span>current_cpu<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>first_cpu<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>first_cpu<span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         <span class="token comment" spellcheck="true">/*
          * qemu_cpu_kick is not enough to kick a halted CPU out of
          * qemu_tcg_wait_io_event.  async_run_on_cpu, instead,
@@ -264,8 +264,8 @@
          * need to do anything.
          */</span>
         <span class="token function">async_run_on_cpu</span><span class="token punctuation">(</span>first_cpu<span class="token punctuation">,</span> do_nothing<span class="token punctuation">,</span> RUN_ON_CPU_NULL<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
-<span class="token punctuation">}</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 </code></pre>
 <p>从qemu_notify_event注释中看出,其会迫使 main_loop_wait检查挂起的事件并退出,使得触发一次qemu_clock_run_all_timers.</p>
 <pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">/**
@@ -295,19 +295,19 @@
 <p>先来分析一下main_loop_wait函数,该函数被主例程循环调用,使用poll(ppoll)监听描述符事件并将结果Dispatch到对应的notifier进行处理.</p>
 <pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">/*util/main-loop.c*/</span>
 <span class="token keyword">void</span> <span class="token function">main_loop_wait</span><span class="token punctuation">(</span><span class="token keyword">int</span> nonblocking<span class="token punctuation">)</span>
-<span class="token punctuation">{</span>
+<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
     <span class="token comment" spellcheck="true">//设置poll参数,timeout = UINT32_MAX即无限阻塞等待</span>
-    MainLoopPoll mlpoll <span class="token operator">=</span> <span class="token punctuation">{</span>
+    MainLoopPoll mlpoll <span class="token operator">=</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         <span class="token punctuation">.</span>state <span class="token operator">=</span> MAIN_LOOP_POLL_FILL<span class="token punctuation">,</span>
         <span class="token punctuation">.</span>timeout <span class="token operator">=</span> UINT32_MAX<span class="token punctuation">,</span>
         <span class="token punctuation">.</span>pollfds <span class="token operator">=</span> gpollfds<span class="token punctuation">,</span>
-    <span class="token punctuation">}</span><span class="token punctuation">;</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span><span class="token punctuation">;</span>
     <span class="token keyword">int</span> ret<span class="token punctuation">;</span>
     int64_t timeout_ns<span class="token punctuation">;</span>
 
-    <span class="token keyword">if</span> <span class="token punctuation">(</span>nonblocking<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>nonblocking<span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         mlpoll<span class="token punctuation">.</span>timeout <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 
     <span class="token comment" spellcheck="true">/* poll any events */</span>
     <span class="token function">g_array_set_size</span><span class="token punctuation">(</span>gpollfds<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">/* reset for new iteration */</span>
@@ -316,12 +316,12 @@
     <span class="token comment" spellcheck="true">//调用main_loop_poll_notifiers中所有notifier的notify函数</span>
     <span class="token function">notifier_list_notify</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>main_loop_poll_notifiers<span class="token punctuation">,</span> <span class="token operator">&amp;</span>mlpoll<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    <span class="token keyword">if</span> <span class="token punctuation">(</span>mlpoll<span class="token punctuation">.</span>timeout <span class="token operator">==</span> UINT32_MAX<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>mlpoll<span class="token punctuation">.</span>timeout <span class="token operator">==</span> UINT32_MAX<span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
     <span class="token comment" spellcheck="true">//这里其实是一个32位的-1到64位-1的转换</span>
         timeout_ns <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span> <span class="token keyword">else</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         timeout_ns <span class="token operator">=</span> <span class="token punctuation">(</span>uint64_t<span class="token punctuation">)</span>mlpoll<span class="token punctuation">.</span>timeout <span class="token operator">*</span> <span class="token punctuation">(</span>int64_t<span class="token punctuation">)</span><span class="token punctuation">(</span>SCALE_MS<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 
     <span class="token comment" spellcheck="true">/*计算timerlistgroup中最近的deadline,
     若小于当前timeout_ns,更新timeout_ns为deadline.*/</span>
@@ -338,17 +338,17 @@
     notifier的notify函数告知其检查这次poll的结果.*/</span>
     <span class="token function">notifier_list_notify</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>main_loop_poll_notifiers<span class="token punctuation">,</span> <span class="token operator">&amp;</span>mlpoll<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">icount_enabled</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">icount_enabled</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         <span class="token comment" spellcheck="true">/*
          * CPU thread can infinitely wait for event after
          * missing the warp
          */</span>
         <span class="token function">icount_start_warp_timer</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 
     <span class="token comment" spellcheck="true">//可能有timer超时了,进行回调.</span>
     <span class="token function">qemu_clock_run_all_timers</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 </code></pre>
 <p>main_loop_wait每次计算main_loop_tlg中最近的deadline并进行阻塞,每次结束阻塞尝试qemu_clock_run_all_timers进行回调(若阻塞结束是因为超时,则应该进行timer回调,若是因为某个事件,仍然调用了qemu_clock_run_all_timers但并不会起作用.</p>
 <p>不过有个特殊情况,os_host_main_loop_wait时最大阻塞时间使用的是进入阻塞之前计算出的deadline,当阻塞时间结束,意味着到达deadline,正好进行timer的callback.但如果在阻塞期间deadline提前了,继续阻塞等待之前的deadline可能导致新的deadline到达而未进行回调,产生错误.</p>
@@ -361,39 +361,39 @@
 <pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">/*util/qemu-timer.c*/</span>
 
 bool <span class="token function">timerlist_run_timers</span><span class="token punctuation">(</span>QEMUTimerList <span class="token operator">*</span>timer_list<span class="token punctuation">)</span>
-<span class="token punctuation">{</span>
+<span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
     QEMUTimer <span class="token operator">*</span>ts<span class="token punctuation">;</span>
     int64_t current_time<span class="token punctuation">;</span>
     bool progress <span class="token operator">=</span> false<span class="token punctuation">;</span>
     QEMUTimerCB <span class="token operator">*</span>cb<span class="token punctuation">;</span>
     <span class="token keyword">void</span> <span class="token operator">*</span>opaque<span class="token punctuation">;</span>
 
-    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">qatomic_read</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>active_timers<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">qatomic_read</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-&gt;</span>active_timers<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         <span class="token keyword">return</span> false<span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 
-    <span class="token function">qemu_event_reset</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>timers_done_ev<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>timer_list<span class="token operator">-></span>clock<span class="token operator">-></span>enabled<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token function">qemu_event_reset</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-&gt;</span>timers_done_ev<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>timer_list<span class="token operator">-&gt;</span>clock<span class="token operator">-&gt;</span>enabled<span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
         <span class="token keyword">goto</span> out<span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 
-    <span class="token keyword">switch</span> <span class="token punctuation">(</span>timer_list<span class="token operator">-></span>clock<span class="token operator">-></span>type<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">switch</span> <span class="token punctuation">(</span>timer_list<span class="token operator">-&gt;</span>clock<span class="token operator">-&gt;</span>type<span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
     <span class="token keyword">case</span> QEMU_CLOCK_REALTIME<span class="token punctuation">:</span>
         <span class="token keyword">break</span><span class="token punctuation">;</span>
     <span class="token keyword">default</span><span class="token punctuation">:</span>
     <span class="token keyword">case</span> QEMU_CLOCK_VIRTUAL<span class="token punctuation">:</span>
         <span class="token keyword">break</span><span class="token punctuation">;</span>
     <span class="token keyword">case</span> QEMU_CLOCK_HOST<span class="token punctuation">:</span>
-        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">replay_checkpoint</span><span class="token punctuation">(</span>CHECKPOINT_CLOCK_HOST<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">replay_checkpoint</span><span class="token punctuation">(</span>CHECKPOINT_CLOCK_HOST<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
             <span class="token keyword">goto</span> out<span class="token punctuation">;</span>
-        <span class="token punctuation">}</span>
+        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
         <span class="token keyword">break</span><span class="token punctuation">;</span>
     <span class="token keyword">case</span> QEMU_CLOCK_VIRTUAL_RT<span class="token punctuation">:</span>
-        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">replay_checkpoint</span><span class="token punctuation">(</span>CHECKPOINT_CLOCK_VIRTUAL_RT<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">replay_checkpoint</span><span class="token punctuation">(</span>CHECKPOINT_CLOCK_VIRTUAL_RT<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
             <span class="token keyword">goto</span> out<span class="token punctuation">;</span>
-        <span class="token punctuation">}</span>
+        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
         <span class="token keyword">break</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 
     <span class="token comment" spellcheck="true">/*
      * Extract expired timers from active timers list and process them.
@@ -405,47 +405,47 @@ bool <span class="token function">timerlist_run_timers</span><span class="token 
      * the checkpoint can be issued at a time until no timers are left and we are
      * done".
      */</span>
-    current_time <span class="token operator">=</span> <span class="token function">qemu_clock_get_ns</span><span class="token punctuation">(</span>timer_list<span class="token operator">-></span>clock<span class="token operator">-></span>type<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token function">qemu_mutex_lock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>ts <span class="token operator">=</span> timer_list<span class="token operator">-></span>active_timers<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">timer_expired_ns</span><span class="token punctuation">(</span>ts<span class="token punctuation">,</span> current_time<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    current_time <span class="token operator">=</span> <span class="token function">qemu_clock_get_ns</span><span class="token punctuation">(</span>timer_list<span class="token operator">-&gt;</span>clock<span class="token operator">-&gt;</span>type<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">qemu_mutex_lock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-&gt;</span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>ts <span class="token operator">=</span> timer_list<span class="token operator">-&gt;</span>active_timers<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">timer_expired_ns</span><span class="token punctuation">(</span>ts<span class="token punctuation">,</span> current_time<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
             <span class="token comment" spellcheck="true">/* No expired timers left.  The checkpoint can be skipped
              * if no timers fired or they were all external.
              */</span>
             <span class="token keyword">break</span><span class="token punctuation">;</span>
-        <span class="token punctuation">}</span>
+        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
         <span class="token comment" spellcheck="true">/* Checkpoint for virtual clock is redundant in cases where
          * it's being triggered with only non-EXTERNAL timers, because
          * these timers don't change guest state directly.
          */</span>
         <span class="token keyword">if</span> <span class="token punctuation">(</span>replay_mode <span class="token operator">!=</span> REPLAY_MODE_NONE
-            <span class="token operator">&amp;&amp;</span> timer_list<span class="token operator">-></span>clock<span class="token operator">-></span>type <span class="token operator">==</span> QEMU_CLOCK_VIRTUAL
-            <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span><span class="token punctuation">(</span>ts<span class="token operator">-></span>attributes <span class="token operator">&amp;</span> QEMU_TIMER_ATTR_EXTERNAL<span class="token punctuation">)</span>
-            <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span><span class="token function">replay_checkpoint</span><span class="token punctuation">(</span>CHECKPOINT_CLOCK_VIRTUAL<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-            <span class="token function">qemu_mutex_unlock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token operator">&amp;&amp;</span> timer_list<span class="token operator">-&gt;</span>clock<span class="token operator">-&gt;</span>type <span class="token operator">==</span> QEMU_CLOCK_VIRTUAL
+            <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span><span class="token punctuation">(</span>ts<span class="token operator">-&gt;</span>attributes <span class="token operator">&amp;</span> QEMU_TIMER_ATTR_EXTERNAL<span class="token punctuation">)</span>
+            <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span><span class="token function">replay_checkpoint</span><span class="token punctuation">(</span>CHECKPOINT_CLOCK_VIRTUAL<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>#<span class="token number">123</span><span class="token punctuation">;</span>
+            <span class="token function">qemu_mutex_unlock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-&gt;</span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
             <span class="token keyword">goto</span> out<span class="token punctuation">;</span>
-        <span class="token punctuation">}</span>
+        <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 
         <span class="token comment" spellcheck="true">/* remove timer from the list before calling the callback */</span>
-        timer_list<span class="token operator">-></span>active_timers <span class="token operator">=</span> ts<span class="token operator">-></span>next<span class="token punctuation">;</span>
-        ts<span class="token operator">-></span>next <span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span>
-        ts<span class="token operator">-></span>expire_time <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
-        cb <span class="token operator">=</span> ts<span class="token operator">-></span>cb<span class="token punctuation">;</span>
-        opaque <span class="token operator">=</span> ts<span class="token operator">-></span>opaque<span class="token punctuation">;</span>
+        timer_list<span class="token operator">-&gt;</span>active_timers <span class="token operator">=</span> ts<span class="token operator">-&gt;</span>next<span class="token punctuation">;</span>
+        ts<span class="token operator">-&gt;</span>next <span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span>
+        ts<span class="token operator">-&gt;</span>expire_time <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+        cb <span class="token operator">=</span> ts<span class="token operator">-&gt;</span>cb<span class="token punctuation">;</span>
+        opaque <span class="token operator">=</span> ts<span class="token operator">-&gt;</span>opaque<span class="token punctuation">;</span>
 
         <span class="token comment" spellcheck="true">/* run the callback (the timer list can be modified) */</span>
-        <span class="token function">qemu_mutex_unlock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">qemu_mutex_unlock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-&gt;</span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token function">cb</span><span class="token punctuation">(</span>opaque<span class="token punctuation">)</span><span class="token punctuation">;</span>
-        <span class="token function">qemu_mutex_lock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">qemu_mutex_lock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-&gt;</span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
         progress <span class="token operator">=</span> true<span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
-    <span class="token function">qemu_mutex_unlock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
+    <span class="token function">qemu_mutex_unlock</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-&gt;</span>active_timers_lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 out<span class="token punctuation">:</span>
-    <span class="token function">qemu_event_set</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-></span>timers_done_ev<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">qemu_event_set</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>timer_list<span class="token operator">-&gt;</span>timers_done_ev<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">return</span> progress<span class="token punctuation">;</span>
-<span class="token punctuation">}</span>
+<span class="token operator">&amp;</span>#<span class="token number">125</span><span class="token punctuation">;</span>
 </code></pre>
 <h2 id="两个有趣的东西"><a href="#两个有趣的东西" class="headerlink" title="两个有趣的东西"></a>两个有趣的东西</h2><pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">/*include/sysemu/cpu-timers.h*/</span>
 
@@ -475,17 +475,17 @@ out<span class="token punctuation">:</span>
  * within the scope and release the lock.  Break and continue statements leave
  * the scope early and release the lock.
  *
- *   WITH_QEMU_LOCK_GUARD(&amp;mutex) {
+ *   WITH_QEMU_LOCK_GUARD(&amp;mutex) &amp;#123;
  *       ...
- *       if (error) {
+ *       if (error) &amp;#123;
  *           return; &lt;-- mutex is automatically unlocked
- *       }
+ *       &amp;#125;
  *
- *       if (early_exit) {
+ *       if (early_exit) &amp;#123;
  *           break;  &lt;-- leave this scope early
- *       }
+ *       &amp;#125;
  *       ...
- *   }
+ *   &amp;#125;
  */</span>
 <span class="token macro property">#<span class="token directive keyword">define</span> WITH_QEMU_LOCK_GUARD(x) \
 </span></code></pre>
