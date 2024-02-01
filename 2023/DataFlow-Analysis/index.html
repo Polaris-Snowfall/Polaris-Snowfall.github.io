@@ -42,9 +42,9 @@
         .swal2-styled.swal2-confirm {
           font-size: 1.6rem;
         }
-      </style>
+      </style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
     
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
 <link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
   </html>
 </html>
@@ -152,7 +152,7 @@
 <p>此时预期执行表达式-可用表达式得到的便是最有效的放置点.在被预期执行但不可用的所有点放置该表达式的计算,最小化了放置的数量,且使得刚刚通过假设所有预期执行点放置计算之后的可用表达式的分析结果成立. 这是放置的有效性. 最有效的放置点集合为Earliest.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161215797.png"></p>
 <p>其实到这里已经完成了从部分冗余表达式到完全冗余表达式的转换,可以完成消除,但还不够完美.因为在Earliest的点放置表达式的计算,意味着表达式的生命周期最长,需要占据寄存器的时间就越长,所以接下来应该尽可能将放置推迟.</p>
 <p>最多能推迟到什么地方呢?答案很明显,推迟到表达式的值被使用之前.(黑色部分代表可后延)<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161231989.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161229468.png"></p>
-<p>最后求Latest集合的公式: 前半部分是可放置的点,后半部分是边界条件,And之后得到最晚的可放置的点.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161255730.png"><br>(也许第一幅图里的Postponable少了给.inB<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161252370.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161300387.png"></p>
+<p>最后求Latest集合的公式: 前半部分是可放置的点,后半部分是边界条件,And之后得到最晚的可放置的点.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161255730.png"><br>(也许第一幅图里的Postponable少了个.inB<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161252370.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161300387.png"></p>
 <p>最终结果:<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161305583.png"></p>
 <p>涉及到的数据流分析:<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161318935.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161318683.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161318742.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161319712.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312161319787.png"></p>
  
@@ -268,7 +268,7 @@
     <ul>
       <li>
         Copyrights &copy;
-        2022-2023
+        2022-2024
         <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
       </li>
     </ul>

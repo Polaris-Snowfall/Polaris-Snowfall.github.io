@@ -42,9 +42,9 @@
         .swal2-styled.swal2-confirm {
           font-size: 1.6rem;
         }
-      </style>
+      </style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
     
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
 <link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
   </html>
 </html>
@@ -156,7 +156,7 @@
 <p>recver阻塞直到sender将其唤醒.检测消息来源是否为期望的sender的工作由用户态调用者完成.</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"> <span class="type">int</span></span><br><span class="line"><span class="title function_">sys_ipc_try_send</span><span class="params">(<span class="type">envid_t</span> envid, <span class="type">uint32_t</span> value, <span class="type">void</span> *srcva, <span class="type">unsigned</span> perm)</span></span><br><span class="line"><span class="type">int</span></span><br><span class="line"><span class="title function_">sys_ipc_recv</span><span class="params">(<span class="type">void</span> *dstva)</span></span><br></pre></td></tr></tbody></table></figure>
 
-<h3 id="Threads-线程-待实现"><a href="#Threads-线程-待实现" class="headerlink" title="Threads 线程(待实现)"></a>Threads 线程(待实现)</h3><h2 id="File-systems"><a href="#File-systems" class="headerlink" title="File systems"></a>File systems</h2><h3 id="On-Disk-File-System-Structure"><a href="#On-Disk-File-System-Structure" class="headerlink" title="On-Disk File System Structure"></a>On-Disk File System Structure</h3><h4 id="Sectors-and-Blocks"><a href="#Sectors-and-Blocks" class="headerlink" title="Sectors and Blocks"></a>Sectors and Blocks</h4><p>磁盘每个扇区大小为512字节,JOS使用的块大小为512字节.</p>
+<h3 id="Threads-线程-待实现"><a href="#Threads-线程-待实现" class="headerlink" title="Threads 线程(待实现)"></a>Threads 线程(待实现)</h3><h2 id="File-systems"><a href="#File-systems" class="headerlink" title="File systems"></a>File systems</h2><h3 id="On-Disk-File-System-Structure"><a href="#On-Disk-File-System-Structure" class="headerlink" title="On-Disk File System Structure"></a>On-Disk File System Structure</h3><h4 id="Sectors-and-Blocks"><a href="#Sectors-and-Blocks" class="headerlink" title="Sectors and Blocks"></a>Sectors and Blocks</h4><p>磁盘每个扇区大小为512字节,HQOS使用的块大小为512字节.</p>
 <h4 id="Superblocks"><a href="#Superblocks" class="headerlink" title="Superblocks"></a>Superblocks</h4><p>HQOS仅有一个超级块,位于磁盘1(第二个磁盘)的块1(第二个扇区).</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> FS_MAGIC	0x53465148	<span class="comment">// related vaguely to 'HQFS'</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Super</span> {</span></span><br><span class="line">	<span class="type">uint32_t</span> s_magic;		<span class="comment">// Magic number: FS_MAGIC</span></span><br><span class="line">	<span class="type">uint32_t</span> s_nblocks;		<span class="comment">// Total number of blocks on disk</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">File</span> <span class="title">s_root</span>;</span>		<span class="comment">// Root directory node</span></span><br><span class="line">};</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
 
@@ -299,7 +299,7 @@
     <ul>
       <li>
         Copyrights &copy;
-        2022-2023
+        2022-2024
         <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
       </li>
     </ul>
