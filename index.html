@@ -256,8 +256,7 @@
        
   <h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>内核版本5.11(没有GFP_KERNEL_ACCOUNT的隔离),smap,smep,kpti,kaslr.<br>给了一次1024字节对象的double free,但未提供对该对象读写能力.</p>
 <p>用户态pwn题对double free的处理一般是利用堆管理器,劫持freelist达成任意地址分配.且在此之前一般需要先获得一些地址信息.</p>
-<pre><code>在这里,我们需要通过一次对不具有读写能力的对象的double free完成信息泄露以及控制流劫持.这种效果在内核中反而容易办到,因为内核中有大量可以利用的结构体.
-</code></pre> 
+<p>在这里,我们需要通过一次对不具有读写能力的对象的double free完成信息泄露以及控制流劫持.这种效果在内核中反而容易办到,因为内核中有大量可以利用的结构体.</p> 
       <a class="article-more-link" href="/2024/d3ctf-2022%20d3kheap%E4%B8%8ECVE-2021-22555/"
         >阅读更多...</a
       >
