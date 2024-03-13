@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>AFL 源码分析 |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AFL Analysis"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  AFL 源码分析
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/AFL%20Analysis/" class="article-date">
+  <time datetime="2024-03-06T16:00:00.000Z" itemprop="datePublished">2024-03-07</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%A8%A1%E7%B3%8A%E6%B5%8B%E8%AF%95/">模糊测试</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">8.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">33 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <blockquote>
+<p>只要吃透了AFL的源码，就能掌握绝⼤部分fuzzer的要领</p>
+</blockquote>
+<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>源码分析之前需先对AFL有个基本的认识,可以看看这篇文章: <a target="_blank" rel="noopener" href="https://xidoo.top/2022/01/afl-white-book">https://xidoo.top/2022/01/afl-white-book</a><br>本文按照时序对afl-fuzz.c进行分析.相应函数在第一次调用点进行分析.<br>参考文章:<a target="_blank" rel="noopener" href="https://eternalsakura13.com/2020/08/23/afl/">https://eternalsakura13.com/2020/08/23/afl/</a></p>
+<span id="more"></span>
+<h1 id="调试准备"><a href="#调试准备" class="headerlink" title="调试准备"></a>调试准备</h1><p>使用的是Sakura师傅提供的Clion调试环境.<br>程序调试到fork时会挂掉,提前设置set follow-fork-mode parent来继续跟踪Fuzzer(虽然但是,这个选项不应该是默认行为么…).<br>可以通过这样的方式加载特定项目的gdb脚本</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">set auto-load local-gdbinit on</span><br><span class="line">add-auto-load-safe-path [full path to the project root]/.gdbinit</span><br></pre></td></tr></tbody></table></figure>
+
+<h1 id="afl-fuzz-c"><a href="#afl-fuzz-c" class="headerlink" title="afl-fuzz.c"></a>afl-fuzz.c</h1><h2 id="初始配置"><a href="#初始配置" class="headerlink" title="初始配置"></a>初始配置</h2><h3 id="随机数种子"><a href="#随机数种子" class="headerlink" title="随机数种子"></a>随机数种子</h3><p>首先调用gettimeofday获取当前时间,根据当前时间异或上当前进程pid后传入srandom作为随机数种子.</p>
+<h3 id="处理参数"><a href="#处理参数" class="headerlink" title="处理参数"></a>处理参数</h3><p>接下来处理传给afl-fuzz的参数,设定相关flag及配置变量,检查参数合法性.</p>
+<h3 id="setup-signal-handlers"><a href="#setup-signal-handlers" class="headerlink" title="setup_signal_handlers"></a>setup_signal_handlers</h3><p>设置信号处理函数.</p>
+<ul>
+<li>SIGHUP,SIGINT,SIGTERM: 设置stop_soon=1,向child和fork_server发送SIGKILL.</li>
+<li>SIGALRM: 如设置child_time_out = 1,向child发送SIGKILL,如果child_pid == -1,转而向fork_server发送SIGKILL.</li>
+<li>SIGWINCH: 设置clear_screen=1.</li>
+<li>SIGUSR1: 设置skip_requested=1(使用SIGUSR1作为skip entry的信号)</li>
+<li>SIGTSTP,SIGPIPE(stop signal from tty/write on a pipe with no one to read it): 使用SIG_IGN忽视.</li>
+</ul>
+<h4 id="check-asan-opts"><a href="#check-asan-opts" class="headerlink" title="check_asan_opts"></a>check_asan_opts</h4><p>读取环境变量中的ASAN_OPTIONS及MSAN_OPTIONS选项,进行检查.</p>
+<h3 id="fix-up-sync"><a href="#fix-up-sync" class="headerlink" title="fix_up_sync"></a>fix_up_sync</h3><p>修复使用-S,-M选项时(distributed mode)的out_dir和sync_dir.<br>sync_dir = out_dir<br>outdir = outdir/sync_id</p>
+<h3 id="读取环境变量配置"><a href="#读取环境变量配置" class="headerlink" title="读取环境变量配置"></a>读取环境变量配置</h3><p>读取一些环境变量的配置.其中AFL_PRELOAD及AFL_LD_PRELOAD可以指定共享库和加载器的路径</p>
+<h3 id="save-cmdline"><a href="#save-cmdline" class="headerlink" title="save_cmdline"></a>save_cmdline</h3><p>将command line拷贝一份到orig_cmdline,参数间由空格分隔.</p>
+<h3 id="fix-up-banner"><a href="#fix-up-banner" class="headerlink" title="fix_up_banner"></a>fix_up_banner</h3><p>Trim and possibly create a banner for the run.</p>
+<h3 id="check-if-tty"><a href="#check-if-tty" class="headerlink" title="check_if_tty"></a>check_if_tty</h3><p>检查是否需要UI及是否正在使用TTY</p>
+<h3 id="get-core-count"><a href="#get-core-count" class="headerlink" title="get_core_count"></a>get_core_count</h3><p>读取_SC_NPROCESSORS_ONLN配置获取CPU核数.</p>
+<h3 id="bind-to-free-cpu"><a href="#bind-to-free-cpu" class="headerlink" title="bind_to_free_cpu"></a>bind_to_free_cpu</h3><p>调用sched_setaffinity将当前进程绑定到(指定的)空闲CPU</p>
+<h3 id="check-crash-handling"><a href="#check-crash-handling" class="headerlink" title="check_crash_handling"></a>check_crash_handling</h3><p>检查/proc/sys/kernel/core_pattern,确保崩溃产生的核心转储不会发送给某个外部工具,避免fuzzer因延迟过长而将崩溃认为是超时.</p>
+<h3 id="check-cpu-governor"><a href="#check-cpu-governor" class="headerlink" title="check_cpu_governor"></a>check_cpu_governor</h3><p>检测CPU的调度策略</p>
+<h3 id="setup-post"><a href="#setup-post" class="headerlink" title="setup_post"></a>setup_post</h3><p>dlopen打开环境变量AFL_POST_LIBRARY指定的库,设置post_handler为库中的alf_postprocess函数</p>
+<h3 id="setup-shm"><a href="#setup-shm" class="headerlink" title="setup_shm"></a>setup_shm</h3><p>配置共享内存和virgin_bits(Regions yet untouched by fuzzing)</p>
+<h3 id="init-count-class16"><a href="#init-count-class16" class="headerlink" title="init_count_class16"></a>init_count_class16</h3><p>初始化count_class_lookup16数组,与count_class_lookup8作用相同.将元组(边)实际命中次数映射到某个桶中.<br>出于效率原因一次读取16bit.</p>
+<blockquote>
+<p>AFL 在检测新元组出现的同时，也粗略地考虑了元组命中次数，它们被分为了如下几个桶 bucket ：<br>    1, 2, 3, 4-7, 8-15, 16-31, 32-127, 128+<br>元组数在每个桶内的变化是可以忽略的；从一个桶到另一个桶的改变将会被认为是程序控制流中的一次有趣的改变，也会指导下一阶段的进化过程 evolutionary process .</p>
+</blockquote>
+<p>不是很好理解,与classify_count结合起来理解.写法挺有意思的,后面has_new_bits还会提到</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Destructively classify execution counts in a trace. This is used as a</span></span><br><span class="line"><span class="comment">   preprocessing step for any newly acquired traces. Called on every exec,</span></span><br><span class="line"><span class="comment">   must be fast. */</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> u8 count_class_lookup8[<span class="number">256</span>] = {</span><br><span class="line"></span><br><span class="line">    [<span class="number">0</span>] = <span class="number">0</span>,</span><br><span class="line">    [<span class="number">1</span>] = <span class="number">1</span>,</span><br><span class="line">    [<span class="number">2</span>] = <span class="number">2</span>,</span><br><span class="line">    [<span class="number">3</span>] = <span class="number">4</span>,</span><br><span class="line">    [<span class="number">4</span> ... <span class="number">7</span>] = <span class="number">8</span>,</span><br><span class="line">    [<span class="number">8</span> ... <span class="number">15</span>] = <span class="number">16</span>,</span><br><span class="line">    [<span class="number">16</span> ... <span class="number">31</span>] = <span class="number">32</span>,</span><br><span class="line">    [<span class="number">32</span> ... <span class="number">127</span>] = <span class="number">64</span>,</span><br><span class="line">    [<span class="number">128</span> ... <span class="number">255</span>] = <span class="number">128</span></span><br><span class="line"></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> u16 count_class_lookup16[<span class="number">65536</span>];</span><br><span class="line"></span><br><span class="line">EXP_ST <span class="type">void</span> <span class="title function_">init_count_class16</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line"></span><br><span class="line">  u32 b1, b2;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span> (b1 = <span class="number">0</span>; b1 &lt; <span class="number">256</span>; b1++)</span><br><span class="line">    <span class="keyword">for</span> (b2 = <span class="number">0</span>; b2 &lt; <span class="number">256</span>; b2++)</span><br><span class="line">      count_class_lookup16[(b1 &lt;&lt; <span class="number">8</span>) + b2] =</span><br><span class="line">          (count_class_lookup8[b1] &lt;&lt; <span class="number">8</span>) |</span><br><span class="line">          count_class_lookup8[b2];</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> WORD_SIZE_64</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">classify_counts</span><span class="params">(u64 *mem)</span></span><br><span class="line">{</span><br><span class="line"></span><br><span class="line">  u32 i = MAP_SIZE &gt;&gt; <span class="number">3</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">while</span> (i--)</span><br><span class="line">  {</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Optimize for sparse bitmaps. */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (unlikely(*mem))</span><br><span class="line">    {</span><br><span class="line"></span><br><span class="line">      u16 *mem16 = (u16 *)mem;</span><br><span class="line"></span><br><span class="line">      mem16[<span class="number">0</span>] = count_class_lookup16[mem16[<span class="number">0</span>]];</span><br><span class="line">      mem16[<span class="number">1</span>] = count_class_lookup16[mem16[<span class="number">1</span>]];</span><br><span class="line">      mem16[<span class="number">2</span>] = count_class_lookup16[mem16[<span class="number">2</span>]];</span><br><span class="line">      mem16[<span class="number">3</span>] = count_class_lookup16[mem16[<span class="number">3</span>]];</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    mem++;</span><br><span class="line">  }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">classify_counts</span><span class="params">(u32 *mem)</span></span><br><span class="line">{</span><br><span class="line"></span><br><span class="line">  u32 i = MAP_SIZE &gt;&gt; <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">while</span> (i--)</span><br><span class="line">  {</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Optimize for sparse bitmaps. */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (unlikely(*mem))</span><br><span class="line">    {</span><br><span class="line"></span><br><span class="line">      u16 *mem16 = (u16 *)mem;</span><br><span class="line"></span><br><span class="line">      mem16[<span class="number">0</span>] = count_class_lookup16[mem16[<span class="number">0</span>]];</span><br><span class="line">      mem16[<span class="number">1</span>] = count_class_lookup16[mem16[<span class="number">1</span>]];</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    mem++;</span><br><span class="line">  }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* ^WORD_SIZE_64 */</span></span></span><br></pre></td></tr></tbody></table></figure>
+<h3 id="setup-dirs-fds"><a href="#setup-dirs-fds" class="headerlink" title="setup_dirs_fds"></a>setup_dirs_fds</h3><p>准备output文件夹及其子目录,和文件描述符.</p>
+<h3 id="read-testcases"><a href="#read-testcases" class="headerlink" title="read_testcases"></a>read_testcases</h3><p>从输入目录中读取所有的测试样例,加入队列用于后续测试.<br>如果存在in_dir/queue目录,将in_dir设置为该目录.扫描其并根据文件名进行排序.若设置了shuffle_queue将文件名序列打乱(shuffle).去掉不合法的文件及已经加入到deterministic_done目录的文件(resume)后调用add_to_queue将合法文件加入到队列中.</p>
+<p>设置queued_at_start=queued_paths.(queue中元素个数)</p>
+<h3 id="load-auto"><a href="#load-auto" class="headerlink" title="load_auto"></a>load_auto</h3><p>加载自动生成的词典.</p>
+<h3 id="pivot-inputs"><a href="#pivot-inputs" class="headerlink" title="pivot_inputs"></a>pivot_inputs</h3><p>在output目录中为输入测试样例创建硬链接(或拷贝).</p>
+<h3 id="find-timeout"><a href="#find-timeout" class="headerlink" title="find_timeout"></a>find_timeout</h3><p>如果没有用-t指定超时时间且正在恢复会话,则尝试从fuzzer_stats中读取exec_timeout作为超时时间.</p>
+<h3 id="detect-file-args"><a href="#detect-file-args" class="headerlink" title="detect_file_args"></a>detect_file_args</h3><p>如果参数中有@@ 且没有指定outfile,则将outfile设置为out_dir/.cur_input</p>
+<h3 id="setup-stdio-file"><a href="#setup-stdio-file" class="headerlink" title="setup_stdio_file"></a>setup_stdio_file</h3><p>删除out_dir/.cur_input再重新创建,保存文件描述符到out_fd.</p>
+<h3 id="check-binary"><a href="#check-binary" class="headerlink" title="check_binary"></a>check_binary</h3><p>检查要fuzz的二进制程序是否存在且不是shell脚本,同时检查ELF头是否合法以及AFL的插桩证据.并通过程序中的插桩信息配置一些模式,如uses_asan.</p>
+<h3 id="获取当前时间作为启动时间"><a href="#获取当前时间作为启动时间" class="headerlink" title="获取当前时间作为启动时间"></a>获取当前时间作为启动时间</h3><h3 id="设置fuzz对象的参数"><a href="#设置fuzz对象的参数" class="headerlink" title="设置fuzz对象的参数"></a>设置fuzz对象的参数</h3><p>从argv中获取传给fuzz对象的参数,若为qemu_mode将重构参数.</p>
+<h3 id="perform-dry-run"><a href="#perform-dry-run" class="headerlink" title="perform_dry_run"></a>perform_dry_run</h3><p>遍历初始输入的测试样例进行校准,确保应用程序预期工作.</p>
+<h4 id="calibrate-case"><a href="#calibrate-case" class="headerlink" title="calibrate_case"></a>calibrate_case</h4><p>校准一个测试样例</p>
+<h5 id="init-forkserver"><a href="#init-forkserver" class="headerlink" title="init_forkserver"></a>init_forkserver</h5><p>其中会首先调用init_forkserver启动forkserver.</p>
+<h6 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h6><p>关于forkserver的想法及样例代码在<a target="_blank" rel="noopener" href="https://lcamtuf.blogspot.com/2014/10/fuzzing-binaries-without-execve.html%E4%B8%AD%E8%A7%A3%E9%87%8A">https://lcamtuf.blogspot.com/2014/10/fuzzing-binaries-without-execve.html中解释</a>.<br>总结一下:<br>在传统的fuzzer中,fuuzzer自身不断fork+execve到fuzz目标程序(target),target再读取输入并处理,而Fuzzer通过waitpid获取处理结果.这种情况下,Fuzzer会花费大量时间waitpid来等待进程结束,等待链接器和所有的库初始化例程完成工作.</p>
+<p>作者提出的解决方案有:</p>
+<ol>
+<li>通过自定义ELF加载器在Fuzzer内部执行target程序,通过mprotect保护Fuzzer本身的内存空间.</li>
+<li>在单个子进程中执行并保存快照,稍后通过/proc/pid/mem恢复到快照.<br>但这两个方案都需要处理复杂的信号以及文件描述符.</li>
+</ol>
+<p>AFL采用的方法是将一段代码插入到target中,在其在加载并完成库的初始化后执行,该段代码诗其停在某个指定处(main),等待fuzzer的信号,接收到信号后fork出子进程,子进程作为target进行处理.而父进程即为forkserver,接收fuzzer的命令并将子进程执行结果发送给fuzzer.由于Copy-On-Write的机制,这将十分高效.</p>
+<h6 id="forkserver"><a href="#forkserver" class="headerlink" title="forkserver"></a>forkserver</h6><p>当然,从Fuzzer创建forkserver的过程还是要经过一次fork+execve的过程.forkserver创建后,其的标准输出及标准错误均被dup到/dev/null.若此前设置了out_file,将标准输入dup到/dev/null,否则dup到out_fd.关闭Fuzzer自身的文件描述符.<br>设置ASAN和MSAN的环境变量,若没有指定LD_BIND_LAZY,设置LD_BIND_NOW=1,提前完成所有的加载绑定工作.<br>最后通过execv加载插桩后的target程序,其将会成为真正的forkserver.</p>
+<h6 id="Fuzzer"><a href="#Fuzzer" class="headerlink" title="Fuzzer"></a>Fuzzer</h6><p>关闭不再需要的文件描述符.从status管道中读取4个字节,如果成功说明forkserver开始工作.否则进行错误处理.</p>
+<h5 id="保存并更新位图"><a href="#保存并更新位图" class="headerlink" title="保存并更新位图"></a>保存并更新位图</h5><ul>
+<li>如果该测试样例不是第一次校准<ul>
+<li>将当前trace_bits拷贝到first_trace.</li>
+<li>调用has_new_bits更新virgin_bits,hnb及new_bits</li>
+</ul>
+</li>
+</ul>
+<h6 id="has-new-bits-virgin-bits"><a href="#has-new-bits-virgin-bits" class="headerlink" title="has_new_bits(virgin_bits)"></a>has_new_bits(virgin_bits)</h6><p>笔者认为分析该函数的实现有利于理解trace_bits及之前提到的所谓”将元组(边)实际命中次数映射到某个桶中”.<br>该函数的目的是检测trace_bits中有新的bit被置位(新的bit被置位有两种情况,一是有新的路径(元组)产生,二是某元组的命中次数进入到下一个桶中),并更新virgin_bits位图.<br>由于该函数会频繁调用,所以需要提高其的运行效率.<br>详见下方注释.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Check if the current execution path brings anything new to the table.</span></span><br><span class="line"><span class="comment">   Update virgin bits to reflect the finds. Returns 1 if the only change is</span></span><br><span class="line"><span class="comment">   the hit-count for a particular tuple; 2 if there are new tuples seen. </span></span><br><span class="line"><span class="comment">   Updates the map, so subsequent calls will always return 0.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">   This function is called after every exec() on a fairly large buffer, so</span></span><br><span class="line"><span class="comment">   it needs to be fast. We do this in 32-bit and 64-bit flavors. */</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> u8 <span class="title function_">has_new_bits</span><span class="params">(u8 *virgin_map)</span></span><br><span class="line">{</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> WORD_SIZE_64</span></span><br><span class="line"></span><br><span class="line">  u64 *current = (u64 *)trace_bits;</span><br><span class="line">  u64 *virgin = (u64 *)virgin_map;</span><br><span class="line"></span><br><span class="line">  u32 i = (MAP_SIZE &gt;&gt; <span class="number">3</span>); <span class="comment">//以8字节(WORD_SIZE)为一个大的检测单位.</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"></span><br><span class="line">  u32 *current = (u32 *)trace_bits;</span><br><span class="line">  u32 *virgin = (u32 *)virgin_map;</span><br><span class="line"></span><br><span class="line">  u32 i = (MAP_SIZE &gt;&gt; <span class="number">2</span>);</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* ^WORD_SIZE_64 */</span></span></span><br><span class="line"></span><br><span class="line">  u8 ret = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">while</span> (i--) <span class="comment">//以WORD_SIZE遍历整个位图</span></span><br><span class="line">  {</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Optimize for (*current &amp; *virgin) == 0 - i.e., no bits in current bitmap</span></span><br><span class="line"><span class="comment">       that have not been already cleared from the virgin map - since this will</span></span><br><span class="line"><span class="comment">       almost always be the case. */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (unlikely(*current) &amp;&amp; unlikely(*current &amp; *virgin))</span><br><span class="line">        <span class="comment">/* (*current &amp; *virgin) == 0的优化版本</span></span><br><span class="line"><span class="comment">        检测该字长的trace_bits中是否有virgin_bits中仍置1的比特位.</span></span><br><span class="line"><span class="comment">        可以把virgin_bits理解为用来check trace_bits的掩码.</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">    {</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (likely(ret &lt; <span class="number">2</span>))</span><br><span class="line">      {</span><br><span class="line"></span><br><span class="line">        u8 *cur = (u8 *)current;</span><br><span class="line">        u8 *vir = (u8 *)virgin;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* Looks like we have not found any new bytes yet; see if any non-zero</span></span><br><span class="line"><span class="comment">           bytes in current[] are pristine in virgin[]. */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> WORD_SIZE_64</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> ((cur[<span class="number">0</span>] &amp;&amp; vir[<span class="number">0</span>] == <span class="number">0xff</span>) || (cur[<span class="number">1</span>] &amp;&amp; vir[<span class="number">1</span>] == <span class="number">0xff</span>) ||</span><br><span class="line">            (cur[<span class="number">2</span>] &amp;&amp; vir[<span class="number">2</span>] == <span class="number">0xff</span>) || (cur[<span class="number">3</span>] &amp;&amp; vir[<span class="number">3</span>] == <span class="number">0xff</span>) ||</span><br><span class="line">            (cur[<span class="number">4</span>] &amp;&amp; vir[<span class="number">4</span>] == <span class="number">0xff</span>) || (cur[<span class="number">5</span>] &amp;&amp; vir[<span class="number">5</span>] == <span class="number">0xff</span>) ||</span><br><span class="line">            (cur[<span class="number">6</span>] &amp;&amp; vir[<span class="number">6</span>] == <span class="number">0xff</span>) || (cur[<span class="number">7</span>] &amp;&amp; vir[<span class="number">7</span>] == <span class="number">0xff</span>))</span><br><span class="line">        <span class="comment">/* 注意一下运算符优先级.依次检查单个字节中 </span></span><br><span class="line"><span class="comment">        1.trace_bits是否至少有一个比特位置位(当前该路径是否被发现)</span></span><br><span class="line"><span class="comment">        2.virgin_bits是否每个比特仍置位(该路径之前未被发现)</span></span><br><span class="line"><span class="comment">        满足上述两个条件则说明有新的路径被发现,返回2</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">          ret = <span class="number">2</span>;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        <span class="comment">//否则说明是该WORDSIZE代表的路径中,命中次数进入了下一个桶.</span></span><br><span class="line">          ret = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> ((cur[<span class="number">0</span>] &amp;&amp; vir[<span class="number">0</span>] == <span class="number">0xff</span>) || (cur[<span class="number">1</span>] &amp;&amp; vir[<span class="number">1</span>] == <span class="number">0xff</span>) ||</span><br><span class="line">            (cur[<span class="number">2</span>] &amp;&amp; vir[<span class="number">2</span>] == <span class="number">0xff</span>) || (cur[<span class="number">3</span>] &amp;&amp; vir[<span class="number">3</span>] == <span class="number">0xff</span>))</span><br><span class="line">          ret = <span class="number">2</span>;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">          ret = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* ^WORD_SIZE_64 */</span></span></span><br><span class="line">      }</span><br><span class="line"></span><br><span class="line">      *virgin &amp;= ~*current; <span class="comment">//更新该WORDSIZE的virgin_bits</span></span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    current++;</span><br><span class="line">    virgin++;</span><br><span class="line">  }</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (ret &amp;&amp; virgin_map == virgin_bits)</span><br><span class="line">    bitmap_changed = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> ret;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h5 id="进入校准阶段-calibration-stage"><a href="#进入校准阶段-calibration-stage" class="headerlink" title="进入校准阶段(calibration stage)"></a>进入校准阶段(calibration stage)</h5><p>循环运行stage_max = fast_cal ? 3 : CAL_CYCLES(8)次</p>
+<h6 id="write-to-testcase"><a href="#write-to-testcase" class="headerlink" title="write_to_testcase"></a>write_to_testcase</h6><p>将本次queue_entry对应的样例内容写入out_file</p>
+<h6 id="run-target"><a href="#run-target" class="headerlink" title="run_target"></a>run_target</h6><p>执行target程序并监控.若dumb_mode=1或no_forkserver=1,使用传统的fork-exec方案进行测试.否则向forkserver发送命令并读取forkserver传回的target’s pid.等待target执行完成读取forkserver传回的status.<br>计算本次的执行时间.<br>对本次产生的新trace_bits进行classify_counts(上文中分析过).<br>返回本次测试的结果保存到fault.</p>
+<h6 id="初步分析执行结果"><a href="#初步分析执行结果" class="headerlink" title="初步分析执行结果"></a>初步分析执行结果</h6><ul>
+<li>如果fault!=crash_mode(crash_mode默认是FAULT_NONE,指定-C后是FAULT_CRASH),跳转到abort_calibration标签.</li>
+<li>如果不是dumb_mode且是该测试样例是第一次运行且运行后共享内存没有任何字节被置位(!count_bytes(trace_bits)),更新fault为FAULT_NOINST后跳转到abort_calibration.</li>
+<li>计算hash32(trace_bits, MAP_SIZE, HASH_CONST)的结果保存到cksum中,若该测试样例是第一次运行或与上次cksum不同(路径可变的queue),<ul>
+<li>调用has_new_bits分析执行结果,更新virgin_bits,hnb及new_bits</li>
+<li>如果是路径可变的queue,遍历整个位图,if (!var_bytes[i] &amp;&amp; first_trace[i] != trace_bits[i])<ul>
+<li>设置var_byte[i] = 1,更新循环次数stage_max=CAL_CYCLES_LONG(40).这将使得该样例被持续测试直到不再使trace_bits产生<code>未出现过</code>的变化.</li>
+<li>设置var_detected=1(路径可变的queue)</li>
+</ul>
+</li>
+<li>否则意味着是第一次运行,保存本次cksum到q-&gt;exec_cksum,复制trace_bits到first_trace.</li>
+</ul>
+</li>
+</ul>
+<h5 id="评估校准表现"><a href="#评估校准表现" class="headerlink" title="评估校准表现"></a>评估校准表现</h5><p>计算该样例在整个校准阶段的用时和循环次数.<br>保存一些统计信息到该queue_entry中.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">stop_us = get_cur_time_us();</span><br><span class="line"></span><br><span class="line">total_cal_us += stop_us - start_us;</span><br><span class="line">total_cal_cycles += stage_max;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* OK, let's collect some stats about the performance of this test case.</span></span><br><span class="line"><span class="comment">   This is used for fuzzing air time calculations in calculate_score(). */</span></span><br><span class="line"></span><br><span class="line">q-&gt;exec_us = (stop_us - start_us) / stage_max;</span><br><span class="line">q-&gt;bitmap_size = count_bytes(trace_bits);</span><br><span class="line">q-&gt;handicap = handicap;</span><br><span class="line">q-&gt;cal_failed = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">total_bitmap_size += q-&gt;bitmap_size;</span><br><span class="line">total_bitmap_entries++;</span><br></pre></td></tr></tbody></table></figure>
+<h6 id="update-bitmap-score"><a href="#update-bitmap-score" class="headerlink" title="update_bitmap_score"></a>update_bitmap_score</h6><p>检查是否出现了更”favorable”的路径.这是为了拥有一个最小的路径集来触发目前位图中出现的所有位,然后专注于fuzz这个集合.</p>
+<p>判断是否更favorable的fav_factor是由q-&gt;exec_us(校准时间)*q-&gt;len(样例长度)得到的.</p>
+<ul>
+<li>遍历trace_bits中存在的每一条路径,<ul>
+<li>如果有更小的fav_factor<ul>
+<li>减少以前该路径对应的评分最高queue_entry的引用.设置当前queue_entry为评分最高,并引用+1.如果该queue_entry还没有创建trace_mini,分配一个并调用minimize_bits将当前trace_bits压缩存入.压缩将丢失路径的计数信息,即一条路径从一个字节(8位)压缩到1位空间.设置score_changed = 1</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h5 id="如果该样例是第一次校准且结果是FAULT-NONE且-new-bits"><a href="#如果该样例是第一次校准且结果是FAULT-NONE且-new-bits" class="headerlink" title="如果该样例是第一次校准且结果是FAULT_NONE且!new_bits"></a>如果该样例是第一次校准且结果是FAULT_NONE且!new_bits</h5><p>设置fault = FAULT_NOBITS</p>
+<h5 id="abort-calibration"><a href="#abort-calibration" class="headerlink" title="abort_calibration"></a>abort_calibration</h5><ul>
+<li>如果校准产生了新的路径且!q-&gt;has_new_cov,设置q-&gt;has_new_cov = 1并将queued_with_cov++.</li>
+<li>如果是可变路径的样例,计算本次校准中产生变化的路径数<ul>
+<li>该样例对应var_behavior未置1<ul>
+<li>var_behavior置1,创建符号链接out_dir/queue/.state/variable_behavior/fname,queued_variable++.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>恢复到校准前的stage.(stage_name,stage_cur,stage_max)</li>
+<li>如果该样例不是第一次校准<ul>
+<li>show_stats</li>
+</ul>
+</li>
+<li>返回fault.</li>
+</ul>
+<h4 id="处理本次校准结果"><a href="#处理本次校准结果" class="headerlink" title="处理本次校准结果"></a>处理本次校准结果</h4><ul>
+<li>FAULT_NONE:<ul>
+<li>如果当前是第一个样例，则check_map_coverage，用以评估map coverage<ul>
+<li>若trace_bits中发现的路径小于100，就直接返回</li>
+<li>trace_bits的数组后半段，如果有值就直接返回。</li>
+<li>否则出警告WARNF(“Recompile binary with newer version of afl to improve coverage!”)</li>
+</ul>
+</li>
+<li>如果是crash_mode,抛出异常FATAL(“Test case ‘%s’ does NOT crash”, fn).</li>
+</ul>
+</li>
+<li>FAULT_TMOUT:<ul>
+<li>若指定了-t nn+,则设置q-&gt;cal_failed = CAL_CHANCES,cal_failures++(容忍超时并跳过该样例),否则抛出异常.</li>
+</ul>
+</li>
+<li>FAULT_CRASH:<ul>
+<li>除了崩溃探索(-C)以外,直接造成Crash的初始输入是不合规的.</li>
+<li>如果指定了-C或AFL_SKIP_CRASHES,跳过该样例.后者还会设置q-&gt;cal_failed = CAL_CHANCES,cal_failures++</li>
+<li>否则抛出异常.</li>
+</ul>
+</li>
+<li>FAULT_ERROR:<ul>
+<li>FATAL(“Unable to execute target application (‘%s’)”, argv[0]);</li>
+</ul>
+</li>
+<li>FAULT_NOINST:<ul>
+<li>FATAL(“No instrumentation detected”);</li>
+</ul>
+</li>
+<li>FAULT_NOBITS:<ul>
+<li>useless_at_start++.</li>
+<li>如果没有-B指定初始in_bitmap且没有设置AFL_SHUFFLE_QUEUE<ul>
+<li>WARNF(“No new instrumentation output, test case may be useless.”);</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="计算所有初始输入样例的校准结果"><a href="#计算所有初始输入样例的校准结果" class="headerlink" title="计算所有初始输入样例的校准结果"></a>计算所有初始输入样例的校准结果</h4><p>如果cal_failures == queued_paths抛出异常,cal_failures * 5 &gt; queued_paths抛出警告</p>
+<h3 id="cull-queue"><a href="#cull-queue" class="headerlink" title="cull_queue"></a>cull_queue</h3><p>精简队列,挑选出fav_factor高且能覆盖所有已发现路径的测试样例.<br>采用的是贪心算法,依次遍历到的每条路径都选最好的测试样例,有些路径在此前遍历中挑选出的测试样例已经能产生了,则不再遍历.</p>
+<ul>
+<li>如果是dumb_mode或没有评分改变(!score_changed)则直接返回</li>
+<li>设置score_changed = 0;queued_favored = 0;pending_favored = 0;初始化一个temp_v数组,作用和virgin_bits相似,不过每条路径只占一比特(去除计数信息).</li>
+<li>遍历所有测试样例,设置q-&gt;favored=0</li>
+<li>遍历top_rated的每个字节(每条路径已发现的评分最高样例),若该路径在temp_v中仍置位<ul>
+<li>在temp_v中去掉该样例的trace_mini中的路径.</li>
+<li>设置该样例的favored=1,queued_favored++.</li>
+<li>如果该样例还没有进行过fuzz<ul>
+<li>pending_favored++</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>遍历所有测试样例,设置q-&gt;fs_redundant=!favored,根据是否冗余创建或删除out_dir/queue/.state/redundant_edges/fname.</li>
+</ul>
+<h3 id="show-init-stats"><a href="#show-init-stats" class="headerlink" title="show_init_stats"></a>show_init_stats</h3><p>在处理输入目录的末尾显示统计信息，以及一堆警告,以及几个硬编码的常量</p>
+<h3 id="find-start-position"><a href="#find-start-position" class="headerlink" title="find_start_position"></a>find_start_position</h3><p>如果是resuming_fuzz,则尝试恢复要开始的队列位置保存到seek_to.这仅在resume时以及当我们可以找到原始的fuzzer_stats时才有意义.</p>
+<ul>
+<li>if(in_place_resume)<ul>
+<li>从out_dir/fuzzer_stats恢复</li>
+</ul>
+</li>
+<li>否则从in_dir/../fuzzer_stats中恢复</li>
+<li>读取文件内容寻找cur_path,若未找到或cur_path大于当前队列长度,返回0,否则返回cur_path.</li>
+</ul>
+<h3 id="write-stats-file"><a href="#write-stats-file" class="headerlink" title="write_stats_file"></a>write_stats_file</h3><p>更新统计信息文件outdir/fuzzer_stats</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">fprintf</span>(f, <span class="string">"start_time        : %llu\n"</span></span><br><span class="line">           <span class="string">"last_update       : %llu\n"</span></span><br><span class="line">           <span class="string">"fuzzer_pid        : %u\n"</span></span><br><span class="line">           <span class="string">"cycles_done       : %llu\n"</span></span><br><span class="line">           <span class="string">"execs_done        : %llu\n"</span></span><br><span class="line">           <span class="string">"execs_per_sec     : %0.02f\n"</span></span><br><span class="line">           <span class="string">"paths_total       : %u\n"</span></span><br><span class="line">           <span class="string">"paths_favored     : %u\n"</span></span><br><span class="line">           <span class="string">"paths_found       : %u\n"</span></span><br><span class="line">           <span class="string">"paths_imported    : %u\n"</span></span><br><span class="line">           <span class="string">"max_depth         : %u\n"</span></span><br><span class="line">           <span class="string">"cur_path          : %u\n"</span> <span class="comment">/* Must match find_start_position() */</span></span><br><span class="line">           <span class="string">"pending_favs      : %u\n"</span></span><br><span class="line">           <span class="string">"pending_total     : %u\n"</span></span><br><span class="line">           <span class="string">"variable_paths    : %u\n"</span></span><br><span class="line">           <span class="string">"stability         : %0.02f%%\n"</span></span><br><span class="line">           <span class="string">"bitmap_cvg        : %0.02f%%\n"</span></span><br><span class="line">           <span class="string">"unique_crashes    : %llu\n"</span></span><br><span class="line">           <span class="string">"unique_hangs      : %llu\n"</span></span><br><span class="line">           <span class="string">"last_path         : %llu\n"</span></span><br><span class="line">           <span class="string">"last_crash        : %llu\n"</span></span><br><span class="line">           <span class="string">"last_hang         : %llu\n"</span></span><br><span class="line">           <span class="string">"execs_since_crash : %llu\n"</span></span><br><span class="line">           <span class="string">"exec_timeout      : %u\n"</span> <span class="comment">/* Must match find_timeout() */</span></span><br><span class="line">           <span class="string">"afl_banner        : %s\n"</span></span><br><span class="line">           <span class="string">"afl_version       : "</span> VERSION <span class="string">"\n"</span></span><br><span class="line">           <span class="string">"target_mode       : %s%s%s%s%s%s%s\n"</span></span><br><span class="line">           <span class="string">"command_line      : %s\n"</span></span><br><span class="line">           <span class="string">"slowest_exec_ms   : %llu\n"</span>,</span><br><span class="line">        start_time / <span class="number">1000</span>, get_cur_time() / <span class="number">1000</span>, getpid(),</span><br><span class="line">        queue_cycle ? (queue_cycle - <span class="number">1</span>) : <span class="number">0</span>, total_execs, eps,</span><br><span class="line">        queued_paths, queued_favored, queued_discovered, queued_imported,</span><br><span class="line">        max_depth, current_entry, pending_favored, pending_not_fuzzed,</span><br><span class="line">        queued_variable, stability, bitmap_cvg, unique_crashes,</span><br><span class="line">        unique_hangs, last_path_time / <span class="number">1000</span>, last_crash_time / <span class="number">1000</span>,</span><br><span class="line">        last_hang_time / <span class="number">1000</span>, total_execs - last_crash_execs,</span><br><span class="line">        exec_tmout, use_banner,</span><br><span class="line">        qemu_mode ? <span class="string">"qemu "</span> : <span class="string">""</span>, dumb_mode ? <span class="string">" dumb "</span> : <span class="string">""</span>,</span><br><span class="line">        no_forkserver ? <span class="string">"no_forksrv "</span> : <span class="string">""</span>, crash_mode ? <span class="string">"crash "</span> : <span class="string">""</span>,</span><br><span class="line">        persistent_mode ? <span class="string">"persistent "</span> : <span class="string">""</span>, deferred_mode ? <span class="string">"deferred "</span> : <span class="string">""</span>,</span><br><span class="line">        (qemu_mode || dumb_mode || no_forkserver || crash_mode ||</span><br><span class="line">         persistent_mode || deferred_mode) ? <span class="string">""</span> : <span class="string">"default"</span>,</span><br><span class="line">        orig_cmdline, slowest_exec_ms);</span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="save-auto"><a href="#save-auto" class="headerlink" title="save_auto"></a>save_auto</h3><p>保存自动生成的extras</p>
+<h2 id="Fuzz执行"><a href="#Fuzz执行" class="headerlink" title="Fuzz执行"></a>Fuzz执行</h2><h3 id="Fuzz主循环"><a href="#Fuzz主循环" class="headerlink" title="Fuzz主循环"></a>Fuzz主循环</h3><h4 id="cull-queue-1"><a href="#cull-queue-1" class="headerlink" title="cull_queue"></a>cull_queue</h4><h4 id="如果第一次循环或是一轮循环结束-进行新一轮fuzz的初始化"><a href="#如果第一次循环或是一轮循环结束-进行新一轮fuzz的初始化" class="headerlink" title="如果第一次循环或是一轮循环结束,进行新一轮fuzz的初始化"></a>如果第一次循环或是一轮循环结束,进行新一轮fuzz的初始化</h4><p>详见注释</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (!queue_cur)</span><br><span class="line">{</span><br><span class="line"></span><br><span class="line">  queue_cycle++; <span class="comment">//进行fuzz的轮数</span></span><br><span class="line">  current_entry = <span class="number">0</span>; </span><br><span class="line">  cur_skipped_paths = <span class="number">0</span>; </span><br><span class="line">  queue_cur = <span class="built_in">queue</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">while</span> (seek_to) <span class="comment">//如果是resume,从seek_to指示的位置开始fuzz</span></span><br><span class="line">  {</span><br><span class="line">    current_entry++;</span><br><span class="line">    seek_to--;</span><br><span class="line">    queue_cur = queue_cur-&gt;next;</span><br><span class="line">  }</span><br><span class="line"></span><br><span class="line">  show_stats();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (not_on_tty)</span><br><span class="line">  {</span><br><span class="line">    ACTF(<span class="string">"Entering queue cycle %llu."</span>, queue_cycle);</span><br><span class="line">    fflush(<span class="built_in">stdout</span>);</span><br><span class="line">  }</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* If we had a full queue cycle with no new finds, try</span></span><br><span class="line"><span class="comment">     recombination strategies next. */</span></span><br><span class="line">     </span><br><span class="line">  <span class="comment">/*经过上一轮fuzz后,队列中样例数没有变化</span></span><br><span class="line"><span class="comment">    接下来尝试重组策略</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line">  <span class="keyword">if</span> (queued_paths == prev_queued)</span><br><span class="line">  {</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (use_splicing) <span class="comment">//是否重组输入</span></span><br><span class="line">      cycles_wo_finds++; <span class="comment">//没有新队列样例产生的轮数++</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">      use_splicing = <span class="number">1</span>;</span><br><span class="line">  }</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    cycles_wo_finds = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  prev_queued = queued_paths;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (sync_id &amp;&amp; queue_cycle == <span class="number">1</span> &amp;&amp; getenv(<span class="string">"AFL_IMPORT_FIRST"</span>))</span><br><span class="line">    sync_fuzzers(use_argv);<span class="comment">//从其他Fuzzer中获取有趣的测试样例(distributed mode).</span></span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h5 id="sync-fuzzers"><a href="#sync-fuzzers" class="headerlink" title="sync_fuzzers"></a>sync_fuzzers</h5><p>从其他Fuzzer的queue中读取测试样例并执行,通过save_if_interesting决定是否导入到自己的queue中.</p>
+<h4 id="fuzz-one"><a href="#fuzz-one" class="headerlink" title="fuzz_one"></a>fuzz_one</h4><p>从列表中取出当前条目进行一段时间的模糊测试.成功返回0,跳过或退出返回1.</p>
+<p>在这里插入对common_fuzz_stuff函数的提前分析,该函数会在后续变异fuzz中大量使用.</p>
+<h5 id="common-fuzz-stuff"><a href="#common-fuzz-stuff" class="headerlink" title="common_fuzz_stuff"></a>common_fuzz_stuff</h5><ul>
+<li>如果在setup_post中设置了post_handler,那么这里将先调用post_handler来处理out_buf.用于在写入testcase之前，对写入内容进行封装或者映射。<blockquote>
+<p>afl-fuzz适合基于字节粒度变异的fuzz，但并不是所有目标都可以直接进行字节粒度的fuzz。有些是因为文件解析部分的代码不能单独抽出来，有些是因为文件解析仅仅是逻辑的开始。那么为变异器加层就是在这方面扩展afl-fuzz的最简单方法。<br>一个示例的代码可以参考gitlab/wangxin/afl-wasm/，这是一个可以为WebAssembly的wasm文件变异加层的fuzzer。这个工具产生的样本如下所示，其中变异的部分是wasmCode中的字节码，而外围的JavaScript代码需要手动编写，而且要求外围代码应该尽量复杂。</p>
+</blockquote>
+</li>
+<li>调用write_to_testcase将变异出的数据写入out_file</li>
+<li>调用run_target执行程序,保存返回值到fault.</li>
+<li>接下来处理fault<ul>
+<li>FAULT_TMOUT: <ul>
+<li>如果subseq_tmouts++ &gt; TMOUT_LIMIT<ul>
+<li>cur_skipped_paths++,返回1</li>
+</ul>
+</li>
+<li>否则设置subseq_tmouts = 0</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>如果用户通过SIGUSR1要求丢弃当前输入,cur_skipped_paths++并返回1.</li>
+<li>queued_discovered += save_if_interesting(argv, out_buf, len, fault).</li>
+<li>返回0.</li>
+</ul>
+<h6 id="save-if-interesting"><a href="#save-if-interesting" class="headerlink" title="save_if_interesting"></a>save_if_interesting</h6><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Check if the result of an execve() during routine fuzzing is interesting,</span></span><br><span class="line"><span class="comment">   save or queue the input test case for further analysis if so. Returns 1 if</span></span><br><span class="line"><span class="comment">   entry is saved, 0 otherwise. */</span></span><br></pre></td></tr></tbody></table></figure>
+
+<ul>
+<li>如果fault == crash_mode(FAULT_NONE,若指定了-C则为FAULT_CRASH)<ul>
+<li>调用has_new_bits分析执行结果并更新virgin_bits.</li>
+<li>如果本次运行没有导致新的virgin_bits置位<ul>
+<li>如果指定了-C,total_crashes++</li>
+<li>否则返回0</li>
+</ul>
+</li>
+<li>否则调用add_to_queue加入队列.</li>
+<li>如果新的virgin_bits置位的原因是有新的路径产生<ul>
+<li>queue_top-&gt;has_new_cov=1,queued_with_cov++.(queue_top就是刚加入的变异样例)</li>
+</ul>
+</li>
+<li>根据当前trace_bits计算queue_top-&gt;exec_cksum</li>
+<li>调用calibrate_case对当前样例进行校准(calibrate)</li>
+<li>写入到out_dir/queue/id:queued_paths,describe_op(hnb)s文件中</li>
+<li>kepping = 1</li>
+</ul>
+</li>
+<li>根据fault的值进行处理:<ul>
+<li>FAULT_TMOUT:<ul>
+<li>total_tmouts++.</li>
+<li>如果unique_hangs数量&gt;=KEEP_UNIQUE_HANG(500),直接返回keeping.</li>
+<li>如果不在dumb_mode中<ul>
+<li>调用simplify_trace简化trace_bits(为1则该字节对应的路径未发现,为128则该字节对应的路径已发现).</li>
+<li>以virgin_tmout(Bits we haven’t seen in tmouts)作为掩码对简化后的trace_bis进行has_new_bits分析(由于已经简化,此次分析对hit_count不敏感).</li>
+<li>如果没有新bit置位,则直接返回keeping.</li>
+</ul>
+</li>
+<li>unique_tmouts++(到这说明这是一个发现新路径的hang样例)</li>
+<li>在保存该样例到hang目录之前,设置更长的超时时间(EXEC_TIMEOUT)再次执行,确保该样例真正使程序挂起.</li>
+<li>如果二次执行出现了Crash,跳转到keep_as_crash.</li>
+<li>如果第二次执行不再超时,返回keeping.</li>
+<li>否则保存到hangs目录中并记录当前时间作为last_hang_time.</li>
+</ul>
+</li>
+<li>FAULT_CRASH(keep_as_crash)<ul>
+<li>如果unique_crashes数量&gt;=KEEP_UNIQUE_CRASH(5000),直接返回keeping.</li>
+<li>如果不在dumb_mode中<ul>
+<li>调用simplify_trace简化trace_bits(为1则该字节对应的路径未发现,为128则该字节对应的路径已发现).</li>
+<li>以virgin_crash(Bits we haven’t seen in crashes)作为掩码对简化后的trace_bis进行has_new_bits分析(由于已经简化,此次分析对hit_count不敏感).</li>
+<li>如果没有新bit置位,则直接返回keeping.</li>
+</ul>
+</li>
+<li>如果是发现的第一个unique_crash,调用write_crash_readme记录命令行到readme文件中</li>
+<li>保存到crashes目录中并记录当前时间作为last_crash_time.</li>
+</ul>
+</li>
+<li>FAULT_ERROR:<ul>
+<li>抛出异常</li>
+</ul>
+</li>
+<li>default:返回keeping</li>
+</ul>
+</li>
+</ul>
+<h5 id="以一定概率跳过当前样例"><a href="#以一定概率跳过当前样例" class="headerlink" title="以一定概率跳过当前样例"></a>以一定概率跳过当前样例</h5><p><code>!fuzz_one的处理流程从这里开始!</code></p>
+<ul>
+<li>如果队列中有favored且未fuzz过的样例<ul>
+<li>如果当前样例已经fuzz过且不为favored,则有99%的概率被跳过</li>
+</ul>
+</li>
+<li>如果队列中没有favored的样例且队列中样例数&gt;10且不为dumb_mode<ul>
+<li>如果当前样例没有fuzz过且不为第一轮fuzz,有75%的概率被跳过</li>
+<li>否则有95%的概率被跳过</li>
+</ul>
+</li>
+</ul>
+<h5 id="将当前测试样例读入到mmap开辟的origin-in缓冲区中"><a href="#将当前测试样例读入到mmap开辟的origin-in缓冲区中" class="headerlink" title="将当前测试样例读入到mmap开辟的origin_in缓冲区中."></a>将当前测试样例读入到mmap开辟的origin_in缓冲区中.</h5><h5 id="CALIBRATION阶段-仅当早前校准失败"><a href="#CALIBRATION阶段-仅当早前校准失败" class="headerlink" title="CALIBRATION阶段(仅当早前校准失败)"></a>CALIBRATION阶段(仅当早前校准失败)</h5><ul>
+<li>如果当前样例之前校准失败且失败次数小于CAL_CHANCES(3)<ul>
+<li>设置queue_cur-&gt;exec_cksum = 0;并调用calibrate_case进行校准.</li>
+</ul>
+</li>
+</ul>
+<h5 id="TRIMMING阶段"><a href="#TRIMMING阶段" class="headerlink" title="TRIMMING阶段"></a>TRIMMING阶段</h5><p>如果不为dumb_mode且当前样例没有修剪完成,调用trim_case进行修建</p>
+<h6 id="trim-case"><a href="#trim-case" class="headerlink" title="trim_case"></a>trim_case</h6><ul>
+<li>如果样例长度小于5,直接返回</li>
+<li>一些初始化工作<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">  stage_name = tmp; <span class="comment">//将stage_name指向tmp缓冲区</span></span><br><span class="line">  bytes_trim_in += q-&gt;len; <span class="comment">//被修剪过的字节数+=q-&gt;len</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Select initial chunk len, starting with large steps. */</span></span><br><span class="line"></span><br><span class="line">  len_p2 = next_p2(q-&gt;len); <span class="comment">//将q-&gt;len向上对齐到2的幂.</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//设置单次修剪长度为len_p2/16,最小为4.</span></span><br><span class="line">  remove_len = MAX(len_p2 / TRIM_START_STEPS, TRIM_MIN_BYTES);</span><br></pre></td></tr></tbody></table></figure></li>
+<li>进入大循环,直到remove_len小于len_p2/1024,每次循环修剪长度会/2.<ul>
+<li>内层循环的初始化工作<ul>
+<li>remove_pos=remove_len. stage_cur = 0;stage_max = q-&gt;len / remove_len;</li>
+</ul>
+</li>
+<li>内层循环,直到remove_pos&gt;=q-&gt;len为止.<ul>
+<li>更新本次课修剪的长度为MIN(remove_len,q-&gt;len-remove_pos)</li>
+<li>调用write_with_gap,跳过从remove_pos开始长度为trim_avail的部分写入out_file</li>
+<li>调用run_target执行一次程序,trim_execs++.</li>
+<li>分析本次执行结果<ul>
+<li>计算cksum,若未发生改变,意味着本次修剪对该样例产生的路径信息无影响<ul>
+<li>保留修剪结果.更新q-&gt;len并重新计算len_p2.</li>
+<li>如果是第一次修剪成功(cksum不改变),保存本次执行的trace_bits至clean_trace用于之后的评分.</li>
+</ul>
+</li>
+<li>否则remove_pos+=remove_len,修剪下一位置.</li>
+</ul>
+</li>
+<li>每执行修剪stats_update_freq次,调用一次show_stats.</li>
+<li>stage_cur++</li>
+</ul>
+</li>
+<li>本轮修剪完成,设置下一轮修剪长度,remove_len &gt;&gt; = 1.</li>
+</ul>
+</li>
+<li>大循环结束,如果有修剪成功的结果,写回原队列文件(之前写入的是out_file).</li>
+<li>将clean_trace拷贝到trace_bits,调用update_bitmap_score对更新后的队列进行评分.</li>
+</ul>
+<h6 id="设置queue-cur-trim-done-1-更新queue-cur-len-拷贝in-buf到out-buf"><a href="#设置queue-cur-trim-done-1-更新queue-cur-len-拷贝in-buf到out-buf" class="headerlink" title="设置queue_cur->trim_done=1,更新queue_cur->len.拷贝in_buf到out_buf"></a>设置queue_cur-&gt;trim_done=1,更新queue_cur-&gt;len.拷贝in_buf到out_buf</h6><h5 id="PERFORMANCE-SCORE阶段"><a href="#PERFORMANCE-SCORE阶段" class="headerlink" title="PERFORMANCE SCORE阶段"></a>PERFORMANCE SCORE阶段</h5><h6 id="calculate-score"><a href="#calculate-score" class="headerlink" title="calculate_score"></a>calculate_score</h6><p>没啥分析的,直接引用一下Sakura师傅.</p>
+<blockquote>
+<p>根据queue entry的执行速度、覆盖到的path数和路径深度来评估出一个得分，这个得分perf_score在后面havoc的时候使用。<br>前面的没什么好说的，这里的q-&gt;depth解释一下，它在每次add_to_queue的时候，会设置为cur_depth+1，而cur_depth是一个全局变量，一开始的初始值为0。<br>    处理输入时<br>        在read_testcases的时候会调用add_to_queue，此时所有的input case的queue depth都会被设置为1。<br>    fuzz_one时<br>        然后在后面fuzz_one的时候，会先设置cur_depth为当前queue的depth，然后这个queue经过mutate之后调用save_if_interesting,如果是interesting case，就会被add_to_queue，此时就建立起了queue之间的关联关系，所以由当前queue变异加入的新queue，深度都在当前queue的基础上再增加。</p>
+</blockquote>
+<h6 id="判断是否需要进行-deterministic-fuzz"><a href="#判断是否需要进行-deterministic-fuzz" class="headerlink" title="判断是否需要进行 deterministic fuzz"></a>判断是否需要进行 deterministic fuzz</h6><p>如果指定了-d选项或者该样例已经进行过fuzz或在早期(恢复)中经过了deterministic fuzz,或者是分布式模式的从fuzzer则直接进入havoc_stage阶段.</p>
+<p>设置 doing_det = 1;</p>
+<h5 id="SIMPLE-BITFLIP-dictionary-construction-阶段"><a href="#SIMPLE-BITFLIP-dictionary-construction-阶段" class="headerlink" title="SIMPLE BITFLIP (+dictionary construction)阶段"></a>SIMPLE BITFLIP (+dictionary construction)阶段</h5><p>这一阶段通过反转样例的比特位进行变异,翻转的宏如下,但看宏不好理解,结合宏调用来理解.<br>_bf取值为[0-len&lt;&lt;3],则每8次循环(_bf&amp;7)将产生[0,1,…8]的移位序列,而^=(128 &gt;&gt; ((_bf)&amp;7))即将一个字节的比特位从高到低依次翻转.<br>_bf&gt;&gt;3将stage_max重新映射回len的长度.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> FLIP_BIT(_ar, _b)                   \</span></span><br><span class="line"><span class="meta">  do                                        \</span></span><br><span class="line"><span class="meta">  {                                         \</span></span><br><span class="line"><span class="meta">    u8 *_arf = (u8 *)(_ar);                 \</span></span><br><span class="line"><span class="meta">    u32 _bf = (_b);                         \</span></span><br><span class="line"><span class="meta">    _arf[(_bf) &gt;&gt; 3] ^= (128 &gt;&gt; ((_bf)&amp;7)); \</span></span><br><span class="line"><span class="meta">  } while (0)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//下面为提取出的宏调用,便于理解宏.</span></span><br><span class="line">stage_max = len &lt;&lt; <span class="number">3</span>;</span><br><span class="line"><span class="keyword">for</span> (stage_cur = <span class="number">0</span>; stage_cur &lt; stage_max; stage_cur++)</span><br><span class="line">    FLIP_BIT(out_buf, stage_cur);</span><br></pre></td></tr></tbody></table></figure>
+
+<h6 id="maybe-add-auto"><a href="#maybe-add-auto" class="headerlink" title="maybe_add_auto"></a>maybe_add_auto</h6><p>在这里插入对maybe_add_auto函数的提前分析.<br>该函数用来保存关键字到字典.</p>
+<ul>
+<li>跳过连续的相同字节.</li>
+<li>如果该关键字的值是预设的intesting value,直接返回.</li>
+<li>进行大小写不敏感的查找,如果该关键字与预设的关键字重复则直接返回.</li>
+<li>进行大小写不敏感的查找,如果该关键字与此前自动生成的关键字重复则增加其的hit_cnt后进行sort_a_extras.</li>
+<li>否则将其加入a_extras(自动生成的关键字数组).如果已满则替换掉下标为 MAX_AUTO_EXTRAS / 2 +UR((MAX_AUTO_EXTRAS + 1) / 2)的关键字.</li>
+<li>sort_a_extras:<ul>
+<li>先将a_extras按照hit_cnt进行递减排序(保证发生替换时被替换的关键字hit_count较小).</li>
+<li>再按len对前USE_AUTO_EXTRAS(50)个关键字进行递增排序.</li>
+</ul>
+</li>
+</ul>
+<h6 id="bitflip-1-1"><a href="#bitflip-1-1" class="headerlink" title="bitflip 1/1"></a>bitflip 1/1</h6><p><code>SIMPLE BITFLIP (+dictionary construction)阶段从这里开始!</code><br>bitflip 1/1会额外进行字典的构建.假设关键字具有这样的特性:当某关键字中的任意一个字节(最低有效位)发生改变,会使得程序走向与原输入不同的路径,且任意字节的改变都导致走向相同的路径.</p>
+<ul>
+<li>设置prev_cksum=queue_cur-&gt;exec_cksum</li>
+<li>循环stage_max(len&lt;&lt;3)次,即遍历样例中的每一个比特位<ul>
+<li>将该比特位翻转后调用一次common_fuzz_stuff(详见前文分析).再翻转回来.</li>
+<li>如果不在dumb_mode,则尝试收集关键字.<ul>
+<li>每当翻转一个字节的最低有效位时,进行特殊处理<ul>
+<li>如果cksum!=prev_cksum,说明可能进入了一个关键字或离开了一个关键字,若a_len在规定的关键字长度限制之内,调用maybe_add_auto尝试保存当前a_collect中的关键字,更新a_len=0,prev_cksum=cksum.</li>
+<li>如果ck_sum!=queue-&gt;exec_cksum,则在MAX_AUTO_EXTRA的长度限制内保存当前字节到a_collect.a_len++.</li>
+<li>如果是最后一次循环,直接调用maybe_add_auto尝试保存当前a_collect中的关键字.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>更新一些记录<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">new_hit_cnt = queued_paths + unique_crashes;</span><br><span class="line"></span><br><span class="line">stage_finds[STAGE_FLIP1] += new_hit_cnt - orig_hit_cnt;</span><br><span class="line">stage_cycles[STAGE_FLIP1] += stage_max;</span><br></pre></td></tr></tbody></table></figure></li>
+</ul>
+</li>
+</ul>
+<h6 id="bitflip-2-1"><a href="#bitflip-2-1" class="headerlink" title="bitflip 2/1"></a>bitflip 2/1</h6><p>和bitflip 1/1类似,一次翻转2位.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (stage_cur = <span class="number">0</span>; stage_cur &lt; stage_max; stage_cur++)</span><br><span class="line">{</span><br><span class="line"></span><br><span class="line">  stage_cur_byte = stage_cur &gt;&gt; <span class="number">3</span>;</span><br><span class="line"></span><br><span class="line">  FLIP_BIT(out_buf, stage_cur);</span><br><span class="line">  FLIP_BIT(out_buf, stage_cur + <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (common_fuzz_stuff(argv, out_buf, len))</span><br><span class="line">    <span class="keyword">goto</span> abandon_entry;</span><br><span class="line"></span><br><span class="line">  FLIP_BIT(out_buf, stage_cur);</span><br><span class="line">  FLIP_BIT(out_buf, stage_cur + <span class="number">1</span>);</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h6 id="bitflip-4-1"><a href="#bitflip-4-1" class="headerlink" title="bitflip 4/1"></a>bitflip 4/1</h6><p>和bitflip 1/1类似,一次翻转4位.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (stage_cur = <span class="number">0</span>; stage_cur &lt; stage_max; stage_cur++)</span><br><span class="line">{</span><br><span class="line"></span><br><span class="line">  stage_cur_byte = stage_cur &gt;&gt; <span class="number">3</span>;</span><br><span class="line"></span><br><span class="line">  FLIP_BIT(out_buf, stage_cur);</span><br><span class="line">  FLIP_BIT(out_buf, stage_cur + <span class="number">1</span>);</span><br><span class="line">  FLIP_BIT(out_buf, stage_cur + <span class="number">2</span>);</span><br><span class="line">  FLIP_BIT(out_buf, stage_cur + <span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (common_fuzz_stuff(argv, out_buf, len))</span><br><span class="line">    <span class="keyword">goto</span> abandon_entry;</span><br><span class="line"></span><br><span class="line">  FLIP_BIT(out_buf, stage_cur);</span><br><span class="line">  FLIP_BIT(out_buf, stage_cur + <span class="number">1</span>);</span><br><span class="line">  FLIP_BIT(out_buf, stage_cur + <span class="number">2</span>);</span><br><span class="line">  FLIP_BIT(out_buf, stage_cur + <span class="number">3</span>);</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h6 id="bitflip-8-8"><a href="#bitflip-8-8" class="headerlink" title="bitflip 8/8"></a>bitflip 8/8</h6><p>和bitflip 1/1类似,一次翻转1字节.<br>在这一过程中会同时完成effector map的构造,具体来说,如果一个将一个字节翻转后路径信息发生改变,将effector map中对应的位置置1,表示有效,否则置0,表示无效.在之后开销更大的阶段将会跳过这些无效字节.</p>
+<p>如果最后有效字节的密度大于90%,则将map全部标记为有效,因为跳过并不会节约太多时间.</p>
+<h6 id="bitflip-16-8"><a href="#bitflip-16-8" class="headerlink" title="bitflip 16/8"></a>bitflip 16/8</h6><p>和bitflip 1/1类似,一次翻转2字节,但跳过effector map中两个连续的无效字节.</p>
+<h6 id="bitflip-32-8"><a href="#bitflip-32-8" class="headerlink" title="bitflip 32/8"></a>bitflip 32/8</h6><p>和bitflip 1/1类似,一次翻转4字节,但跳过effector map中四个连续的无效字节.</p>
+<h5 id="ARITHMETIC-INC-DEC阶段"><a href="#ARITHMETIC-INC-DEC阶段" class="headerlink" title="ARITHMETIC INC/DEC阶段"></a>ARITHMETIC INC/DEC阶段</h5><h6 id="arith-8-8"><a href="#arith-8-8" class="headerlink" title="arith 8/8"></a>arith 8/8</h6><p>对每一个byte,分别加上及减去从0到ARITH_MAX(35)的整数后进行common_fuzz_stuff.其中会跳过effector map中指示无效的和之前已经由bitflip阶段产生过的输入.</p>
+<p>判断是否产生过是通过could_be_bitflip函数,方法是将原数据异或上运算后的数据得到结果val,将其右移直到最低有效位为1(即原数据与运算后数据不同的第一个比特位).此时根据val中连续为1的比特位位数是否对应翻转阶段的步长(1,2,4,8,….)来判断此数据是否已经产生过.</p>
+<h6 id="arith-16-8"><a href="#arith-16-8" class="headerlink" title="arith 16/8"></a>arith 16/8</h6><p>对每一个word,分大端序和小端序两种情况,均分别加上及减去从0到ARITH_MAX(35)的整数后进行common_fuzz_stuff.其中会跳过effector map中指示无效的和之前已经由bitflip阶段产生过的输入以及加减后仅影响最低1字节的(此情况已在arith 8/8中处理).</p>
+<h6 id="arith-32-8"><a href="#arith-32-8" class="headerlink" title="arith 32/8"></a>arith 32/8</h6><p>对每一个dword,分大端序和小端序两种情况,均分别加上及减去从0到ARITH_MAX(35)的整数后进行common_fuzz_stuff.其中会跳过effector map中指示无效的和之前已经由bitflip阶段产生过的输入以及加减后仅影响最低2字节的(此情况已在arith 16/8中处理).</p>
+<h5 id="INTERESTING-VALUES阶段"><a href="#INTERESTING-VALUES阶段" class="headerlink" title="INTERESTING VALUES阶段"></a>INTERESTING VALUES阶段</h5><h6 id="interest-8-8"><a href="#interest-8-8" class="headerlink" title="interest 8/8"></a>interest 8/8</h6><p>以byte为单位将原数据替换为interest.跳过之前阶段中产生过的数据.</p>
+<p>interest是一些特殊的数据</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> INTERESTING_8 \</span></span><br><span class="line"><span class="meta">  -128,          <span class="comment">/* Overflow signed 8-bit when decremented  */</span> \</span></span><br><span class="line"><span class="meta">  -1,            <span class="comment">/*                                         */</span> \</span></span><br><span class="line"><span class="meta">   0,            <span class="comment">/*                                         */</span> \</span></span><br><span class="line"><span class="meta">   1,            <span class="comment">/*                                         */</span> \</span></span><br><span class="line"><span class="meta">   16,           <span class="comment">/* One-off with common buffer size         */</span> \</span></span><br><span class="line"><span class="meta">   32,           <span class="comment">/* One-off with common buffer size         */</span> \</span></span><br><span class="line"><span class="meta">   64,           <span class="comment">/* One-off with common buffer size         */</span> \</span></span><br><span class="line"><span class="meta">   100,          <span class="comment">/* One-off with common buffer size         */</span> \</span></span><br><span class="line"><span class="meta">   127           <span class="comment">/* Overflow signed 8-bit when incremented  */</span></span></span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+<h6 id="interest-16-8"><a href="#interest-16-8" class="headerlink" title="interest 16/8"></a>interest 16/8</h6><p>以word为单位将原数据替换为interest.跳过之前阶段中产生过的数据.</p>
+<h6 id="interest-32-8"><a href="#interest-32-8" class="headerlink" title="interest 32/8"></a>interest 32/8</h6><p>以dword为单位将原数据替换为interest.跳过之前阶段中产生过的数据.</p>
+<h5 id="DICTIONARY-STUFF阶段"><a href="#DICTIONARY-STUFF阶段" class="headerlink" title="DICTIONARY STUFF阶段"></a>DICTIONARY STUFF阶段</h5><h6 id="user-extras-over"><a href="#user-extras-over" class="headerlink" title="user extras (over)"></a>user extras (over)</h6><ul>
+<li>遍历原输入中的每一个字节作为起始替换点<ul>
+<li>遍历所有预设关键字<ul>
+<li>如果下列条件满足其一 1)当前替换点没有足够空间进行替换 2)当前将要被替换的数据与当前关键字重复 3)将要被替换的数据在effector map中标记为无效 4 )extras_cnt &gt; MAX_DET_EXTRAS &amp;&amp; UR(extras_cnt) &gt;= MAX_DET_EXTRAS)<ul>
+<li>跳过本次替换.</li>
+</ul>
+</li>
+<li>否则进行替换并进行common_fuzz_stuff</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h6 id="user-extras-insert"><a href="#user-extras-insert" class="headerlink" title="user extras (insert)"></a>user extras (insert)</h6><ul>
+<li>遍历原输入中每一个字节作为插入点<ul>
+<li>遍历所有预设关键字<ul>
+<li>如果插入后长度不超过MAX_FILE<ul>
+<li>插入并调用common_fuzz_stuff</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h6 id="auto-extras-over"><a href="#auto-extras-over" class="headerlink" title="auto extras (over)"></a>auto extras (over)</h6><ul>
+<li>遍历原输入中的每一个字节作为起始替换点<ul>
+<li>遍历所有自动生成的关键字<ul>
+<li>如果下列条件满足其一 1)当前替换点没有足够空间进行替换 2)当前将要被替换的数据与当前关键字重复 3)将要被替换的数据在effector map中标记为无效 <ul>
+<li>跳过本次替换.</li>
+</ul>
+</li>
+<li>否则进行替换并进行common_fuzz_stuff</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h5 id="RANDOM-HAVOC阶段"><a href="#RANDOM-HAVOC阶段" class="headerlink" title="RANDOM HAVOC阶段"></a>RANDOM HAVOC阶段</h5><p>这里直接引用Sakura师傅的文章.<br>   havoc，顾名思义，是充满了各种随机生成的变异，是对原文件的“大破坏”。具体来说，havoc包含了对原文件的多轮变异，每一轮都是将多种方式组合（stacked）而成：</p>
+<ul>
+<li>随机选取某个bit进行翻转</li>
+<li>随机选取某个byte，将其设置为随机的interesting value</li>
+<li>随机选取某个word，并随机选取大、小端序，将其设置为随机的interesting value</li>
+<li>随机选取某个dword，并随机选取大、小端序，将其设置为随机的interesting value</li>
+<li>随机选取某个byte，对其减去一个随机数</li>
+<li>随机选取某个byte，对其加上一个随机数</li>
+<li>随机选取某个word，并随机选取大、小端序，对其减去一个随机数</li>
+<li>随机选取某个word，并随机选取大、小端序，对其加上一个随机数</li>
+<li>随机选取某个dword，并随机选取大、小端序，对其减去一个随机数</li>
+<li>随机选取某个dword，并随机选取大、小端序，对其加上一个随机数</li>
+<li>随机选取某个byte，将其设置为随机数</li>
+<li>随机删除一段bytes</li>
+<li>随机选取一个位置，插入一段随机长度的内容，其中75%的概率是插入原文中随机位置的内容，25%的概率是插入一段随机选取的数</li>
+<li>随机选取一个位置，替换为一段随机长度的内容，其中75%的概率是替换成原文中随机位置的内容，25%的概率是替换成一段随机选取的数</li>
+<li>随机选取一个位置，用随机选取的token（用户提供的或自动生成的）替换</li>
+<li>随机选取一个位置，用随机选取的token（用户提供的或自动生成的）插入</li>
+</ul>
+<h5 id="SPLICING阶段"><a href="#SPLICING阶段" class="headerlink" title="SPLICING阶段"></a>SPLICING阶段</h5><ul>
+<li>如果use_splicing=1<ul>
+<li>尝试拼接两个测试样例中的内容，拼接之后重新走一遍RANDOM HAVOC阶段</li>
+</ul>
+</li>
+</ul>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2024/AFL%20Analysis/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AFL/" rel="tag">AFL</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/fuzz/" rel="tag">fuzz</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/2024/Try%20Fuzzing%20-%20CVE-2019-13288%20xpdf%20Infinite-Recursion/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            CVE-2019-13288 xpdf 无限递归
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2024/CVE-2018-10387%20TFTP%20Server-HeapOverflow/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">CVE-2018-10387 TFTP Server 堆溢出</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2024
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2022/About">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>
