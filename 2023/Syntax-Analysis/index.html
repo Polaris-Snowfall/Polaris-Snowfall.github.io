@@ -143,7 +143,7 @@
 <p>所以我们应该为输入符号和非终结符产生式创建一个关联,称作分析表(当然也有其他的结构).类比于词法分析中将NFA转换成DFA进行模拟,我们应该对文法<code>提取左因子</code>来保证不存在同一非终结符对于输入符号a的多种产生式.</p>
 <h6 id="预测分析表的构造"><a href="#预测分析表的构造" class="headerlink" title="预测分析表的构造"></a>预测分析表的构造</h6><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201813871.png"><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201813745.png"></p>
 <h6 id="表驱动的预测分析算法"><a href="#表驱动的预测分析算法" class="headerlink" title="表驱动的预测分析算法"></a>表驱动的预测分析算法</h6><p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201815234.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201815613.png"></p>
-<h3 id="自底向上语法分析"><a href="#自底向上语法分析" class="headerlink" title="自底向上语法分析"></a>自底向上语法分析</h3><p>自根节点向下建立分析树.<br><del>大量概念名词预警</del></p>
+<h3 id="自底向上语法分析"><a href="#自底向上语法分析" class="headerlink" title="自底向上语法分析"></a>自底向上语法分析</h3><p>自叶子节点向上建立分析树.<br><del>大量概念名词预警</del></p>
 <p>归约: 一个匹配某产生式右部的字符串w被产生式左部替代的过程,推导的逆过程.<br>自底向上语法分析就是将一个句子一步步归约到文法的开始符号.</p>
 <p>从定义可以看出,自底向上语法分析主要解决两个问题:</p>
 <ol>

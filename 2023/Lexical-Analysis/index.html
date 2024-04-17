@@ -123,7 +123,7 @@
 <h4 id="非正规集"><a href="#非正规集" class="headerlink" title="非正规集"></a>非正规集</h4><p>正规表达式描述能力有限,其不能描述均衡或嵌套结构,如具有配对括号的符号串集合.<br>正规表达式只能表示固定次数的重复或给定结构的没有指定次数的重复.</p>
 <h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><p>接下来我们要完成对一个给定的正规表达式r的识别器的构造.</p>
 <h2 id="有穷自动机"><a href="#有穷自动机" class="headerlink" title="有穷自动机"></a>有穷自动机</h2><h3 id="概念-1"><a href="#概念-1" class="headerlink" title="概念"></a>概念</h3><p>语言的识别器是一个程序,它以字符串x作为输入,输出true(接受)或false来表示x是否是语言的句子.</p>
-<p>不确定的有穷自动机(NFA):<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121724289.png"><br>NFA可以由带标记的有向图(状态转换图),转换表表示.<br>F(T,a)=S:在T状态时,如果当前输入字符是a,可以转换到S状态(对于NFA来说,这里的S可能是一个状态集合)<br>当且仅当对应的转换图中存在从开始状态到某个接受状态的路径,使得该路径的便上的标记恰好连成字符串x时,NFA接受字符串x.</p>
+<p>不确定的有穷自动机(NFA):<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121724289.png"><br>NFA可以由带标记的有向图(状态转换图),转换表表示.<br>F(T,a)=S:在T状态时,如果当前输入字符是a,可以转换到S状态(对于NFA来说,这里的S可能是一个状态集合)<br>当且仅当对应的转换图中存在从开始状态到某个接受状态的路径,使得该路径的边上的标记恰好连成字符串x时,NFA接受字符串x.</p>
 <p>确定的有穷自动机(DFA)是特殊的NFA:<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121725005.png"><br>也就是对于当前正在识别的字符a,当前状态有唯一的转换,这非常适合计算机的模拟.</p>
 <h3 id="模拟DFA"><a href="#模拟DFA" class="headerlink" title="模拟DFA"></a>模拟DFA</h3><p>算法: 持续读入字符并根据当前输入字符进行状态转换(“对于当前正在识别的字符a,当前状态有唯一的转换”),当输入结束,检查当前状态是否为一个接受状态.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310121735931.png"></p>
 <p>有了DFA的模拟算法,现在只需要构造r的DFA表示.</p>
@@ -147,7 +147,7 @@
 <blockquote>
 <p>The constructed NFA has only one accepting state, but this state, having<br>no out-transitions, is not an imp ortant state. By concatenating a unique right<br>endmarker # to a regular expression r , we give the accepting state for r a<br>transition on #, making it an imp ortant state of the NFA for (r )#. In other<br>words, by using the augmented regular expression (r )#, we can forget ab out<br>accepting states as the subset construction pro ceeds; when the construction is<br>complete, any state with a transition on # must b e an accepting state.</p>
 </blockquote>
-<h4 id="Functions-Computed-From-the-Syntax-Tree"><a href="#Functions-Computed-From-the-Syntax-Tree" class="headerlink" title="Functions Computed From the Syntax Tree"></a>Functions Computed From the Syntax Tree</h4><h5 id="Compute"><a href="#Compute" class="headerlink" title="Compute"></a>Compute</h5><p>为了直接从正规表达式r构造DFA,需要从语法树中计算这四个函数.Each de nition refers to the syntax tree for a particular<br>augmented regular expression (r )#</p>
+<h4 id="Functions-Computed-From-the-Syntax-Tree"><a href="#Functions-Computed-From-the-Syntax-Tree" class="headerlink" title="Functions Computed From the Syntax Tree"></a>Functions Computed From the Syntax Tree</h4><h5 id="Compute"><a href="#Compute" class="headerlink" title="Compute"></a>Compute</h5><p>为了直接从正规表达式r构造DFA,需要从语法树中计算这四个函数.Each denition refers to the syntax tree for a particular augmented regular expression (r )#</p>
 <p>直白点说,nullable就是该位置代表的字符串是否可以为空(ε).<br>firstpos就是该节点所代表的字符串可能的开始位置集合.<br>lastpos就是该节点所代表的字符串可能的结束位置集合.<br>followpos就是可能的紧跟着该位置的位置集合.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310122309087.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310122309685.png"></p>
 <p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310122312703.png"></p>
 <p>最后我们需要的其实只有follow集,根据求出的follow集可以得到这样一个没有ε的NFA<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310131045245.png"></p>
