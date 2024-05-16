@@ -120,7 +120,7 @@
 <h4 id="成员变量"><a href="#成员变量" class="headerlink" title="成员变量"></a>成员变量</h4><p>维护一个free_list数组,每一个free_list是一个存放未分配内存的单向链表(的头指针).用来管理释放或未分配的内存.<br>另外维护两个所有二级分配器共用的静态指针start_free和end_free,分别指向空闲内存(空闲且未链入free_list)的首尾.<br>还有一个size_t类型的heap_size成员,在重新向操作系统malloc内存时会用到其来计算需要申请的空间大小,但不太懂其存在的意义.</p>
 <h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><h5 id="内存分配"><a href="#内存分配" class="headerlink" title="内存分配"></a>内存分配</h5><p>当容器使用alloc分配空间时,若内存超过128bytes(MAX_BYTES)使用第一级分配器进行内存分配.反之使用第二级.</p>
 <p>首先检查对应大小的free_list是否存在未分配空间.若有就直接取出.<br>如果没有,调用refill函数用空闲内存区域先填充free_list(内存充足的情况下每次链入20块),再取出一块完成分配.<br>refill函数其实只负责将从空闲内存区域取出的空间链入free_list,实际的取出工作由chunk_alloc函数完成.</p>
-<p>chunk_alloc函数先检查空闲区域是否足够取出20个对应大小的堆块,若够则能取多少个取多少.如果一个的空间都不够,就先将空闲区域整个链入free_list对应大小链表中.然后调用malloc函数向系统申请2*20*nbytes(一个元素的大小)字节的空间.如果malloc失败,则从更大的freelist链表(单个obj&gt;nbytes)中取出一个chunk作为新的空闲区域.</p>
+<p>chunk_alloc函数先检查空闲区域是否足够取出20个对应大小的堆块,若不够则能取多少个取多少.如果一个的空间都不够,就先将空闲区域整个链入free_list对应大小链表中.然后调用malloc函数向系统申请2*20*nbytes(一个元素的大小)字节的空间.如果malloc失败,则从更大的freelist链表(单个obj&gt;nbytes)中取出一个chunk作为新的空闲区域.</p>
 <h5 id="内存释放"><a href="#内存释放" class="headerlink" title="内存释放"></a>内存释放</h5><p>若内存超过128bytes,使用第一级分配器释放内存.<br>否则使用第二级分配器直接链入对应free_list中.</p>
 <p>值得注意的时,第二级分配器并没有对free_list以及start_free~end_free之间区域的释放操作,这一操作最后将由操作系统完成?<br><a target="_blank" rel="noopener" href="https://www.zhihu.com/question/38524347">STL allocator何时释放内存？</a></p>
 <h2 id="迭代器"><a href="#迭代器" class="headerlink" title="迭代器"></a>迭代器</h2><p>迭代器用来粘合算法和容器.</p>
