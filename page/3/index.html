@@ -111,6 +111,239 @@
     
     
     <article
+  id="post-2021 HWS FastCP"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/2021%20HWS%20FastCP/"
+    >2021 HWS FastCP</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/2021%20HWS%20FastCP/" class="article-date">
+  <time datetime="2023-11-29T16:00:00.000Z" itemprop="datePublished">2023-11-30</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Qemu/">Qemu</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>还是熟悉的越界读写,CP_buffer之后有个QEMUTIMER结构体,劫持其cb指针为system,opaque为cmd即可.<br>对QemuTimer Callback的回调机制可以看: <a target="_blank" rel="noopener" href="https://hanqi-blogs.cn/2023/QemuTimer-Callback">QemuTimer Callback机制</a></p> 
+      <a class="article-more-link" href="/2023/2021%20HWS%20FastCP/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Qemu/" rel="tag">Qemu</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
+  id="post-QemuTimer-Callback"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/QemuTimer-Callback/"
+    >QemuTimer Callback机制</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/QemuTimer-Callback/" class="article-date">
+  <time datetime="2023-11-28T16:00:00.000Z" itemprop="datePublished">2023-11-29</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E8%99%9A%E6%8B%9F%E5%8C%96/">虚拟化</a> / <a class="article-category-link" href="/categories/%E8%99%9A%E6%8B%9F%E5%8C%96/Qemu/">Qemu</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在做2021 HWS FastCP的时候,有这样一个场景.漏洞点是对CP_buffer的溢出读写,可以覆盖掉之后的QEMUTimer结构,自然想到劫持其的callback函数指针.</p>
+<p>但又多想了一点,cp_timer的回调函数是在pci_FastCP_realize中调用timer_init_full注册(初始化)过的,说不定callback指针已经在另一个位置保存并作为之后回调使用,并不会调用该结构中的指针.</p> 
+      <a class="article-more-link" href="/2023/QemuTimer-Callback/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Qemu/" rel="tag">Qemu</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
+  id="post-Qemu-pwn study"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/Qemu-pwn%20study/"
+    >Qemu pwn的第一次尝试</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/Qemu-pwn%20study/" class="article-date">
+  <time datetime="2023-11-27T16:00:00.000Z" itemprop="datePublished">2023-11-28</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Qemu/">Qemu</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>(<del>Qemu pwn == Kernel Mode的交互 + User Mode的利用</del></p>
+<h2 id="gva-hva"><a href="#gva-hva" class="headerlink" title="gva -> hva"></a>gva -&gt; hva</h2><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">gva -&gt; gpa: 读/proc/self/pagemap获取gva对应的gpa</span><br><span class="line">gpa + hva_start == hva: 理解一下: Guset的物理内存是Host(Qemu进程)虚拟地址空间中一段连续的区域 </span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure> 
+      <a class="article-more-link" href="/2023/Qemu-pwn%20study/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Qemu/" rel="tag">Qemu</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
+  id="post-HQOS-Design-and-Implementation"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/HQOS-Design-and-Implementation/"
+    >HQOS 设计与实现</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/HQOS-Design-and-Implementation/" class="article-date">
+  <time datetime="2023-11-15T16:00:00.000Z" itemprop="datePublished">2023-11-16</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/">程序设计</a> / <a class="article-category-link" href="/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/HQOS/">HQOS</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="序"><a href="#序" class="headerlink" title="序"></a>序</h1><p>“THE MAN WHO CHANGED CHROME” 曾经指出如何学习计算机基础知识:</p>
+<blockquote>
+<p>自己写一个CPU,在自己写的CPU上运行自己写的操作系统,然后用自己写的编译器编译运行一个程序.</p>
+</blockquote>
+<p>于是便有了写一个操作系统的想法.在粗略看完一遍《操作系统真相还原》后,感觉从引导操作系统到实现各种操作系统概念的完整过程工作量有点太大了,暂时还没有那么多时间和精力来完成,便暂且搁置了.</p>
+<p>感谢MIT的6.828课程,让我能在有限的时间里一步一步地实现一个操作系统雏形JOS.JOS的开发过程请查看 /学习笔记/6.828分类下的文章.</p>
+<p>在接下来的一段时间,我会继续开发扩展该操作系统,并重构目前实现模型中我不太喜欢的实现,就叫它HQOS吧.</p>
+<p>本博客记录当前版本HQOS的设计与实现,你可以在github上找到其历史文档及代码实现.<br><a target="_blank" rel="noopener" href="https://github.com/Polaris-Snowfall/HQOS">github</a></p> 
+      <a class="article-more-link" href="/2023/HQOS-Design-and-Implementation/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/HQOS/" rel="tag">HQOS</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
   id="post-6.828-Lab6"
   class="article article-type-post"
   itemscope
@@ -566,240 +799,6 @@
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
-  id="post-6.828-Lab3"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2023/6.828-Lab3/"
-    >MIT6.828 Lab3</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2023/6.828-Lab3/" class="article-date">
-  <time datetime="2023-10-02T16:00:00.000Z" itemprop="datePublished">2023-10-03</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/">操作系统</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/6-828/">6.828</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h1 id="Lec-7"><a href="#Lec-7" class="headerlink" title="Lec 7"></a>Lec 7</h1><p>一些虚拟内存实现的技巧,如延迟分配,写时复制等<br><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.828/2018/lec/l-usingvm.pdf">https://pdos.csail.mit.edu/6.828/2018/lec/l-usingvm.pdf</a></p>
-<h2 id="Lab3-User-Environments"><a href="#Lab3-User-Environments" class="headerlink" title="Lab3 User Environments"></a>Lab3 User Environments</h2><h3 id="PartA-User-Environments-and-Exception-Handling"><a href="#PartA-User-Environments-and-Exception-Handling" class="headerlink" title="PartA: User Environments and Exception Handling"></a>PartA: User Environments and Exception Handling</h3><h4 id="Creating-and-Running-Environments"><a href="#Creating-and-Running-Environments" class="headerlink" title="Creating and Running Environments"></a>Creating and Running Environments</h4><p>创建并初始化envs,env_setup_vm函数为环境e建立一个专属的页目录表,由于在UTOP上的内核空间映射对每个环境都是相同的,所以可以直接拷贝kern_pgdir过来.</p> 
-      <a class="article-more-link" href="/2023/6.828-Lab3/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/6%C2%B7828/" rel="tag">6·828</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
-  id="post-ycb2023"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2023/ycb2023/"
-    >羊城杯2023 复现</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2023/ycb2023/" class="article-date">
-  <time datetime="2023-09-30T16:00:00.000Z" itemprop="datePublished">2023-10-01</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/ctf%E5%A4%8D%E7%8E%B0/">ctf复现</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>heap没出没进线下…</p>
-<h2 id="login"><a href="#login" class="headerlink" title="login"></a>login</h2><p>qemu-riscv64 -g 2333 ./pwn<br>gdbinit这样设置方便调试,然后gdb-multiarch -x gdbinit就能调了</p>
-<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">set arch riscv:rv64</span><br><span class="line">target remote 127.0.0.1:2333</span><br><span class="line">define hook-stop</span><br><span class="line">    info reg</span><br><span class="line">    echo "\n\n\n\n\n"</span><br><span class="line">    x/10i $pc</span><br><span class="line">end</span><br><span class="line"></span><br><span class="line">b *0x123457EA</span><br><span class="line">c</span><br></pre></td></tr></tbody></table></figure> 
-      <a class="article-more-link" href="/2023/ycb2023/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
-  id="post-6.828-Lab1-2"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2023/6.828-Lab1-2/"
-    >MIT6.828 Lab1-Lab2</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2023/6.828-Lab1-2/" class="article-date">
-  <time datetime="2023-09-26T16:00:00.000Z" itemprop="datePublished">2023-09-27</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/">操作系统</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/6-828/">6.828</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h1 id="LEC-1"><a href="#LEC-1" class="headerlink" title="LEC 1"></a>LEC 1</h1><h2 id="操作系统概述"><a href="#操作系统概述" class="headerlink" title="操作系统概述"></a>操作系统概述</h2><p>管道本质上是一个内核的缓冲区,大多数情况下半开工,描述符可跨fork继承.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202309202328496.png"></p>
-<h2 id="Lab-1-Booting-a-PC"><a href="#Lab-1-Booting-a-PC" class="headerlink" title="Lab 1: Booting a PC"></a>Lab 1: Booting a PC</h2><h3 id="PC-Bootstrap"><a href="#PC-Bootstrap" class="headerlink" title="PC Bootstrap"></a>PC Bootstrap</h3><p>BIOS: 设置中断描述符表,初始化设备.加载bootloader</p>
-<blockquote>
-<p>When the BIOS runs, it sets up an interrupt descriptor table and initializes various devices such as the VGA display. This is where the “Starting SeaBIOS” message you see in the QEMU window comes from. </p>
-</blockquote> 
-      <a class="article-more-link" href="/2023/6.828-Lab1-2/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/6%C2%B7828/" rel="tag">6·828</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
-  id="post-SGI-STL--Notes"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2023/SGI-STL--Notes/"
-    >SGI STL学习笔记</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2023/SGI-STL--Notes/" class="article-date">
-  <time datetime="2023-09-11T16:00:00.000Z" itemprop="datePublished">2023-09-12</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/">程序设计</a> / <a class="article-category-link" href="/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/SGI-STL/">SGI-STL</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>所有内容均基于SGI STL.该项目仅作为本人学习C++STL库,数据结构与算法使用.</p>
-<h2 id="内存置配器"><a href="#内存置配器" class="headerlink" title="内存置配器"></a>内存置配器</h2><p>容器使用内存置配器来进行内存空间的分配和释放.<br>为了适配STL标准,在实际使用的分配器实现一个上层接口类simple_alloc.该类默认使用第二级分配器</p>
-<h3 id="第一级分配器-malloc-alloc-template"><a href="#第一级分配器-malloc-alloc-template" class="headerlink" title="第一级分配器 malloc_alloc_template"></a>第一级分配器 malloc_alloc_template</h3><p>该分配器在内部直接使用operator new/delete进行内存管理</p>
-<h3 id="第二级分配器-default-alloc-template"><a href="#第二级分配器-default-alloc-template" class="headerlink" title="第二级分配器 default_alloc_template"></a>第二级分配器 default_alloc_template</h3><p>该分配器以小型内存池进行内存管理,减轻分配内存时的cookie占用的内存.</p> 
-      <a class="article-more-link" href="/2023/SGI-STL--Notes/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CPP/" rel="tag">CPP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/STL/" rel="tag">STL</a></li></ul>
 
     </footer>
   </div>

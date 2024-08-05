@@ -161,7 +161,7 @@
 <h3 id="perform-dry-run"><a href="#perform-dry-run" class="headerlink" title="perform_dry_run"></a>perform_dry_run</h3><p>遍历初始输入的测试样例进行校准,确保应用程序预期工作.</p>
 <h4 id="calibrate-case"><a href="#calibrate-case" class="headerlink" title="calibrate_case"></a>calibrate_case</h4><p>校准一个测试样例</p>
 <h5 id="init-forkserver"><a href="#init-forkserver" class="headerlink" title="init_forkserver"></a>init_forkserver</h5><p>其中会首先调用init_forkserver启动forkserver.</p>
-<h6 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h6><p>关于forkserver的想法及样例代码在<a target="_blank" rel="noopener" href="https://lcamtuf.blogspot.com/2014/10/fuzzing-binaries-without-execve.html%E4%B8%AD%E8%A7%A3%E9%87%8A">https://lcamtuf.blogspot.com/2014/10/fuzzing-binaries-without-execve.html中解释</a>.<br>总结一下:<br>在传统的fuzzer中,fuuzzer自身不断fork+execve到fuzz目标程序(target),target再读取输入并处理,而Fuzzer通过waitpid获取处理结果.这种情况下,Fuzzer会花费大量时间waitpid来等待进程结束,等待链接器和所有的库初始化例程完成工作.</p>
+<h6 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h6><p>关于forkserver的想法及样例代码在<a target="_blank" rel="noopener" href="https://lcamtuf.blogspot.com/2014/10/fuzzing-binaries-without-execve.html">https://lcamtuf.blogspot.com/2014/10/fuzzing-binaries-without-execve.html</a> 中解释.<br>总结一下:<br>在传统的fuzzer中,fuuzzer自身不断fork+execve到fuzz目标程序(target),target再读取输入并处理,而Fuzzer通过waitpid获取处理结果.这种情况下,Fuzzer会花费大量时间waitpid来等待进程结束,等待链接器和所有的库初始化例程完成工作.</p>
 <p>作者提出的解决方案有:</p>
 <ol>
 <li>通过自定义ELF加载器在Fuzzer内部执行target程序,通过mprotect保护Fuzzer本身的内存空间.</li>
