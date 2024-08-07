@@ -88,7 +88,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">2k</span>
+            <span class="post-count">2.1k</span>
         </span>
     </span>
 
@@ -119,7 +119,7 @@
 <h2 id="CrossCache-UAF"><a href="#CrossCache-UAF" class="headerlink" title="CrossCache UAF"></a>CrossCache UAF</h2><p><a target="_blank" rel="noopener" href="https://org.anize.rs/HITCON-2022/pwn/fourchain-kernel">https://org.anize.rs/HITCON-2022/pwn/fourchain-kernel</a><br><a target="_blank" rel="noopener" href="https://ruia-ruia.github.io/2022/08/05/CVE-2022-29582-io-uring/">https://ruia-ruia.github.io/2022/08/05/CVE-2022-29582-io-uring/</a></p>
 <p>如何构造CrossCache UAF.</p>
 <h3 id="内存分配释放相关过程"><a href="#内存分配释放相关过程" class="headerlink" title="内存分配释放相关过程"></a>内存分配释放相关过程</h3><p>如何分配一个新的页面?<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/newslab.png"></p>
-<p>如何释放页面?<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/freeslab.jpg"></p>
+<p>如何释放页面?<br>下图中有一个地方不准确, 在unfreeze_partials中, 是否discard_slab还有一个kmem_cache_node-&gt;nr_partial &gt;= kmem_cache-&gt;min_partial的要求, 这也是在kmem_cache_node的partial链表中能看到完全空闲的slab的原因.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/freeslab.jpg"></p>
 <p>从左向右, 首先释放目标slab上的所有对象, 使得其进入partial_list.<br>之后释放每个slab中的1个对象, 使得partial_list逐渐填满, 触发unfreeze_partials.<br>在unfreeze_partials中, 由于目标slab完全空闲(所有对象已释放), 则目标slab会被释放回到Buddy_system.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/partialoverflow.png"></p>
 <p>如何填满一个slab? : /sys/kernel/slab/XXX/objs_per_slab  此例中为25<br>partial_list允许的最大slab数量? : /sys/kernel/slab/XXX/cpu_partial  此例中为13</p>
 <h3 id="CorssCache-UAF构造"><a href="#CorssCache-UAF构造" class="headerlink" title="CorssCache UAF构造"></a>CorssCache UAF构造</h3><h4 id="1-Reserving-slabs-to-overflow-the-partial-list"><a href="#1-Reserving-slabs-to-overflow-the-partial-list" class="headerlink" title="1. Reserving slabs to overflow the partial list"></a>1. Reserving slabs to overflow the partial list</h4><p>为了填充partial_list直至溢出, 我们需要先持有一些页面.<br>方法为分配 (objs_per_slab * (cpu_partial+1) ) 个对象.</p>
