@@ -111,6 +111,64 @@
     
     
     <article
+  id="post-Try Fuzzing -CVE-2012-2836 CVE-2009-3895 libexif Integer-Overflow"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2024/Try%20Fuzzing%20-CVE-2012-2836%20CVE-2009-3895%20libexif%20Integer-Overflow/"
+    >CVE-2012-2836 CVE-2009-3895 libexif 整数溢出</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/Try%20Fuzzing%20-CVE-2012-2836%20CVE-2009-3895%20libexif%20Integer-Overflow/" class="article-date">
+  <time datetime="2024-03-10T16:00:00.000Z" itemprop="datePublished">2024-03-11</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/%E5%BA%94%E7%94%A8%E5%B1%82/">应用层</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>libexif-0.6.14.</p>
+<h2 id="CVE-2012-2836"><a href="#CVE-2012-2836" class="headerlink" title="CVE-2012-2836"></a>CVE-2012-2836</h2><p>-s 123跑几分钟,出了13个crash,栈回溯分一下类,一共4种路径</p>
+<h3 id="崩溃分析"><a href="#崩溃分析" class="headerlink" title="崩溃分析"></a>崩溃分析</h3><p>crash 0:<br>调用exif_data_load_data_thumbnail函数时size参数明显过大,且正好是unsigned int的最大值,猜测是个整数溢出或错误的类型转换(int32_t转uint32_t).</p> 
+      <a class="article-more-link" href="/2024/Try%20Fuzzing%20-CVE-2012-2836%20CVE-2009-3895%20libexif%20Integer-Overflow/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CVE/" rel="tag">CVE</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
   id="post-Try Fuzzing - CVE-2019-13288 xpdf Infinite-Recursion"
   class="article article-type-post"
   itemscope
@@ -728,62 +786,6 @@
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CSCD70/" rel="tag">CSCD70</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%99%E6%80%81%E5%88%86%E6%9E%90/" rel="tag">静态分析</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
-  id="post-JQCTF223 Qemu-mr Recursive-MMIO-Flaws"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2023/JQCTF223%20Qemu-mr%20Recursive-MMIO-Flaws/"
-    >京麒CTF2023 qemu-mr MMIO重入攻击</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2023/JQCTF223%20Qemu-mr%20Recursive-MMIO-Flaws/" class="article-date">
-  <time datetime="2023-12-02T16:00:00.000Z" itemprop="datePublished">2023-12-03</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Qemu/">Qemu</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>有趣的MMIO重入</p> 
-      <a class="article-more-link" href="/2023/JQCTF223%20Qemu-mr%20Recursive-MMIO-Flaws/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Qemu/" rel="tag">Qemu</a></li></ul>
 
     </footer>
   </div>

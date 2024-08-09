@@ -111,6 +111,63 @@
     
     
     <article
+  id="post-m0leConFinals 2023 Keasy CrossCache UAF + DirtyPagetable"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2024/m0leConFinals%202023%20Keasy%20CrossCache%20UAF%20+%20DirtyPagetable/"
+    >m0leConFinals 2023 Keasy CrossCache UAF + DirtyPagetable</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/m0leConFinals%202023%20Keasy%20CrossCache%20UAF%20+%20DirtyPagetable/" class="article-date">
+  <time datetime="2024-08-07T16:00:00.000Z" itemprop="datePublished">2024-08-08</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>传说中的dirty_pagetable.</p>
+<p>漏洞在于copy_to_user失败后, 会fput释放file, 但用户态仍能通过fd访问到该file, 造成file结构体的UAF.</p> 
+      <a class="article-more-link" href="/2024/m0leConFinals%202023%20Keasy%20CrossCache%20UAF%20+%20DirtyPagetable/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
   id="post-Hitcon2023 WallRose"
   class="article article-type-post"
   itemscope
@@ -713,64 +770,6 @@
 </blockquote>
 <p>形式是由环境变量GLIBC_TUNABLES指示的由”:”分隔的键值对序列,如:<br>GLIBC_TUNABLES=glibc.malloc.trim_threshold=128:glibc.malloc.check=3</p> 
       <a class="article-more-link" href="/2024/CVE-2023-4911%20LD-HeapOverflow/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CVE/" rel="tag">CVE</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
-  id="post-Try Fuzzing -CVE-2012-2836 CVE-2009-3895 libexif Integer-Overflow"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2024/Try%20Fuzzing%20-CVE-2012-2836%20CVE-2009-3895%20libexif%20Integer-Overflow/"
-    >CVE-2012-2836 CVE-2009-3895 libexif 整数溢出</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2024/Try%20Fuzzing%20-CVE-2012-2836%20CVE-2009-3895%20libexif%20Integer-Overflow/" class="article-date">
-  <time datetime="2024-03-10T16:00:00.000Z" itemprop="datePublished">2024-03-11</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/%E5%BA%94%E7%94%A8%E5%B1%82/">应用层</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>libexif-0.6.14.</p>
-<h2 id="CVE-2012-2836"><a href="#CVE-2012-2836" class="headerlink" title="CVE-2012-2836"></a>CVE-2012-2836</h2><p>-s 123跑几分钟,出了13个crash,栈回溯分一下类,一共4种路径</p>
-<h3 id="崩溃分析"><a href="#崩溃分析" class="headerlink" title="崩溃分析"></a>崩溃分析</h3><p>crash 0:<br>调用exif_data_load_data_thumbnail函数时size参数明显过大,且正好是unsigned int的最大值,猜测是个整数溢出或错误的类型转换(int32_t转uint32_t).</p> 
-      <a class="article-more-link" href="/2024/Try%20Fuzzing%20-CVE-2012-2836%20CVE-2009-3895%20libexif%20Integer-Overflow/"
         >阅读更多...</a
       >
        
