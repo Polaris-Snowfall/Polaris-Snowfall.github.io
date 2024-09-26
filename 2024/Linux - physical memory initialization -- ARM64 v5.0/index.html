@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>Linux内核  物理内存初始化过程 -- ARM64 v5.0 |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Linux - physical memory initialization -- ARM64 v5.0"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Linux内核  物理内存初始化过程 -- ARM64 v5.0
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/Linux%20-%20physical%20memory%20initialization%20--%20ARM64%20v5.0/" class="article-date">
+  <time datetime="2024-09-15T16:00:00.000Z" itemprop="datePublished">2024-09-16</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux%E5%86%85%E6%A0%B8/">Linux内核</a> / <a class="article-category-link" href="/categories/Linux%E5%86%85%E6%A0%B8/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">内存管理</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">3.3k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">18 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="Question"><a href="#Question" class="headerlink" title="Question"></a>Question</h1><ol>
+<li>内核如何获取物理内存相关信息?</li>
+<li>sparse模型中,mem_section, page的关系是怎么建立的? pfn_to_page和page_to_pfn的实现?</li>
+<li>node, zone, page的关系是怎么建立的?</li>
+</ol>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20240915154202.png"></p>
+<span id="more"></span>
+<h1 id="Memblock-初始化"><a href="#Memblock-初始化" class="headerlink" title="Memblock 初始化"></a>Memblock 初始化</h1><p>Memblock是在常规的内核内存分配器没有运行之前的早期启动阶段的内存区域管理方式.<br> Memblock 将系统内存视为一系列连续的区域集合。这些集合有几种类型：</p>
+<blockquote>
+<p><code>memory</code> - 描述内核可用的物理内存；这可能与系统中实际安装的物理内存有所不同，例如当使用 <code>mem=</code> 命令行参数限制内存时。<br> <code>reserved</code> - 描述已分配的区域。<br> <code>physmap</code> - 描述实际的物理内存，不论可能的限制；<code>physmap</code> 类型仅在某些架构上可用。</p>
+</blockquote>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DOC: memblock overview</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Memblock is a method of managing memory regions during the early</span></span><br><span class="line"><span class="comment"> * boot period when the usual kernel memory allocators are not up and</span></span><br><span class="line"><span class="comment"> * running.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Memblock views the system memory as collections of contiguous</span></span><br><span class="line"><span class="comment"> * regions. There are several types of these collections:</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * * ``memory`` - describes the physical memory available to the</span></span><br><span class="line"><span class="comment"> *   kernel; this may differ from the actual physical memory installed</span></span><br><span class="line"><span class="comment"> *   in the system, for instance when the memory is restricted with</span></span><br><span class="line"><span class="comment"> *   ``mem=`` command line parameter</span></span><br><span class="line"><span class="comment"> * * ``reserved`` - describes the regions that were allocated</span></span><br><span class="line"><span class="comment"> * * ``physmap`` - describes the actual physical memory regardless of</span></span><br><span class="line"><span class="comment"> *   the possible restrictions; the ``physmap`` type is only available</span></span><br><span class="line"><span class="comment"> *   on some architectures.</span></span><br></pre></td></tr></tbody></table></figure>
+
+<p>相关数据结构定义:</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * enum memblock_flags - definition of memory region attributes</span></span><br><span class="line"><span class="comment"> * @MEMBLOCK_NONE: no special request</span></span><br><span class="line"><span class="comment"> * @MEMBLOCK_HOTPLUG: hotpluggable region</span></span><br><span class="line"><span class="comment"> * @MEMBLOCK_MIRROR: mirrored region</span></span><br><span class="line"><span class="comment"> * @MEMBLOCK_NOMAP: don't add to kernel direct mapping</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">enum</span> <span class="title">memblock_flags</span> {</span></span><br><span class="line">	MEMBLOCK_NONE		= <span class="number">0x0</span>,	<span class="comment">/* No special request */</span></span><br><span class="line">	MEMBLOCK_HOTPLUG	= <span class="number">0x1</span>,	<span class="comment">/* hotpluggable region */</span></span><br><span class="line">	MEMBLOCK_MIRROR		= <span class="number">0x2</span>,	<span class="comment">/* mirrored region */</span></span><br><span class="line">	MEMBLOCK_NOMAP		= <span class="number">0x4</span>,	<span class="comment">/* don't add to kernel direct mapping */</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * struct memblock_region - represents a memory region</span></span><br><span class="line"><span class="comment"> * @base: physical address of the region</span></span><br><span class="line"><span class="comment"> * @size: size of the region</span></span><br><span class="line"><span class="comment"> * @flags: memory region attributes</span></span><br><span class="line"><span class="comment"> * @nid: NUMA node id</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">memblock_region</span> {</span></span><br><span class="line">	<span class="type">phys_addr_t</span> base;</span><br><span class="line">	<span class="type">phys_addr_t</span> size;</span><br><span class="line">	<span class="class"><span class="keyword">enum</span> <span class="title">memblock_flags</span> <span class="title">flags</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_HAVE_MEMBLOCK_NODE_MAP</span></span><br><span class="line">	<span class="type">int</span> nid;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * struct memblock_type - collection of memory regions of certain type</span></span><br><span class="line"><span class="comment"> * @cnt: number of regions</span></span><br><span class="line"><span class="comment"> * @max: size of the allocated array</span></span><br><span class="line"><span class="comment"> * @total_size: size of all regions</span></span><br><span class="line"><span class="comment"> * @regions: array of regions</span></span><br><span class="line"><span class="comment"> * @name: the memory type symbolic name</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">memblock_type</span> {</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> cnt;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> max;</span><br><span class="line">	<span class="type">phys_addr_t</span> total_size;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">memblock_region</span> *<span class="title">regions</span>;</span></span><br><span class="line">	<span class="type">char</span> *name;</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * struct memblock - memblock allocator metadata</span></span><br><span class="line"><span class="comment"> * @bottom_up: is bottom up direction?</span></span><br><span class="line"><span class="comment"> * @current_limit: physical address of the current allocation limit</span></span><br><span class="line"><span class="comment"> * @memory: usabe memory regions</span></span><br><span class="line"><span class="comment"> * @reserved: reserved memory regions</span></span><br><span class="line"><span class="comment"> * @physmem: all physical memory</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">memblock</span> {</span></span><br><span class="line">	<span class="type">bool</span> bottom_up;  <span class="comment">/* is bottom up direction? */</span></span><br><span class="line">	<span class="type">phys_addr_t</span> current_limit;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">memblock_type</span> <span class="title">memory</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">memblock_type</span> <span class="title">reserved</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_HAVE_MEMBLOCK_PHYS_MAP</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">memblock_type</span> <span class="title">physmem</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">};</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>最上层的memblock结构是静态初始化的: </p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">memblock_region</span> <span class="title">memblock_memory_init_regions</span>[<span class="title">INIT_MEMBLOCK_REGIONS</span>] __<span class="title">initdata_memblock</span>;</span></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">memblock_region</span> <span class="title">memblock_reserved_init_regions</span>[<span class="title">INIT_MEMBLOCK_RESERVED_REGIONS</span>] __<span class="title">initdata_memblock</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_HAVE_MEMBLOCK_PHYS_MAP</span></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">memblock_region</span> <span class="title">memblock_physmem_init_regions</span>[<span class="title">INIT_PHYSMEM_REGIONS</span>] __<span class="title">initdata_memblock</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">memblock</span> <span class="title">memblock</span> __<span class="title">initdata_memblock</span> =</span> {</span><br><span class="line">	.memory.regions		= memblock_memory_init_regions,</span><br><span class="line">	.memory.cnt		= <span class="number">1</span>,	<span class="comment">/* empty dummy entry */</span></span><br><span class="line">	.memory.max		= INIT_MEMBLOCK_REGIONS,</span><br><span class="line">	.memory.name		= <span class="string">"memory"</span>,</span><br><span class="line"></span><br><span class="line">	.reserved.regions	= memblock_reserved_init_regions,</span><br><span class="line">	.reserved.cnt		= <span class="number">1</span>,	<span class="comment">/* empty dummy entry */</span></span><br><span class="line">	.reserved.max		= INIT_MEMBLOCK_RESERVED_REGIONS,</span><br><span class="line">	.reserved.name		= <span class="string">"reserved"</span>,</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_HAVE_MEMBLOCK_PHYS_MAP</span></span><br><span class="line">	.physmem.regions	= memblock_physmem_init_regions,</span><br><span class="line">	.physmem.cnt		= <span class="number">1</span>,	<span class="comment">/* empty dummy entry */</span></span><br><span class="line">	.physmem.max		= INIT_PHYSMEM_REGIONS,</span><br><span class="line">	.physmem.name		= <span class="string">"physmem"</span>,</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">	.bottom_up		= <span class="literal">false</span>,</span><br><span class="line">	.current_limit		= MEMBLOCK_ALLOC_ANYWHERE,</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+
+<p>在setup阶段, 会扫描FDT获取物理内存信息, 通过memblock_add加入到memblock中.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * memblock_add - add new memblock region</span></span><br><span class="line"><span class="comment"> * @base: base address of the new region</span></span><br><span class="line"><span class="comment"> * @size: size of the new region</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Add new memblock region [@base, @base + @size) to the "memory"</span></span><br><span class="line"><span class="comment"> * type. See memblock_add_range() description for mode details</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Return:</span></span><br><span class="line"><span class="comment"> * 0 on success, -errno on failure.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">int</span> __init_memblock <span class="title function_">memblock_add</span><span class="params">(<span class="type">phys_addr_t</span> base, <span class="type">phys_addr_t</span> size)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">phys_addr_t</span> end = base + size - <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">	memblock_dbg(<span class="string">"memblock_add: [%pa-%pa] %pF\n"</span>,</span><br><span class="line">		     &amp;base, &amp;end, (<span class="type">void</span> *)_RET_IP_);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> memblock_add_range(&amp;memblock.memory, base, size, MAX_NUMNODES, <span class="number">0</span>);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>然后在arm64_memblock_init整理并移除一些物理内存, 完成memblock的初始化.<br>之后便可以使用memblock相关的api分配释放物理内存.</p>
+<h1 id="bootmem-init"><a href="#bootmem-init" class="headerlink" title="bootmem_init"></a>bootmem_init</h1><p>sparse模型主要初始化过程在bootmem_init中.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> __init <span class="title function_">bootmem_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> min, max;</span><br><span class="line"></span><br><span class="line">	min = PFN_UP(memblock_start_of_DRAM());</span><br><span class="line">	max = PFN_DOWN(memblock_end_of_DRAM());</span><br><span class="line"></span><br><span class="line">	early_memtest(min &lt;&lt; PAGE_SHIFT, max &lt;&lt; PAGE_SHIFT);</span><br><span class="line"></span><br><span class="line">	max_pfn = max_low_pfn = max;</span><br><span class="line"></span><br><span class="line">	arm64_numa_init();</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Sparsemem tries to allocate bootmem in memory_present(), so must be</span></span><br><span class="line"><span class="comment">	 * done after the fixed reservations.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	arm64_memory_present();</span><br><span class="line"></span><br><span class="line">	sparse_init();</span><br><span class="line">	zone_sizes_init(min, max);</span><br><span class="line"></span><br><span class="line">	memblock_dump_all();</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+<h2 id="arm64-memory-present"><a href="#arm64-memory-present" class="headerlink" title="arm64_memory_present"></a>arm64_memory_present</h2><p>初始化mem_section数组.<br>遍历memblock中所有可用的物理内存区域, 调用memory_present.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> __init <span class="title function_">arm64_memory_present</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">memblock_region</span> *<span class="title">reg</span>;</span></span><br><span class="line"></span><br><span class="line">	for_each_memblock(memory, reg) {</span><br><span class="line">		<span class="type">int</span> nid = memblock_get_region_node(reg);</span><br><span class="line"></span><br><span class="line">		memory_present(nid, memblock_region_memory_base_pfn(reg),</span><br><span class="line">				memblock_region_memory_end_pfn(reg));</span><br><span class="line">	}</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>memory_present函数在每个section-&gt;section_mem_map中记录节点信息.<br>这里补充一下CONFIG_SPARSEMEM_EXTREME.<br>在Sparse Memory内存模型中, mem_section可以使用静态的二维数组, 也可以动态的进行分配.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Permanent SPARSEMEM data:</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 1) mem_section	- memory sections, mem_map's for valid memory</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_SPARSEMEM_EXTREME</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mem_section</span> **<span class="title">mem_section</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mem_section</span> <span class="title">mem_section</span>[<span class="title">NR_SECTION_ROOTS</span>][<span class="title">SECTIONS_PER_ROOT</span>]</span></span><br><span class="line"><span class="class">	____<span class="title">cacheline_internodealigned_in_smp</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_SPARSEMEM_EXTREME</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SECTIONS_PER_ROOT       (PAGE_SIZE / sizeof (struct mem_section))</span></span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SECTIONS_PER_ROOT	1</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SECTION_NR_TO_ROOT(sec)	((sec) / SECTIONS_PER_ROOT)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> NR_SECTION_ROOTS	DIV_ROUND_UP(NR_MEM_SECTIONS, SECTIONS_PER_ROOT)</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Record a memory area against a node. */</span></span><br><span class="line"><span class="type">void</span> __init <span class="title function_">memory_present</span><span class="params">(<span class="type">int</span> nid, <span class="type">unsigned</span> <span class="type">long</span> start, <span class="type">unsigned</span> <span class="type">long</span> end)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> pfn;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_SPARSEMEM_EXTREME</span></span><br><span class="line">	<span class="keyword">if</span> (unlikely(!mem_section)) {</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">long</span> size, align;</span><br><span class="line"></span><br><span class="line">		size = <span class="keyword">sizeof</span>(<span class="keyword">struct</span> mem_section*) * NR_SECTION_ROOTS;</span><br><span class="line">		align = <span class="number">1</span> &lt;&lt; (INTERNODE_CACHE_SHIFT);</span><br><span class="line">		mem_section = memblock_alloc(size, align);</span><br><span class="line">	}</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">	start &amp;= PAGE_SECTION_MASK;</span><br><span class="line">	mminit_validate_memmodel_limits(&amp;start, &amp;end);</span><br><span class="line">	<span class="keyword">for</span> (pfn = start; pfn &lt; end; pfn += PAGES_PER_SECTION) {</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">long</span> section = pfn_to_section_nr(pfn);</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">mem_section</span> *<span class="title">ms</span>;</span></span><br><span class="line"></span><br><span class="line">		sparse_index_init(section, nid);<span class="comment">//为section对应的root分配空间.</span></span><br><span class="line">		set_section_nid(section, nid);<span class="comment">//在section_to_node_table中记录section所属的node.</span></span><br><span class="line"></span><br><span class="line">		ms = __nr_to_section(section);</span><br><span class="line">		<span class="comment">//  在boot阶段,使用section_mem_map字段来存储nid.</span></span><br><span class="line">		<span class="keyword">if</span> (!ms-&gt;section_mem_map) {</span><br><span class="line">			ms-&gt;section_mem_map = sparse_encode_early_nid(nid) |</span><br><span class="line">							SECTION_IS_ONLINE;</span><br><span class="line">			section_mark_present(ms); <span class="comment">//更新__highest_present_section_nr, 节约遍历时间。</span></span><br><span class="line">		}</span><br><span class="line">	}</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>pfn与section序号之间的转换关系如下: </p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">pfn_to_section_nr</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> pfn)</span></span><br><span class="line">{</span><br><span class="line">	<span class="keyword">return</span> pfn &gt;&gt; PFN_SECTION_SHIFT;</span><br><span class="line">}</span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">section_nr_to_pfn</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> sec)</span></span><br><span class="line">{</span><br><span class="line">	<span class="keyword">return</span> sec &lt;&lt; PFN_SECTION_SHIFT;</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>sparse_index_init函数为CONFIG_SPARSEMEM_EXTREME的mem_section分配下一级指针数组(即单个ROOT内部的指针数组).<br>set_section_nid在section_to_node_table表中记录section对应的nid, 方便找到某page所属的节点.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> __meminit <span class="title function_">sparse_index_init</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> section_nr, <span class="type">int</span> nid)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> root = SECTION_NR_TO_ROOT(section_nr);</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">mem_section</span> *<span class="title">section</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (mem_section[root])</span><br><span class="line">		<span class="keyword">return</span> -EEXIST;</span><br><span class="line"></span><br><span class="line">	section = sparse_index_alloc(nid);</span><br><span class="line">	<span class="keyword">if</span> (!section)</span><br><span class="line">		<span class="keyword">return</span> -ENOMEM;</span><br><span class="line"></span><br><span class="line">	mem_section[root] = section;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> NODE_NOT_IN_PAGE_FLAGS</span></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * If we did not store the node number in the page then we have to</span></span><br><span class="line"><span class="comment"> * do a lookup in the section_to_node_table in order to find which</span></span><br><span class="line"><span class="comment"> * node the page belongs to.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> MAX_NUMNODES &lt;= 256</span></span><br><span class="line"><span class="type">static</span> u8 section_to_node_table[NR_MEM_SECTIONS] __cacheline_aligned;</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"><span class="type">static</span> u16 section_to_node_table[NR_MEM_SECTIONS] __cacheline_aligned;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">page_to_nid</span><span class="params">(<span class="type">const</span> <span class="keyword">struct</span> page *page)</span></span><br><span class="line">{</span><br><span class="line">	<span class="keyword">return</span> section_to_node_table[page_to_section(page)];</span><br><span class="line">}</span><br><span class="line">EXPORT_SYMBOL(page_to_nid);</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">set_section_nid</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> section_nr, <span class="type">int</span> nid)</span></span><br><span class="line">{</span><br><span class="line">	section_to_node_table[section_nr] = nid;</span><br><span class="line">}</span><br><span class="line"><span class="meta">#<span class="keyword">else</span> <span class="comment">/* !NODE_NOT_IN_PAGE_FLAGS */</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * During early boot, before section_mem_map is used for an actual</span></span><br><span class="line"><span class="comment"> * mem_map, we use section_mem_map to store the section's NUMA</span></span><br><span class="line"><span class="comment"> * node.  This keeps us from having to use another data structure.  The</span></span><br><span class="line"><span class="comment"> * node information is cleared just before we store the real mem_map.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">sparse_encode_early_nid</span><span class="params">(<span class="type">int</span> nid)</span></span><br><span class="line">{</span><br><span class="line">	<span class="keyword">return</span> (nid &lt;&lt; SECTION_NID_SHIFT);</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="sparse-init"><a href="#sparse-init" class="headerlink" title="sparse_init"></a>sparse_init</h2><p>sparse_init为每个节点的每个section分配PAGES_PER_SECTION个struct page的空间和一个usemap结构.<br>并将所有struct page映射到vmemmap区域, 使得page结构在虚拟地址空间上连续, 便于访问和转换.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Allocate the accumulated non-linear sections, allocate a mem_map</span></span><br><span class="line"><span class="comment"> * for each and record the physical to section mapping.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">void</span> __init <span class="title function_">sparse_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> pnum_begin = first_present_section_nr();</span><br><span class="line">	<span class="type">int</span> nid_begin = sparse_early_nid(__nr_to_section(pnum_begin));</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> pnum_end, map_count = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Setup pageblock_order for HUGETLB_PAGE_SIZE_VARIABLE */</span></span><br><span class="line">	set_pageblock_order();</span><br><span class="line"></span><br><span class="line">	for_each_present_section_nr(pnum_begin + <span class="number">1</span>, pnum_end) {</span><br><span class="line">		<span class="type">int</span> nid = sparse_early_nid(__nr_to_section(pnum_end));</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (nid == nid_begin) {</span><br><span class="line">			map_count++;</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line">		}</span><br><span class="line">		<span class="comment">/* Init node with sections in range [pnum_begin, pnum_end) */</span></span><br><span class="line">		sparse_init_nid(nid_begin, pnum_begin, pnum_end, map_count);</span><br><span class="line">		nid_begin = nid;</span><br><span class="line">		pnum_begin = pnum_end;</span><br><span class="line">		map_count = <span class="number">1</span>;</span><br><span class="line">	}</span><br><span class="line">	<span class="comment">/* cover the last node */</span></span><br><span class="line">	sparse_init_nid(nid_begin, pnum_begin, pnum_end, map_count);</span><br><span class="line">	vmemmap_populate_print_last();</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> __meminit <span class="title function_">sparse_init_one_section</span><span class="params">(<span class="keyword">struct</span> mem_section *ms,</span></span><br><span class="line"><span class="params">		<span class="type">unsigned</span> <span class="type">long</span> pnum, <span class="keyword">struct</span> page *mem_map,</span></span><br><span class="line"><span class="params">		<span class="type">unsigned</span> <span class="type">long</span> *pageblock_bitmap)</span></span><br><span class="line">{</span><br><span class="line">	ms-&gt;section_mem_map &amp;= ~SECTION_MAP_MASK;</span><br><span class="line">	ms-&gt;section_mem_map |= sparse_encode_mem_map(mem_map, pnum) |</span><br><span class="line">							SECTION_HAS_MEM_MAP;</span><br><span class="line"> 	ms-&gt;pageblock_flags = pageblock_bitmap;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Initialize sparse on a specific node. The node spans [pnum_begin, pnum_end)</span></span><br><span class="line"><span class="comment"> * And number of present sections in this node is map_count.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __init <span class="title function_">sparse_init_nid</span><span class="params">(<span class="type">int</span> nid, <span class="type">unsigned</span> <span class="type">long</span> pnum_begin,</span></span><br><span class="line"><span class="params">				   <span class="type">unsigned</span> <span class="type">long</span> pnum_end,</span></span><br><span class="line"><span class="params">				   <span class="type">unsigned</span> <span class="type">long</span> map_count)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> pnum, usemap_longs, *usemap;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">page</span> *<span class="title">map</span>;</span></span><br><span class="line"></span><br><span class="line">	usemap_longs = BITS_TO_LONGS(SECTION_BLOCKFLAGS_BITS);</span><br><span class="line">	usemap = sparse_early_usemaps_alloc_pgdat_section(NODE_DATA(nid),</span><br><span class="line">							  usemap_size() *</span><br><span class="line">							  map_count);</span><br><span class="line">	<span class="keyword">if</span> (!usemap) {</span><br><span class="line">		pr_err(<span class="string">"%s: node[%d] usemap allocation failed"</span>, __func__, nid);</span><br><span class="line">		<span class="keyword">goto</span> failed;</span><br><span class="line">	}</span><br><span class="line">	</span><br><span class="line">	sparse_buffer_init(map_count * section_map_size(), nid);<span class="comment">//为所有section预分配map的空间</span></span><br><span class="line">	for_each_present_section_nr(pnum_begin, pnum) {</span><br><span class="line">		<span class="keyword">if</span> (pnum &gt;= pnum_end)</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">		<span class="built_in">map</span> = sparse_mem_map_populate(pnum, nid, <span class="literal">NULL</span>);<span class="comment">// 分配一个map的空间, 并建立属于该section的vmemmap区域映射.</span></span><br><span class="line">		<span class="keyword">if</span> (!<span class="built_in">map</span>) {</span><br><span class="line">			pr_err(<span class="string">"%s: node[%d] memory map backing failed. Some memory will not be available."</span>,</span><br><span class="line">			       __func__, nid);</span><br><span class="line">			pnum_begin = pnum;</span><br><span class="line">			<span class="keyword">goto</span> failed;</span><br><span class="line">		}</span><br><span class="line">		check_usemap_section_nr(nid, usemap);</span><br><span class="line">		sparse_init_one_section(__nr_to_section(pnum), pnum, <span class="built_in">map</span>, usemap);</span><br><span class="line">		usemap += usemap_longs;</span><br><span class="line">	}</span><br><span class="line">	sparse_buffer_fini();</span><br><span class="line">	<span class="keyword">return</span>;</span><br><span class="line">failed:</span><br><span class="line">	<span class="comment">/* We failed to allocate, mark all the following pnums as not present */</span></span><br><span class="line">	for_each_present_section_nr(pnum_begin, pnum) {</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">mem_section</span> *<span class="title">ms</span>;</span></span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (pnum &gt;= pnum_end)</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		ms = __nr_to_section(pnum);</span><br><span class="line">		ms-&gt;section_mem_map = <span class="number">0</span>;</span><br><span class="line">	}</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">struct</span> page * __meminit <span class="title function_">sparse_mem_map_populate</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> pnum, <span class="type">int</span> nid,</span></span><br><span class="line"><span class="params">		<span class="keyword">struct</span> vmem_altmap *altmap)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> start;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> end;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">page</span> *<span class="title">map</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="built_in">map</span> = pfn_to_page(pnum * PAGES_PER_SECTION);</span><br><span class="line">	start = (<span class="type">unsigned</span> <span class="type">long</span>)<span class="built_in">map</span>;</span><br><span class="line">	end = (<span class="type">unsigned</span> <span class="type">long</span>)(<span class="built_in">map</span> + PAGES_PER_SECTION);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (vmemmap_populate(start, end, nid, altmap))</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="built_in">map</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> __meminit <span class="title function_">vmemmap_populate_basepages</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> start,</span></span><br><span class="line"><span class="params">					 <span class="type">unsigned</span> <span class="type">long</span> end, <span class="type">int</span> node)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> addr = start;</span><br><span class="line">	<span class="type">pgd_t</span> *pgd;</span><br><span class="line">	<span class="type">p4d_t</span> *p4d;</span><br><span class="line">	<span class="type">pud_t</span> *pud;</span><br><span class="line">	<span class="type">pmd_t</span> *pmd;</span><br><span class="line">	<span class="type">pte_t</span> *pte;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (; addr &lt; end; addr += PAGE_SIZE) {</span><br><span class="line">		pgd = vmemmap_pgd_populate(addr, node);</span><br><span class="line">		<span class="keyword">if</span> (!pgd)</span><br><span class="line">			<span class="keyword">return</span> -ENOMEM;</span><br><span class="line">		p4d = vmemmap_p4d_populate(pgd, addr, node);</span><br><span class="line">		<span class="keyword">if</span> (!p4d)</span><br><span class="line">			<span class="keyword">return</span> -ENOMEM;</span><br><span class="line">		pud = vmemmap_pud_populate(p4d, addr, node);</span><br><span class="line">		<span class="keyword">if</span> (!pud)</span><br><span class="line">			<span class="keyword">return</span> -ENOMEM;</span><br><span class="line">		pmd = vmemmap_pmd_populate(pud, addr, node);</span><br><span class="line">		<span class="keyword">if</span> (!pmd)</span><br><span class="line">			<span class="keyword">return</span> -ENOMEM;</span><br><span class="line">		pte = vmemmap_pte_populate(pmd, addr, node);</span><br><span class="line">		<span class="keyword">if</span> (!pte)</span><br><span class="line">			<span class="keyword">return</span> -ENOMEM;</span><br><span class="line">		vmemmap_verify(pte, node, addr, addr + PAGE_SIZE);</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20240915154422.png"></p>
+<h2 id="zone-sizes-init"><a href="#zone-sizes-init" class="headerlink" title="zone_sizes_init"></a>zone_sizes_init</h2><p>以UMA为例.<br>首先计算出DMA32和NORMAL区的空洞大小存入zhole_size, 然后调用free_area_init_node.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __init <span class="title function_">zone_sizes_init</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> min, <span class="type">unsigned</span> <span class="type">long</span> max)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">memblock_region</span> *<span class="title">reg</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> zone_size[MAX_NR_ZONES], zhole_size[MAX_NR_ZONES];</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> max_dma = min;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">memset</span>(zone_size, <span class="number">0</span>, <span class="keyword">sizeof</span>(zone_size));</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 4GB maximum for 32-bit only capable devices */</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_ZONE_DMA32</span></span><br><span class="line">	max_dma = PFN_DOWN(arm64_dma_phys_limit);</span><br><span class="line">	zone_size[ZONE_DMA32] = max_dma - min;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	zone_size[ZONE_NORMAL] = max - max_dma;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">memcpy</span>(zhole_size, zone_size, <span class="keyword">sizeof</span>(zhole_size));</span><br><span class="line"></span><br><span class="line">	for_each_memblock(memory, reg) {</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">long</span> start = memblock_region_memory_base_pfn(reg);</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">long</span> end = memblock_region_memory_end_pfn(reg);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (start &gt;= max)</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_ZONE_DMA32</span></span><br><span class="line">		<span class="keyword">if</span> (start &lt; max_dma) {</span><br><span class="line">			<span class="type">unsigned</span> <span class="type">long</span> dma_end = min(end, max_dma);</span><br><span class="line">			zhole_size[ZONE_DMA32] -= dma_end - start;</span><br><span class="line">		}</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">		<span class="keyword">if</span> (end &gt; max_dma) {</span><br><span class="line">			<span class="type">unsigned</span> <span class="type">long</span> normal_end = min(end, max);</span><br><span class="line">			<span class="type">unsigned</span> <span class="type">long</span> normal_start = max(start, max_dma);</span><br><span class="line">			zhole_size[ZONE_NORMAL] -= normal_end - normal_start;</span><br><span class="line">		}</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	free_area_init_node(<span class="number">0</span>, zone_size, min, zhole_size);</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<ul>
+<li>设置pgdat的一些字段</li>
+<li>calculate_node_totalpages计算并设置pgdat节点中以及各区的spanned_pages(总共的页面数量, 包括空洞),present_pages数量(可用的页面数量).</li>
+<li>调用free_area_init_core.<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> __init <span class="title function_">free_area_init_node</span><span class="params">(<span class="type">int</span> nid, <span class="type">unsigned</span> <span class="type">long</span> *zones_size,</span></span><br><span class="line"><span class="params">				   <span class="type">unsigned</span> <span class="type">long</span> node_start_pfn,</span></span><br><span class="line"><span class="params">				   <span class="type">unsigned</span> <span class="type">long</span> *zholes_size)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">pg_data_t</span> *pgdat = NODE_DATA(nid);</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> start_pfn = <span class="number">0</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> end_pfn = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* pg_data_t should be reset to zero when it's allocated */</span></span><br><span class="line">	WARN_ON(pgdat-&gt;nr_zones || pgdat-&gt;kswapd_classzone_idx);</span><br><span class="line"></span><br><span class="line">	pgdat-&gt;node_id = nid;</span><br><span class="line">	pgdat-&gt;node_start_pfn = node_start_pfn;</span><br><span class="line">	pgdat-&gt;per_cpu_nodestats = <span class="literal">NULL</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_HAVE_MEMBLOCK_NODE_MAP</span></span><br><span class="line">	get_pfn_range_for_nid(nid, &amp;start_pfn, &amp;end_pfn);</span><br><span class="line">	pr_info(<span class="string">"Initmem setup node %d [mem %#018Lx-%#018Lx]\n"</span>, nid,</span><br><span class="line">		(u64)start_pfn &lt;&lt; PAGE_SHIFT,</span><br><span class="line">		end_pfn ? ((u64)end_pfn &lt;&lt; PAGE_SHIFT) - <span class="number">1</span> : <span class="number">0</span>);</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">	start_pfn = node_start_pfn;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	calculate_node_totalpages(pgdat, start_pfn, end_pfn,</span><br><span class="line">				  zones_size, zholes_size);</span><br><span class="line"></span><br><span class="line">	alloc_node_mem_map(pgdat);</span><br><span class="line">	pgdat_set_deferred_range(pgdat);</span><br><span class="line"></span><br><span class="line">	free_area_init_core(pgdat);</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure></li>
+</ul>
+<p>calculate_node_totalpages函数的计算过程主要是由zone_spanned_pages_in_node和zone_absent_pages_in_node实现的, 从下图中可以轻易地推出前者的实现方式, 而后者的实现则是遍历memblock.memory的各region, 然后用zone_spanned_pages_in_node来减.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20240904195416.png"></p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> __init <span class="title function_">calculate_node_totalpages</span><span class="params">(<span class="keyword">struct</span> pglist_data *pgdat,</span></span><br><span class="line"><span class="params">						<span class="type">unsigned</span> <span class="type">long</span> node_start_pfn,</span></span><br><span class="line"><span class="params">						<span class="type">unsigned</span> <span class="type">long</span> node_end_pfn,</span></span><br><span class="line"><span class="params">						<span class="type">unsigned</span> <span class="type">long</span> *zones_size,</span></span><br><span class="line"><span class="params">						<span class="type">unsigned</span> <span class="type">long</span> *zholes_size)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> realtotalpages = <span class="number">0</span>, totalpages = <span class="number">0</span>;</span><br><span class="line">	<span class="class"><span class="keyword">enum</span> <span class="title">zone_type</span> <span class="title">i</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; MAX_NR_ZONES; i++) {</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">zone</span> *<span class="title">zone</span> =</span> pgdat-&gt;node_zones + i;</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">long</span> zone_start_pfn, zone_end_pfn;</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">long</span> size, real_size;</span><br><span class="line"></span><br><span class="line">		size = zone_spanned_pages_in_node(pgdat-&gt;node_id, i,</span><br><span class="line">						  node_start_pfn,</span><br><span class="line">						  node_end_pfn,</span><br><span class="line">						  &amp;zone_start_pfn,</span><br><span class="line">						  &amp;zone_end_pfn,</span><br><span class="line">						  zones_size);</span><br><span class="line">		real_size = size - zone_absent_pages_in_node(pgdat-&gt;node_id, i,</span><br><span class="line">						  node_start_pfn, node_end_pfn,</span><br><span class="line">						  zholes_size);</span><br><span class="line">		<span class="keyword">if</span> (size)</span><br><span class="line">			zone-&gt;zone_start_pfn = zone_start_pfn;</span><br><span class="line">		<span class="keyword">else</span></span><br><span class="line">			zone-&gt;zone_start_pfn = <span class="number">0</span>;</span><br><span class="line">		zone-&gt;spanned_pages = size;</span><br><span class="line">		zone-&gt;present_pages = real_size;</span><br><span class="line"></span><br><span class="line">		totalpages += size;</span><br><span class="line">		realtotalpages += real_size;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	pgdat-&gt;node_spanned_pages = totalpages;</span><br><span class="line">	pgdat-&gt;node_present_pages = realtotalpages;</span><br><span class="line">	printk(KERN_DEBUG <span class="string">"On node %d totalpages: %lu\n"</span>, pgdat-&gt;node_id,</span><br><span class="line">							realtotalpages);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Return the number of pages a zone spans in a node, including holes</span></span><br><span class="line"><span class="comment"> * present_pages = zone_spanned_pages_in_node() - zone_absent_pages_in_node()</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">unsigned</span> <span class="type">long</span> __init <span class="title function_">zone_spanned_pages_in_node</span><span class="params">(<span class="type">int</span> nid,</span></span><br><span class="line"><span class="params">					<span class="type">unsigned</span> <span class="type">long</span> zone_type,</span></span><br><span class="line"><span class="params">					<span class="type">unsigned</span> <span class="type">long</span> node_start_pfn,</span></span><br><span class="line"><span class="params">					<span class="type">unsigned</span> <span class="type">long</span> node_end_pfn,</span></span><br><span class="line"><span class="params">					<span class="type">unsigned</span> <span class="type">long</span> *zone_start_pfn,</span></span><br><span class="line"><span class="params">					<span class="type">unsigned</span> <span class="type">long</span> *zone_end_pfn,</span></span><br><span class="line"><span class="params">					<span class="type">unsigned</span> <span class="type">long</span> *ignored)</span></span><br><span class="line">{</span><br><span class="line">	<span class="comment">/* When hotadd a new node from cpu_up(), the node should be empty */</span></span><br><span class="line">	<span class="keyword">if</span> (!node_start_pfn &amp;&amp; !node_end_pfn)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Get the start and end of the zone */</span></span><br><span class="line">	*zone_start_pfn = arch_zone_lowest_possible_pfn[zone_type];</span><br><span class="line">	*zone_end_pfn = arch_zone_highest_possible_pfn[zone_type];</span><br><span class="line">	adjust_zone_range_for_zone_movable(nid, zone_type,</span><br><span class="line">				node_start_pfn, node_end_pfn,</span><br><span class="line">				zone_start_pfn, zone_end_pfn);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Check that this node has pages within the zone's required range */</span></span><br><span class="line">	<span class="keyword">if</span> (*zone_end_pfn &lt; node_start_pfn || *zone_start_pfn &gt; node_end_pfn)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Move the zone boundaries inside the node if necessary */</span></span><br><span class="line">	*zone_end_pfn = min(*zone_end_pfn, node_end_pfn);</span><br><span class="line">	*zone_start_pfn = max(*zone_start_pfn, node_start_pfn);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Return the spanned pages */</span></span><br><span class="line">	<span class="keyword">return</span> *zone_end_pfn - *zone_start_pfn;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Return the number of holes in a range on a node. If nid is MAX_NUMNODES,</span></span><br><span class="line"><span class="comment"> * then all holes in the requested range will be accounted for.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">unsigned</span> <span class="type">long</span> __init __absent_pages_in_range(<span class="type">int</span> nid,</span><br><span class="line">				<span class="type">unsigned</span> <span class="type">long</span> range_start_pfn,</span><br><span class="line">				<span class="type">unsigned</span> <span class="type">long</span> range_end_pfn)</span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> nr_absent = range_end_pfn - range_start_pfn;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> start_pfn, end_pfn;</span><br><span class="line">	<span class="type">int</span> i;</span><br><span class="line"></span><br><span class="line">	for_each_mem_pfn_range(i, nid, &amp;start_pfn, &amp;end_pfn, <span class="literal">NULL</span>) {</span><br><span class="line">		start_pfn = clamp(start_pfn, range_start_pfn, range_end_pfn);</span><br><span class="line">		end_pfn = clamp(end_pfn, range_start_pfn, range_end_pfn);</span><br><span class="line">		nr_absent -= end_pfn - start_pfn;</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">return</span> nr_absent;</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>free_area_init_core函数:<br>遍历节点中所有的zone, </p>
+<ul>
+<li>初始化节点内部的list_head,spin_lock之类的数据结构.</li>
+<li>计算空闲的页面数量. 方式为zone-&gt;present_pages减去memmap所用struct page结构占的页面数, 再减去dma_reserve</li>
+<li>初始化zone内部的数据结构</li>
+<li>初始化zone-&gt;free_area</li>
+<li>初始化memmap的struct page,为每个页块设置MIGRATE_MOVABLE标志.<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Set up the zone data structures:</span></span><br><span class="line"><span class="comment"> *   - mark all pages reserved</span></span><br><span class="line"><span class="comment"> *   - mark all memory queues empty</span></span><br><span class="line"><span class="comment"> *   - clear the memory bitmaps</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">NOTE:</span> pgdat should get zeroed by caller.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">NOTE:</span> this function is only called during early init.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __init <span class="title function_">free_area_init_core</span><span class="params">(<span class="keyword">struct</span> pglist_data *pgdat)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">enum</span> <span class="title">zone_type</span> <span class="title">j</span>;</span></span><br><span class="line">	<span class="type">int</span> nid = pgdat-&gt;node_id;</span><br><span class="line"></span><br><span class="line">	pgdat_init_internals(pgdat);</span><br><span class="line">	pgdat-&gt;per_cpu_nodestats = &amp;boot_nodestats;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (j = <span class="number">0</span>; j &lt; MAX_NR_ZONES; j++) {</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">zone</span> *<span class="title">zone</span> =</span> pgdat-&gt;node_zones + j;</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">long</span> size, freesize, memmap_pages;</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">long</span> zone_start_pfn = zone-&gt;zone_start_pfn;</span><br><span class="line"></span><br><span class="line">		size = zone-&gt;spanned_pages;</span><br><span class="line">		freesize = zone-&gt;present_pages;</span><br><span class="line"></span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * Adjust freesize so that it accounts for how much memory</span></span><br><span class="line"><span class="comment">		 * is used by this zone for memmap. This affects the watermark</span></span><br><span class="line"><span class="comment">		 * and per-cpu initialisations</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		memmap_pages = calc_memmap_size(size, freesize);</span><br><span class="line">		<span class="keyword">if</span> (!is_highmem_idx(j)) {</span><br><span class="line">			<span class="keyword">if</span> (freesize &gt;= memmap_pages) {</span><br><span class="line">				freesize -= memmap_pages;</span><br><span class="line">				<span class="keyword">if</span> (memmap_pages)</span><br><span class="line">					printk(KERN_DEBUG</span><br><span class="line">					       <span class="string">"  %s zone: %lu pages used for memmap\n"</span>,</span><br><span class="line">					       zone_names[j], memmap_pages);</span><br><span class="line">			} <span class="keyword">else</span></span><br><span class="line">				pr_warn(<span class="string">"  %s zone: %lu pages exceeds freesize %lu\n"</span>,</span><br><span class="line">					zone_names[j], memmap_pages, freesize);</span><br><span class="line">		}</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* Account for reserved pages */</span></span><br><span class="line">		<span class="keyword">if</span> (j == <span class="number">0</span> &amp;&amp; freesize &gt; dma_reserve) {</span><br><span class="line">			freesize -= dma_reserve;</span><br><span class="line">			printk(KERN_DEBUG <span class="string">"  %s zone: %lu pages reserved\n"</span>,</span><br><span class="line">					zone_names[<span class="number">0</span>], dma_reserve);</span><br><span class="line">		}</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (!is_highmem_idx(j))</span><br><span class="line">			nr_kernel_pages += freesize;</span><br><span class="line">		<span class="comment">/* Charge for highmem memmap if there are enough kernel pages */</span></span><br><span class="line">		<span class="keyword">else</span> <span class="keyword">if</span> (nr_kernel_pages &gt; memmap_pages * <span class="number">2</span>)</span><br><span class="line">			nr_kernel_pages -= memmap_pages;</span><br><span class="line">		nr_all_pages += freesize;</span><br><span class="line"></span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * Set an approximate value for lowmem here, it will be adjusted</span></span><br><span class="line"><span class="comment">		 * when the bootmem allocator frees pages into the buddy system.</span></span><br><span class="line"><span class="comment">		 * And all highmem pages will be managed by the buddy system.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		zone_init_internals(zone, j, nid, freesize);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (!size)</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">		set_pageblock_order();</span><br><span class="line">		setup_usemap(pgdat, zone, zone_start_pfn, size);</span><br><span class="line">		init_currently_empty_zone(zone, zone_start_pfn, size);</span><br><span class="line">		memmap_init(size, nid, j, zone_start_pfn);</span><br><span class="line">	}</span><br></pre></td></tr></tbody></table></figure></li>
+</ul>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/1771657-20190922175306387-1681319283.png"></p>
+<h1 id="Answer"><a href="#Answer" class="headerlink" title="Answer"></a>Answer</h1><h2 id="1-内核如何获取物理内存相关信息"><a href="#1-内核如何获取物理内存相关信息" class="headerlink" title="1. 内核如何获取物理内存相关信息?"></a>1. 内核如何获取物理内存相关信息?</h2><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">start_kernel-&gt;</span><br><span class="line">    setup_arch-&gt;</span><br><span class="line">        setup_machine_fdt</span><br></pre></td></tr></tbody></table></figure>
+<p>从fdt中获取物理内存信息.</p>
+<h2 id="2-sparse模型中-mem-section-page的关系是怎么建立的-pfn-to-page和page-to-pfn的实现"><a href="#2-sparse模型中-mem-section-page的关系是怎么建立的-pfn-to-page和page-to-pfn的实现" class="headerlink" title="2. sparse模型中,mem_section, page的关系是怎么建立的? pfn_to_page和page_to_pfn的实现?"></a>2. sparse模型中,mem_section, page的关系是怎么建立的? pfn_to_page和page_to_pfn的实现?</h2><p>建立过程看上方的分析. 下面分析两个转换宏的实现.</p>
+<p>在开启了CONFIG_SPARSEMEM_VMEMMAP的情况下, vmemmap区域会虚拟连续地映射所有的page结构, 所以转换非常简单.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">elif</span> defined(CONFIG_SPARSEMEM_VMEMMAP)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* memmap is virtually contiguous.  */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __pfn_to_page(pfn)	(vmemmap + (pfn))</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __page_to_pfn(page)	(unsigned long)((page) - vmemmap)</span></span><br></pre></td></tr></tbody></table></figure>
+
+<p>而在普通的CONFIG_SPARSEMEM中, 转换会复杂很多.<br>先来看__pfn_to_page.</p>
+<ul>
+<li>__pfn_to_section得到section<ul>
+<li>pfn &gt;&gt; PFN_SECTION_SHIFT得到section_nr</li>
+<li>mem_section[SECTION_NR_TO_ROOT(nr)][nr &amp; SECTION_ROOT_MASK]得到对应的section</li>
+</ul>
+</li>
+<li>将section-&gt;section_mem_map掩码后, 加上pfn得到对应的page. 这里的计算过程很反直觉, 因为掩码后得到的实际上是memmap的基地址减去memmap中第一个page的pfn.</li>
+</ul>
+<p>然后是__page_to_pfn</p>
+<ul>
+<li>从page-&gt;flags中得到section_nr : (page-&gt;flags &gt;&gt; SECTIONS_PGSHIFT) &amp; SECTIONS_MASK.</li>
+<li>page地址减去section-&gt;section_mem_map掩码后的值得到pfn.</li>
+</ul>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> __page_to_pfn(pg)					\</span></span><br><span class="line"><span class="meta">({	const struct page *__pg = (pg);				\</span></span><br><span class="line"><span class="meta">	int __sec = page_to_section(__pg);			\</span></span><br><span class="line"><span class="meta">	(unsigned long)(__pg - __section_mem_map_addr(__nr_to_section(__sec)));	\</span></span><br><span class="line"><span class="meta">})</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __pfn_to_page(pfn)				\</span></span><br><span class="line"><span class="meta">({	unsigned long __pfn = (pfn);			\</span></span><br><span class="line"><span class="meta">	struct mem_section *__sec = __pfn_to_section(__pfn);	\</span></span><br><span class="line"><span class="meta">	__section_mem_map_addr(__sec) + __pfn;		\</span></span><br><span class="line"><span class="meta">})</span></span><br></pre></td></tr></tbody></table></figure>
+
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">pfn_to_section_nr</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> pfn)</span></span><br><span class="line">{</span><br><span class="line">	<span class="keyword">return</span> pfn &gt;&gt; PFN_SECTION_SHIFT;</span><br><span class="line">}</span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">section_nr_to_pfn</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> sec)</span></span><br><span class="line">{</span><br><span class="line">	<span class="keyword">return</span> sec &lt;&lt; PFN_SECTION_SHIFT;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SECTION_NR_TO_ROOT(sec)	((sec) / SECTIONS_PER_ROOT)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> NR_SECTION_ROOTS	DIV_ROUND_UP(NR_MEM_SECTIONS, SECTIONS_PER_ROOT)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SECTION_ROOT_MASK	(SECTIONS_PER_ROOT - 1)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_SPARSEMEM_EXTREME</span></span><br><span class="line"><span class="keyword">extern</span> <span class="class"><span class="keyword">struct</span> <span class="title">mem_section</span> **<span class="title">mem_section</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"><span class="keyword">extern</span> <span class="class"><span class="keyword">struct</span> <span class="title">mem_section</span> <span class="title">mem_section</span>[<span class="title">NR_SECTION_ROOTS</span>][<span class="title">SECTIONS_PER_ROOT</span>];</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="class"><span class="keyword">struct</span> <span class="title">mem_section</span> *__<span class="title">nr_to_section</span>(<span class="title">unsigned</span> <span class="title">long</span> <span class="title">nr</span>)</span></span><br><span class="line"><span class="class">{</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_SPARSEMEM_EXTREME</span></span><br><span class="line">	<span class="keyword">if</span> (!mem_section)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	<span class="keyword">if</span> (!mem_section[SECTION_NR_TO_ROOT(nr)])</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">	<span class="keyword">return</span> &amp;mem_section[SECTION_NR_TO_ROOT(nr)][nr &amp; SECTION_ROOT_MASK];</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="class"><span class="keyword">struct</span> <span class="title">mem_section</span> *__<span class="title">pfn_to_section</span>(<span class="title">unsigned</span> <span class="title">long</span> <span class="title">pfn</span>)</span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">	<span class="keyword">return</span> __nr_to_section(pfn_to_section_nr(pfn));</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="class"><span class="keyword">struct</span> <span class="title">page</span> *__<span class="title">section_mem_map_addr</span>(<span class="keyword">struct</span> <span class="title">mem_section</span> *<span class="title">section</span>)</span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> <span class="built_in">map</span> = section-&gt;section_mem_map;</span><br><span class="line">	<span class="built_in">map</span> &amp;= SECTION_MAP_MASK;</span><br><span class="line">	<span class="keyword">return</span> (<span class="keyword">struct</span> page *)<span class="built_in">map</span>;</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+
+<h2 id="3-node-zone与page的关系是怎么建立的"><a href="#3-node-zone与page的关系是怎么建立的" class="headerlink" title="3. node, zone与page的关系是怎么建立的?"></a>3. node, zone与page的关系是怎么建立的?</h2><p>page中存有node,和zone的索引, zone本身在pgdat结构中, zone-&gt;pgdat在zone_init_internals时指向所属的node.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">&lt;start_kernel-&gt;setup_arch()-&gt;bootmem_init()-&gt;zone_sizes_init()-&gt;memmap_init_zone()-&gt;__init_single_page()-&gt;set_page_links&gt;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">set_page_zone</span><span class="params">(<span class="keyword">struct</span> page *page, <span class="keyword">enum</span> zone_type zone)</span></span><br><span class="line">{</span><br><span class="line">	page-&gt;flags &amp;= ~(ZONES_MASK &lt;&lt; ZONES_PGSHIFT);</span><br><span class="line">	page-&gt;flags |= (zone &amp; ZONES_MASK) &lt;&lt; ZONES_PGSHIFT;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">set_page_node</span><span class="params">(<span class="keyword">struct</span> page *page, <span class="type">unsigned</span> <span class="type">long</span> node)</span></span><br><span class="line">{</span><br><span class="line">	page-&gt;flags &amp;= ~(NODES_MASK &lt;&lt; NODES_PGSHIFT);</span><br><span class="line">	page-&gt;flags |= (node &amp; NODES_MASK) &lt;&lt; NODES_PGSHIFT;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">set_page_links</span><span class="params">(<span class="keyword">struct</span> page *page, <span class="keyword">enum</span> zone_type zone,</span></span><br><span class="line"><span class="params">	<span class="type">unsigned</span> <span class="type">long</span> node, <span class="type">unsigned</span> <span class="type">long</span> pfn)</span></span><br><span class="line">{</span><br><span class="line">	set_page_zone(page, zone);</span><br><span class="line">	set_page_node(page, node);</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> SECTION_IN_PAGE_FLAGS</span></span><br><span class="line">	set_page_section(page, pfn_to_section_nr(pfn));</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/LoyenWang/p/11523678.html">https://www.cnblogs.com/LoyenWang/p/11523678.html</a><br><a target="_blank" rel="noopener" href="https://www.cnblogs.com/LoyenWang/p/11568481.html">https://www.cnblogs.com/LoyenWang/p/11568481.html</a></p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2024/Linux%20-%20physical%20memory%20initialization%20--%20ARM64%20v5.0/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/" rel="tag">Linux</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Memory-Management/" rel="tag">Memory_Management</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/2024/Linux%20-%20%20BuddySystem%20--%20ARM64%20v5.0/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Linux内核 BuddySystem -- ARM64 v5.0
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2024/Linux%20-%20pagetable%20mapping%20establishment%20--%20ARM64%20v5.0/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Linux内核  页表映射建立过程 -- ARM64 v5.0</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2024
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2022/About">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>

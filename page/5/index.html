@@ -13,7 +13,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title>归档 |  北极落小雪</title>
+      <title> 北极落小雪</title>
   <meta name="generator" content="hexo-theme-ayer">
       
       <link rel="shortcut icon" href="/favicon.ico" />
@@ -55,290 +55,293 @@
     
       
     <main class="content on">
-      <section class="outer">
+      
+<section class="cover">
+    
+  <div class="cover-frame">
+    <div class="bg-box">
+      <img src="/images/0.jpg" alt="image frame" />
+    </div>
+    <div class="cover-inner text-center text-white">
+      <h1><a href="/">北极落小雪</a></h1>
+      <div id="subtitle-box">
+        
+        <span id="subtitle"></span>
+        
+      </div>
+      <div>
+        
+      </div>
+    </div>
+  </div>
+  <div class="cover-learn-more">
+    <a href="javascript:void(0)" class="anchor"><i class="ri-arrow-down-line"></i></a>
+  </div>
+</section>
+
+
+
+<script src="https://cdn.staticfile.org/typed.js/2.0.12/typed.min.js"></script>
+
+
+<!-- Subtitle -->
+
+  <script>
+    try {
+      var typed = new Typed("#subtitle", {
+        strings: ['遗憾的话,总会有的...', '翰青HanQi-blogs', 'Polaris_Snowfall...'],
+        startDelay: 0,
+        typeSpeed: 200,
+        loop: true,
+        backSpeed: 100,
+        showCursor: true
+      });
+    } catch (err) {
+      console.log(err)
+    }
+  </script>
+  
+<div id="main">
+  <section class="outer">
   
   
   <article class="articles">
     
     
-    <h1 class="page-type-title">归档</h1>
     
     
-  
-  
-  
-  
-  
-  
-  <div class="archives-wrap">
-    <div class="archive-year-wrap">
-      <a href="/archives/2023" class="archive-year">2023</a>
+    <article
+  id="post-CSAPP--Notes"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/CSAPP--Notes/"
+    >CSAPP--Notes</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/CSAPP--Notes/" class="article-date">
+  <time datetime="2023-06-24T16:00:00.000Z" itemprop="datePublished">2023-06-25</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%9D%82%E9%A1%B9/">杂项</a>
+  </div>
+   
     </div>
-    <div class="archives">
       
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2023/Syntax-Analysis/" class="archive-article-date">
-  <time datetime="2023-11-02T16:00:00.000Z" itemprop="datePublished">11/03</time>
-</a>
+    <div class="article-entry" itemprop="articleBody">
        
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/2023/Syntax-Analysis/"
-    >语法分析</a> 
-</h2>
- 
-
-    </header>
-    
-    
-  </div>
-</article>
-      
-  
-  
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2023/6.828-Lab5/" class="archive-article-date">
-  <time datetime="2023-10-24T16:00:00.000Z" itemprop="datePublished">10/25</time>
-</a>
+  <p>CSAPP阅读笔记<br>文章仅作为笔者复习参考,其中内容仅为笔者当前阶段学习CSAPP的理解.</p>
+<h1 id="第三章-程序的机器级表示"><a href="#第三章-程序的机器级表示" class="headerlink" title="第三章 程序的机器级表示"></a>第三章 程序的机器级表示</h1><h3 id="3-6-1条件码"><a href="#3-6-1条件码" class="headerlink" title="3.6.1条件码:"></a>3.6.1条件码:</h3><p>CF:进位标志.最近的操作使最高位产生了进位.<br>ZF:零标志.最近操作的结果为0.<br>SF:符号标志.最近的操作得到负数.<br>OF:溢出标志.最近的操作导致一个补码溢出<br>PF:奇偶标志位.最近操作的结果所有bit中1为偶数<br>AF:辅助进位标志位 运算过程中看最后四位,不论长度为多少 最后四位向前有进位或者借位,AF=1,否则AF=0<br>TF:调试标志位 当TF=1时,处理器每次只执行一条指令,即单步执行<br>IF:中断允许标志位 它用来控制8086是否允许接收外部中断请求 若IF=1,8086能响应外部中断,反之则屏蔽外部中断<br>DF:方向标志位 在串处理指令中,每次操作后,如果DF=0,si di递增,如果DF=1,si di递减;注意此处DF的值是由程序员进行设定的 cld命令是将DF设置为0,std命令是将DF设置为1<br>进位标志表示无符号数运算结果是否超出范围，运算结果仍然正确；<br>溢出标志表示有符号数运算结果是否超出范围，运算结果已经不正确。<br>leaq指令不改变任何条件码.对于逻辑操作,进位标志和溢出标志会设置成0.对于移作,进位标志将设置为最后一个被移出的位,溢出标志设置为0.INC和DEC指令仅设出和零标志.</p> 
+      <a class="article-more-link" href="/2023/CSAPP--Notes/"
+        >阅读更多...</a
+      >
        
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/2023/6.828-Lab5/"
-    >MIT6.828 Lab5</a> 
-</h2>
- 
-
-    </header>
-    
-    
-  </div>
-</article>
-      
-  
-  
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2023/Shanghai-Master-WP/" class="archive-article-date">
-  <time datetime="2023-10-18T16:00:00.000Z" itemprop="datePublished">10/19</time>
-</a>
-       
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/2023/Shanghai-Master-WP/"
-    >中华武数杯2023 WP</a> 
-</h2>
- 
-
-    </header>
-    
-    
-  </div>
-</article>
-      
-  
-  
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2023/6.828-Lab4/" class="archive-article-date">
-  <time datetime="2023-10-13T16:00:00.000Z" itemprop="datePublished">10/14</time>
-</a>
-       
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/2023/6.828-Lab4/"
-    >MIT6.828 Lab4</a> 
-</h2>
- 
-
-    </header>
-    
-    
-  </div>
-</article>
-      
-  
-  
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2023/Lexical-Analysis/" class="archive-article-date">
-  <time datetime="2023-10-12T16:00:00.000Z" itemprop="datePublished">10/13</time>
-</a>
-       
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/2023/Lexical-Analysis/"
-    >词法分析</a> 
-</h2>
- 
-
-    </header>
-    
-    
-  </div>
-</article>
-      
-  
-  
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2023/The%20Art%20Of%20Linux%20Kernel%20Design--Notes/" class="archive-article-date">
-  <time datetime="2023-10-03T16:00:00.000Z" itemprop="datePublished">10/04</time>
-</a>
-       
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/2023/The%20Art%20Of%20Linux%20Kernel%20Design--Notes/"
-    >Linux内核设计的艺术 阅读笔记</a> 
-</h2>
- 
-
-    </header>
-    
-    
-  </div>
-</article>
-      
-  
-  
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2023/6.828-Lab3/" class="archive-article-date">
-  <time datetime="2023-10-02T16:00:00.000Z" itemprop="datePublished">10/03</time>
-</a>
-       
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/2023/6.828-Lab3/"
-    >MIT6.828 Lab3</a> 
-</h2>
- 
-
-    </header>
-    
-    
-  </div>
-</article>
-      
-  
-  
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2023/ycb2023/" class="archive-article-date">
-  <time datetime="2023-09-30T16:00:00.000Z" itemprop="datePublished">10/01</time>
-</a>
-       
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/2023/ycb2023/"
-    >羊城杯2023 复现</a> 
-</h2>
- 
-
-    </header>
-    
-    
-  </div>
-</article>
-      
-  
-  
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2023/6.828-Lab1-2/" class="archive-article-date">
-  <time datetime="2023-09-26T16:00:00.000Z" itemprop="datePublished">09/27</time>
-</a>
-       
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/2023/6.828-Lab1-2/"
-    >MIT6.828 Lab1-Lab2</a> 
-</h2>
- 
-
-    </header>
-    
-    
-  </div>
-</article>
-      
-  
-  
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2023/SGI-STL--Notes/" class="archive-article-date">
-  <time datetime="2023-09-11T16:00:00.000Z" itemprop="datePublished">09/12</time>
-</a>
-       
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/2023/SGI-STL--Notes/"
-    >SGI STL学习笔记</a> 
-</h2>
- 
-
-    </header>
-    
-    
-  </div>
-</article>
-      
-  
-  
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2023/DASCTF-2023-June-Binary-WP/" class="archive-article-date">
-  <time datetime="2023-07-19T16:00:00.000Z" itemprop="datePublished">07/20</time>
-</a>
-       
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/2023/DASCTF-2023-June-Binary-WP/"
-    >DASCTF 2023六月挑战赛｜二进制专项 复现</a> 
-</h2>
- 
-
-    </header>
-    
-    
-  </div>
-</article>
-      
-  
-  
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2023/CSAPP-Labs/" class="archive-article-date">
-  <time datetime="2023-06-25T16:00:00.000Z" itemprop="datePublished">06/26</time>
-</a>
-       
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/2023/CSAPP-Labs/"
-    >CSAPP Labs</a> 
-</h2>
- 
-
-    </header>
-    
-    
-  </div>
-</article>
-      
+      <!-- reward -->
       
     </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CSAPP/" rel="tag">CSAPP</a></li></ul>
+
+    </footer>
   </div>
-  
+
+   
+    
+</article>
+
+    
+    <article
+  id="post-Pwnhub-2023-March-WP"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/Pwnhub-2023-March-WP/"
+    >Pwnhub 2023 3月公开赛 WP</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/Pwnhub-2023-March-WP/" class="article-date">
+  <time datetime="2023-03-11T16:00:00.000Z" itemprop="datePublished">2023-03-12</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/ctf%E5%A4%8D%E7%8E%B0/">ctf复现</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>Pwnhub 2023 3月公开赛 WP</p>
+<h2 id="sh-v1-1"><a href="#sh-v1-1" class="headerlink" title="sh_v1_1"></a>sh_v1_1</h2><p>glibc2.31堆题<br>一堆莫名其妙的全局变量运算,白看了半天最后发现一点用都没有.<br>恢复一下结构体</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">file</span>{</span></span><br><span class="line"><span class="type">long</span> flag;</span><br><span class="line"><span class="type">char</span> filename[<span class="number">32</span>];</span><br><span class="line"><span class="type">char</span>* content_ptr;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>程序逻辑就是模拟的一个linux终端,输入命令进行相应处理.<br>漏洞在ln的时候可以备份指针造成uaf</p> 
+      <a class="article-more-link" href="/2023/Pwnhub-2023-March-WP/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
+  id="post-Flower-of-Love"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/Flower-of-Love/"
+    >一生所爱</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/Flower-of-Love/" class="article-date">
+  <time datetime="2022-07-19T16:00:00.000Z" itemprop="datePublished">2022-07-20</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E9%9A%8F%E7%AC%94/">随笔</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  Here's something encrypted, password is required to continue reading. 
+      <a class="article-more-link" href="/2022/Flower-of-Love/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
+  id="post-About"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/About/"
+    >关于</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/About/" class="article-date">
+  <time datetime="2021-12-31T16:00:00.000Z" itemprop="datePublished">2022-01-01</time>
+</a>    
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>翰青HanQi,北极落小雪,Polaris_Snowfall</p> 
+      <a class="article-more-link" href="/2022/About/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+  </article>
   
 
   
   <nav class="page-nav">
     
-    <a class="extend prev" rel="prev" href="/archives/page/3/">上一页</a><a class="page-number" href="/archives/">1</a><a class="page-number" href="/archives/page/2/">2</a><a class="page-number" href="/archives/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/archives/page/5/">5</a><a class="extend next" rel="next" href="/archives/page/5/">下一页</a>
+    <a class="extend prev" rel="prev" href="/page/4/">上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span>
   </nav>
   
 </section>
+</div>
+
       <footer class="footer">
   <div class="outer">
     <ul>
