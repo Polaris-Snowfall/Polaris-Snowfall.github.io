@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>Linux内核 页面回收 -- ARM64 v5.0 |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Linux - memory reclaim -- ARM64 v5.0"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Linux内核 页面回收 -- ARM64 v5.0
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/Linux%20-%20memory%20reclaim%20--%20ARM64%20v5.0/" class="article-date">
+  <time datetime="2024-09-26T16:00:00.000Z" itemprop="datePublished">2024-09-27</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux%E5%86%85%E6%A0%B8/">Linux内核</a> / <a class="article-category-link" href="/categories/Linux%E5%86%85%E6%A0%B8/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">内存管理</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">5.6k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">26 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>文中引文均来自文末参考文章.</p>
+<h2 id="Question"><a href="#Question" class="headerlink" title="Question"></a>Question</h2><ol>
+<li>PG_ACTIVE,PG_REFERENCE的作用和区别?.</li>
+<li>LRU+二次机会的实现?</li>
+</ol>
+<span id="more"></span>
+<h2 id="LRU链表"><a href="#LRU链表" class="headerlink" title="LRU链表"></a>LRU链表</h2><p>LRU链表是内存回收的核心结构.</p>
+<blockquote>
+<p>lru链表组织的页包括：可以存放到swap分区中的页，映射了文件的页，以及被锁在内存中禁止换出的进程页。所有属于这些情况的页都必须加入到lru链表中，无一例外，而剩下那些没有加入到lru链表中的页，基本也就剩内核使用的页框了。</p>
+</blockquote>
+<blockquote>
+<p>　为了方便对于LRU_INACTIVE_ANON和LRU_ACTIVE_ANON这两个链表，统称为匿名页lru链表，而LRU_INACTIVE_FILE和LRU_ACTIVE_FILE统称为文件页lru链表。当进程运行过程中，通过调用mlock()将一些内存页锁在内存中时，这些内存页就会被加入到它们锁在的zone的LRU_UNEVICTABLE链表中，在LRU_UNEVICTABLE链表中的页可能是文件页也可能是匿名页。</p>
+</blockquote>
+<blockquote>
+<p>当需要修改lru链表时，一定要占有zone中的lru_lock这个锁，在多核的硬件环境中，在同时需要对lru链表进行修改时，锁的竞争会非常的频繁，所以内核提供了一个lru缓存的机制，这种机制能够减少锁的竞争频率。其实这种机制非常简单，lru缓存相当于将一些需要相同处理的页集合起来，当达到一定数量时再对它们进行一批次的处理，这样做可以让对锁的需求集中在这个处理的时间点</p>
+</blockquote>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* LRU缓存 </span></span><br><span class="line"><span class="comment"> * PAGEVEC_SIZE默认为14</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pagevec</span> {</span></span><br><span class="line">    <span class="comment">/* 当前数量 */</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> nr;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> cold;</span><br><span class="line">    <span class="comment">/* 指针数组，每一项都可以指向一个页描述符，默认大小是14 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">page</span> *<span class="title">pages</span>[<span class="title">PAGEVEC_SIZE</span>];</span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+
+<blockquote>
+<p>注意，内核是为每个CPU提供四种lru缓存，而不是每个zone，并且也不是为每种lru链表提供四种lru缓存，也就是说，只要是新页，所有应该放入lru链表的新页都会加入到当前CPU的lru_add_pvec这个lru缓存中，比如同时有两个新页，一个将加入到zone0的活动匿名页lru链表，另一个将加入到zone1的非活动文件页lru链表，这两个新页都会先加入到此CPU的lru_add_pvec这个lru缓存中</p>
+</blockquote>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 这部分的lru缓存是用于那些原来不属于lru链表的，新加入进来的页 */</span></span><br><span class="line"><span class="type">static</span> <span class="title function_">DEFINE_PER_CPU</span><span class="params">(<span class="keyword">struct</span> pagevec, lru_add_pvec)</span>;</span><br><span class="line"><span class="comment">/* 在这个lru_rotate_pvecs中的页都是非活动页并且在非活动lru链表中，将这些页移动到非活动lru链表的末尾 */</span></span><br><span class="line"><span class="type">static</span> <span class="title function_">DEFINE_PER_CPU</span><span class="params">(<span class="keyword">struct</span> pagevec, lru_rotate_pvecs)</span>;</span><br><span class="line"><span class="comment">/* 在这个lru缓存的页原本应属于活动lru链表中的页，会强制清除PG_activate和PG_referenced，并加入到非活动lru链表的链表表头中</span></span><br><span class="line"><span class="comment"> * 这些页一般从活动lru链表中的尾部拿出来的</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="title function_">DEFINE_PER_CPU</span><span class="params">(<span class="keyword">struct</span> pagevec, lru_deactivate_pvecs)</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_SMP</span></span><br><span class="line"><span class="comment">/* 将此lru缓存中的页放到活动页lru链表头中，这些页原本属于非活动lru链表的页 */</span></span><br><span class="line"><span class="type">static</span> <span class="title function_">DEFINE_PER_CPU</span><span class="params">(<span class="keyword">struct</span> pagevec, activate_page_pvecs)</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br></pre></td></tr></tbody></table></figure>
+
+<blockquote>
+<p>对于CPU的lru_add_pvec缓存的处理，如上，而其他类型的lru缓存处理也是相同。只需要记住，要对页实现什么操作，就放到CPU对应的lru缓存中，而CPU的lru缓存满或者需要立即将lru缓存中的页放入lru链表时，就会将lru缓存中的页放到它们需要放入的lru链表中。同时，对于lru缓存来说，它们只负责将页放到页应该放到的lru链表中，所以，在一个页加入lru缓存前，就必须设置好此页的一些属性，这样才能配合lru缓存进行工作。</p>
+</blockquote>
+<blockquote>
+<p>　如注释所说，判断页需要加入到哪个lru链表中，主要通过三个标志位：<br>    PG_active:：此标志置位，表示此页需要加入或者处于页所在zone的活动lru链表中，当此页已经在lru链表中时，此标志可以让系统判断此页是在活动lru链表还是非活动lru链表中。<br>    PG_swapbacked：此标志置位，表示此页可以回写到swap分区，那么此页需要加入或者处于页所在zone的匿名页lru链表中。<br>    PG_unevictable：置位表示此页被锁在内存中禁止换出，表示此页需要加入或者处于页所在zone的LRU_UNEVICTABLE链表中。<br>　　而对于文件页lru链表来说，实际上还有一个PG_referenced标志</p>
+</blockquote>
+<h2 id="内存回收流程"><a href="#内存回收流程" class="headerlink" title="内存回收流程"></a>内存回收流程</h2><blockquote>
+<p>因为在不同的内存分配路径中，会触发不同的内存回收方式，内存回收针对的目标有两种，一种是针对zone的，另一种是针对一个memcg的，而这里我们只讨论针对zone的内存回收，个人把针对zone的内存回收方式分为三种，分别是快速内存回收、直接内存回收、kswapd内存回收。</p>
+</blockquote>
+<p>   快速内存回收：处于get_page_from_freelist()函数中，在遍历zonelist过程中，对每个zone都在分配前进行判断，如果分配后zone的空闲内存数量 &lt; 阀值 + 保留页框数量，那么此zone就会进行快速内存回收，即使分配前此zone空闲页框数量都没有达到阀值，都会进行此zone的快速内存回收。注意阀值可能是min/low/high的任何一种，因为在快速内存分配，慢速内存分配和oom分配过程中如果回收的页框足够，都会调用到get_page_from_freelist()函数，所以快速内存回收不仅仅发生在快速内存分配中，在慢速内存分配过程中也会发生。回收对象：zone的干净文件页、slab、可能会回写匿名页</p>
+<blockquote>
+</blockquote>
+<p>   直接内存回收：处于慢速分配过程中，直接内存回收只有一种情况下会使用，在慢速分配中无法从zonelist的所有zone中以min阀值分配页框，并且进行异步内存压缩后，还是无法分配到页框的时候，就对zonelist中的所有zone进行一次直接内存回收。注意，直接内存回收是针对zonelist中的所有zone的，它并不像快速内存回收和kswapd内存回收，只会对zonelist中空闲页框不达标的zone进行内存回收。并且在直接内存回收中，有可能唤醒flush内核线程。回收对象：超过所在memcg的soft_limit_in_bytes的进程的内存、zone的干净文件页、slab、匿名页swap</p>
+<blockquote>
+<p>kswapd内存回收：发生在kswapd内核线程中，每个node有一个swapd内核线程，也就是kswapd内核线程中的内存回收，是只针对所在node的，并且只会对 分配了order页框数量后空闲页框数量 &lt; 此zone的high阀值 + 保留页框数量 的zone进行内存回收，并不会对此node的所有zone进行内存回收。</p>
+<p>这三种内存回收虽然是在不同状态下会被触发，但是如果当内存不足时，kswapd内存回收和直接内存回收很大可能是在并发的进行内存回收的。而实际上，这三种回收再怎么不同，进行内存回收的执行代码是一样的，只是在内存回收前做的一些处理和判断不同。回收对象：超过所在memcg的soft_limit_in_bytes的进程的内存、zone的干净的文件页、zone的脏的文件页、slab、匿名页swap</p>
+</blockquote>
+<h3 id="shrink-node"><a href="#shrink-node" class="headerlink" title="shrink_node"></a>shrink_node</h3><p>shrink_node是三种内存回收路径合并的地方, 进一步调用shrink_node_memcg.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">bool</span> <span class="title function_">shrink_node</span><span class="params">(<span class="type">pg_data_t</span> *pgdat, <span class="keyword">struct</span> scan_control *sc)</span></span><br></pre></td></tr></tbody></table></figure>
+
+<p>shrink_node_memcg先get_scan_count获取在各条LRU链表上需要扫描的页面数量, 然后对各条LRU链表调用shrink_list.</p>
+<p>shrink_list进一步根据lru链表类型进行dispatch.在处理active_list时, 仅当inactive_list_is_low时调用shrink_active_list</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">shrink_list</span><span class="params">(<span class="keyword">enum</span> lru_list lru, <span class="type">unsigned</span> <span class="type">long</span> nr_to_scan,</span></span><br><span class="line"><span class="params">				 <span class="keyword">struct</span> lruvec *lruvec, <span class="keyword">struct</span> mem_cgroup *memcg,</span></span><br><span class="line"><span class="params">				 <span class="keyword">struct</span> scan_control *sc)</span></span><br><span class="line">{</span><br><span class="line">	<span class="keyword">if</span> (is_active_lru(lru)) {</span><br><span class="line">		<span class="keyword">if</span> (inactive_list_is_low(lruvec, is_file_lru(lru),</span><br><span class="line">					 memcg, sc, <span class="literal">true</span>))</span><br><span class="line">			shrink_active_list(nr_to_scan, lruvec, sc, lru);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> shrink_inactive_list(nr_to_scan, lruvec, sc, lru);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>将页面在ACTIVE链表和INACTIVE链表之间移动前, 需要先将要处理的页面隔离出来, 这使用isolate_lru_pages函数<br>isolate_lru_pages实际上隔离出来的页面数量小于等于扫描的页面数量, 这与isolate_mode等有关.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * zone_lru_lock is heavily contended.  Some of the functions that</span></span><br><span class="line"><span class="comment"> * shrink the lists perform better by taking out a batch of pages</span></span><br><span class="line"><span class="comment"> * and working on them outside the LRU lock.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * For pagecache intensive workloads, this function is the hottest</span></span><br><span class="line"><span class="comment"> * spot in the kernel (apart from copy_*_user functions).</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Appropriate locks must be held before calling this function.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @nr_to_scan:	The number of eligible pages to look through on the list.</span></span><br><span class="line"><span class="comment"> * @lruvec:	The LRU vector to pull pages from.</span></span><br><span class="line"><span class="comment"> * @dst:	The temp list to put pages on to.</span></span><br><span class="line"><span class="comment"> * @nr_scanned:	The number of pages that were scanned.</span></span><br><span class="line"><span class="comment"> * @sc:		The scan_control struct for this reclaim session</span></span><br><span class="line"><span class="comment"> * @mode:	One of the LRU isolation modes</span></span><br><span class="line"><span class="comment"> * @lru:	LRU list id for isolating</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * returns how many pages were moved onto *@dst.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">isolate_lru_pages</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> nr_to_scan,</span></span><br><span class="line"><span class="params">		<span class="keyword">struct</span> lruvec *lruvec, <span class="keyword">struct</span> list_head *dst,</span></span><br><span class="line"><span class="params">		<span class="type">unsigned</span> <span class="type">long</span> *nr_scanned, <span class="keyword">struct</span> scan_control *sc,</span></span><br><span class="line"><span class="params">		<span class="type">isolate_mode_t</span> mode, <span class="keyword">enum</span> lru_list lru)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> *<span class="title">src</span> =</span> &amp;lruvec-&gt;lists[lru];</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> nr_taken = <span class="number">0</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> nr_zone_taken[MAX_NR_ZONES] = { <span class="number">0</span> };</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> nr_skipped[MAX_NR_ZONES] = { <span class="number">0</span>, };</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> skipped = <span class="number">0</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> scan, total_scan, nr_pages;</span><br><span class="line">	LIST_HEAD(pages_skipped);</span><br><span class="line"></span><br><span class="line">	scan = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (total_scan = <span class="number">0</span>;</span><br><span class="line">	     scan &lt; nr_to_scan &amp;&amp; nr_taken &lt; nr_to_scan &amp;&amp; !list_empty(src);</span><br><span class="line">	     total_scan++) {</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">page</span> *<span class="title">page</span>;</span></span><br><span class="line"></span><br><span class="line">		page = lru_to_page(src);</span><br><span class="line">		prefetchw_prev_lru_page(page, src, flags);</span><br><span class="line"></span><br><span class="line">		VM_BUG_ON_PAGE(!PageLRU(page), page);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (page_zonenum(page) &gt; sc-&gt;reclaim_idx) {</span><br><span class="line">			list_move(&amp;page-&gt;lru, &amp;pages_skipped);</span><br><span class="line">			nr_skipped[page_zonenum(page)]++;</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line">		}</span><br><span class="line"></span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * Do not count skipped pages because that makes the function</span></span><br><span class="line"><span class="comment">		 * return with no isolated pages if the LRU mostly contains</span></span><br><span class="line"><span class="comment">		 * ineligible pages.  This causes the VM to not reclaim any</span></span><br><span class="line"><span class="comment">		 * pages, triggering a premature OOM.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		scan++;</span><br><span class="line">		<span class="keyword">switch</span> (__isolate_lru_page(page, mode)) {</span><br><span class="line">		<span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">			nr_pages = hpage_nr_pages(page);</span><br><span class="line">			nr_taken += nr_pages;</span><br><span class="line">			nr_zone_taken[page_zonenum(page)] += nr_pages;</span><br><span class="line">			list_move(&amp;page-&gt;lru, dst);</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">case</span> -EBUSY:</span><br><span class="line">			<span class="comment">/* else it is being freed elsewhere */</span></span><br><span class="line">			list_move(&amp;page-&gt;lru, src);</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">default</span>:</span><br><span class="line">			BUG();</span><br><span class="line">		}</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Splice any skipped pages to the start of the LRU list. Note that</span></span><br><span class="line"><span class="comment">	 * this disrupts the LRU order when reclaiming for lower zones but</span></span><br><span class="line"><span class="comment">	 * we cannot splice to the tail. If we did then the SWAP_CLUSTER_MAX</span></span><br><span class="line"><span class="comment">	 * scanning would soon rescan the same pages to skip and put the</span></span><br><span class="line"><span class="comment">	 * system at risk of premature OOM.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (!list_empty(&amp;pages_skipped)) {</span><br><span class="line">		<span class="type">int</span> zid;</span><br><span class="line"></span><br><span class="line">		list_splice(&amp;pages_skipped, src);</span><br><span class="line">		<span class="keyword">for</span> (zid = <span class="number">0</span>; zid &lt; MAX_NR_ZONES; zid++) {</span><br><span class="line">			<span class="keyword">if</span> (!nr_skipped[zid])</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">			__count_zid_vm_events(PGSCAN_SKIP, zid, nr_skipped[zid]);</span><br><span class="line">			skipped += nr_skipped[zid];</span><br><span class="line">		}</span><br><span class="line">	}</span><br><span class="line">	*nr_scanned = total_scan;</span><br><span class="line">	trace_mm_vmscan_lru_isolate(sc-&gt;reclaim_idx, sc-&gt;order, nr_to_scan,</span><br><span class="line">				    total_scan, skipped, nr_taken, mode, lru);</span><br><span class="line">	update_lru_sizes(lruvec, lru, nr_zone_taken);</span><br><span class="line">	<span class="keyword">return</span> nr_taken;</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>先放一张概览图</p>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/687284-20160502170206201-1852078929.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/687284-20160430211041769-278725455.png"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/687284-20160501030351316-312004296.png"></p>
+<p>shrink_active_list先将要进行处理的页面从lruvec中隔离出来, 放到l_hold中, </p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">shrink_active_list</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> nr_to_scan,</span></span><br><span class="line"><span class="params">			       <span class="keyword">struct</span> lruvec *lruvec,</span></span><br><span class="line"><span class="params">			       <span class="keyword">struct</span> scan_control *sc,</span></span><br><span class="line"><span class="params">			       <span class="keyword">enum</span> lru_list lru)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> nr_taken;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> nr_scanned;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> vm_flags;</span><br><span class="line">	LIST_HEAD(l_hold);	<span class="comment">/* The pages which were snipped off */</span></span><br><span class="line">	LIST_HEAD(l_active);</span><br><span class="line">	LIST_HEAD(l_inactive);</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">page</span> *<span class="title">page</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">zone_reclaim_stat</span> *<span class="title">reclaim_stat</span> =</span> &amp;lruvec-&gt;reclaim_stat;</span><br><span class="line">	<span class="type">unsigned</span> nr_deactivate, nr_activate;</span><br><span class="line">	<span class="type">unsigned</span> nr_rotated = <span class="number">0</span>;</span><br><span class="line">	<span class="type">isolate_mode_t</span> isolate_mode = <span class="number">0</span>;</span><br><span class="line">	<span class="type">int</span> file = is_file_lru(lru);</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">pglist_data</span> *<span class="title">pgdat</span> =</span> lruvec_pgdat(lruvec);</span><br><span class="line"></span><br><span class="line">	lru_add_drain();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!sc-&gt;may_unmap)</span><br><span class="line">		isolate_mode |= ISOLATE_UNMAPPED;</span><br><span class="line"></span><br><span class="line">	spin_lock_irq(&amp;pgdat-&gt;lru_lock);</span><br><span class="line"></span><br><span class="line">	nr_taken = isolate_lru_pages(nr_to_scan, lruvec, &amp;l_hold,</span><br><span class="line">				     &amp;nr_scanned, sc, isolate_mode, lru);</span><br><span class="line"></span><br><span class="line">	__mod_node_page_state(pgdat, NR_ISOLATED_ANON + file, nr_taken);</span><br><span class="line">	reclaim_stat-&gt;recent_scanned[file] += nr_taken;</span><br><span class="line"></span><br><span class="line">	__count_vm_events(PGREFILL, nr_scanned);</span><br><span class="line">	count_memcg_events(lruvec_memcg(lruvec), PGREFILL, nr_scanned);</span><br><span class="line"></span><br><span class="line">	spin_unlock_irq(&amp;pgdat-&gt;lru_lock);</span><br></pre></td></tr></tbody></table></figure>
+
+<p>然后再处理隔离出来的页面. 有三条路径:</p>
+<ol>
+<li>如果页面是不可驱逐的, 调用putback_lru_page放回正确的lru中.</li>
+<li>如果页面近期没被访问过, 加入l_inactive头部</li>
+<li>如果页面近期被访问过, 且是文件页, 且标记为VM_EXEC(对可执行页面的特殊处理), 则再次加入l_active头部, 否则加入l_inactive头部.</li>
+</ol>
+<p>2,3可以合成一句话, 除了近期被访问过的可执行文件页, 其他隔离页面均加入l_active头部.</p>
+<p>这里提一下”访问”的概念, 检测页面是否访问过是通过page_referenced_one函数, 该函数会检测并清除该页面对应页表项中的PTE_YOUNG(在ARM64中实际是PTE_AF), 该位在页面被访问时由硬件设置. 与下文会提到的PG_referenced是两个不同的标志.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> (!list_empty(&amp;l_hold)) {</span><br><span class="line">	cond_resched();</span><br><span class="line">	page = lru_to_page(&amp;l_hold);</span><br><span class="line">	list_del(&amp;page-&gt;lru);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (unlikely(!page_evictable(page))) {</span><br><span class="line">		putback_lru_page(page);</span><br><span class="line">		<span class="keyword">continue</span>;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (unlikely(buffer_heads_over_limit)) {</span><br><span class="line">		<span class="keyword">if</span> (page_has_private(page) &amp;&amp; trylock_page(page)) {</span><br><span class="line">			<span class="keyword">if</span> (page_has_private(page))</span><br><span class="line">				try_to_release_page(page, <span class="number">0</span>);</span><br><span class="line">			unlock_page(page);</span><br><span class="line">		}</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (page_referenced(page, <span class="number">0</span>, sc-&gt;target_mem_cgroup,</span><br><span class="line">			    &amp;vm_flags)) {</span><br><span class="line">		nr_rotated += hpage_nr_pages(page);</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * Identify referenced, file-backed active pages and</span></span><br><span class="line"><span class="comment">		 * give them one more trip around the active list. So</span></span><br><span class="line"><span class="comment">		 * that executable code get better chances to stay in</span></span><br><span class="line"><span class="comment">		 * memory under moderate memory pressure.  Anon pages</span></span><br><span class="line"><span class="comment">		 * are not likely to be evicted by use-once streaming</span></span><br><span class="line"><span class="comment">		 * IO, plus JVM can create lots of anon VM_EXEC pages,</span></span><br><span class="line"><span class="comment">		 * so we ignore them here.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		<span class="keyword">if</span> ((vm_flags &amp; VM_EXEC) &amp;&amp; page_is_file_cache(page)) {</span><br><span class="line">			list_add(&amp;page-&gt;lru, &amp;l_active);</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line">		}</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	ClearPageActive(page);	<span class="comment">/* we are de-activating */</span></span><br><span class="line">	SetPageWorkingset(page);</span><br><span class="line">	list_add(&amp;page-&gt;lru, &amp;l_inactive);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>最后再正式加入到对应的lru中, 并直接释放不再被引用的页面.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Move pages back to the lru list.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">spin_lock_irq(&amp;pgdat-&gt;lru_lock);</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Count referenced pages from currently used mappings as rotated,</span></span><br><span class="line"><span class="comment"> * even though only some of them are actually re-activated.  This</span></span><br><span class="line"><span class="comment"> * helps balance scan pressure between file and anonymous pages in</span></span><br><span class="line"><span class="comment"> * get_scan_count.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">reclaim_stat-&gt;recent_rotated[file] += nr_rotated;</span><br><span class="line"></span><br><span class="line">nr_activate = move_active_pages_to_lru(lruvec, &amp;l_active, &amp;l_hold, lru);</span><br><span class="line">nr_deactivate = move_active_pages_to_lru(lruvec, &amp;l_inactive, &amp;l_hold, lru - LRU_ACTIVE);</span><br><span class="line">__mod_node_page_state(pgdat, NR_ISOLATED_ANON + file, -nr_taken);</span><br><span class="line">spin_unlock_irq(&amp;pgdat-&gt;lru_lock);</span><br><span class="line"></span><br><span class="line">mem_cgroup_uncharge_list(&amp;l_hold);</span><br><span class="line">free_unref_page_list(&amp;l_hold);</span><br><span class="line">trace_mm_vmscan_lru_shrink_active(pgdat-&gt;node_id, nr_taken, nr_activate,</span><br><span class="line">		nr_deactivate, nr_rotated, sc-&gt;priority, file);</span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>shrink_inactive_list的实现比较类似. 先扫描并隔离出要处理的页面放入page_list, 然后调用shrink_page_list处理</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * shrink_inactive_list() is a helper for shrink_node().  It returns the number</span></span><br><span class="line"><span class="comment"> * of reclaimed pages</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> noinline_for_stack <span class="type">unsigned</span> <span class="type">long</span></span><br><span class="line"><span class="title function_">shrink_inactive_list</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> nr_to_scan, <span class="keyword">struct</span> lruvec *lruvec,</span></span><br><span class="line"><span class="params">		     <span class="keyword">struct</span> scan_control *sc, <span class="keyword">enum</span> lru_list lru)</span></span><br><span class="line">{</span><br><span class="line">	LIST_HEAD(page_list);</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> nr_scanned;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> nr_reclaimed = <span class="number">0</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> nr_taken;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">reclaim_stat</span> <span class="title">stat</span> =</span> {};</span><br><span class="line">	<span class="type">isolate_mode_t</span> isolate_mode = <span class="number">0</span>;</span><br><span class="line">	<span class="type">int</span> file = is_file_lru(lru);</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">pglist_data</span> *<span class="title">pgdat</span> =</span> lruvec_pgdat(lruvec);</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">zone_reclaim_stat</span> *<span class="title">reclaim_stat</span> =</span> &amp;lruvec-&gt;reclaim_stat;</span><br><span class="line">	<span class="type">bool</span> stalled = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">while</span> (unlikely(too_many_isolated(pgdat, file, sc))) {</span><br><span class="line">		<span class="keyword">if</span> (stalled)</span><br><span class="line">			<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* wait a bit for the reclaimer. */</span></span><br><span class="line">		msleep(<span class="number">100</span>);</span><br><span class="line">		stalled = <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* We are about to die and free our memory. Return now. */</span></span><br><span class="line">		<span class="keyword">if</span> (fatal_signal_pending(current))</span><br><span class="line">			<span class="keyword">return</span> SWAP_CLUSTER_MAX;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	lru_add_drain();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!sc-&gt;may_unmap)</span><br><span class="line">		isolate_mode |= ISOLATE_UNMAPPED;</span><br><span class="line"></span><br><span class="line">	spin_lock_irq(&amp;pgdat-&gt;lru_lock);</span><br><span class="line"></span><br><span class="line">	nr_taken = isolate_lru_pages(nr_to_scan, lruvec, &amp;page_list,</span><br><span class="line">				     &amp;nr_scanned, sc, isolate_mode, lru);</span><br><span class="line"></span><br><span class="line">	__mod_node_page_state(pgdat, NR_ISOLATED_ANON + file, nr_taken);</span><br><span class="line">	reclaim_stat-&gt;recent_scanned[file] += nr_taken;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (current_is_kswapd()) {</span><br><span class="line">		<span class="keyword">if</span> (global_reclaim(sc))</span><br><span class="line">			__count_vm_events(PGSCAN_KSWAPD, nr_scanned);</span><br><span class="line">		count_memcg_events(lruvec_memcg(lruvec), PGSCAN_KSWAPD,</span><br><span class="line">				   nr_scanned);</span><br><span class="line">	} <span class="keyword">else</span> {</span><br><span class="line">		<span class="keyword">if</span> (global_reclaim(sc))</span><br><span class="line">			__count_vm_events(PGSCAN_DIRECT, nr_scanned);</span><br><span class="line">		count_memcg_events(lruvec_memcg(lruvec), PGSCAN_DIRECT,</span><br><span class="line">				   nr_scanned);</span><br><span class="line">	}</span><br><span class="line">	spin_unlock_irq(&amp;pgdat-&gt;lru_lock);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (nr_taken == <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	nr_reclaimed = shrink_page_list(&amp;page_list, pgdat, sc, <span class="number">0</span>,</span><br><span class="line">				&amp;stat, <span class="literal">false</span>);</span><br><span class="line"></span><br><span class="line">	spin_lock_irq(&amp;pgdat-&gt;lru_lock);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (current_is_kswapd()) {</span><br><span class="line">		<span class="keyword">if</span> (global_reclaim(sc))</span><br><span class="line">			__count_vm_events(PGSTEAL_KSWAPD, nr_reclaimed);</span><br><span class="line">		count_memcg_events(lruvec_memcg(lruvec), PGSTEAL_KSWAPD,</span><br><span class="line">				   nr_reclaimed);</span><br><span class="line">	} <span class="keyword">else</span> {</span><br><span class="line">		<span class="keyword">if</span> (global_reclaim(sc))</span><br><span class="line">			__count_vm_events(PGSTEAL_DIRECT, nr_reclaimed);</span><br><span class="line">		count_memcg_events(lruvec_memcg(lruvec), PGSTEAL_DIRECT,</span><br><span class="line">				   nr_reclaimed);</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	putback_inactive_pages(lruvec, &amp;page_list);</span><br><span class="line"></span><br><span class="line">	__mod_node_page_state(pgdat, NR_ISOLATED_ANON + file, -nr_taken);</span><br><span class="line"></span><br><span class="line">	spin_unlock_irq(&amp;pgdat-&gt;lru_lock);</span><br><span class="line"></span><br><span class="line">	mem_cgroup_uncharge_list(&amp;page_list);</span><br><span class="line">	free_unref_page_list(&amp;page_list);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * If dirty pages are scanned that are not queued for IO, it</span></span><br><span class="line"><span class="comment">	 * implies that flushers are not doing their job. This can</span></span><br><span class="line"><span class="comment">	 * happen when memory pressure pushes dirty pages to the end of</span></span><br><span class="line"><span class="comment">	 * the LRU before the dirty limits are breached and the dirty</span></span><br><span class="line"><span class="comment">	 * data has expired. It can also happen when the proportion of</span></span><br><span class="line"><span class="comment">	 * dirty pages grows not through writes but through memory</span></span><br><span class="line"><span class="comment">	 * pressure reclaiming all the clean cache. And in some cases,</span></span><br><span class="line"><span class="comment">	 * the flushers simply cannot keep up with the allocation</span></span><br><span class="line"><span class="comment">	 * rate. Nudge the flusher threads in case they are asleep.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (stat.nr_unqueued_dirty == nr_taken)</span><br><span class="line">		wakeup_flusher_threads(WB_REASON_VMSCAN);</span><br><span class="line"></span><br><span class="line">	sc-&gt;nr.dirty += stat.nr_dirty;</span><br><span class="line">	sc-&gt;nr.congested += stat.nr_congested;</span><br><span class="line">	sc-&gt;nr.unqueued_dirty += stat.nr_unqueued_dirty;</span><br><span class="line">	sc-&gt;nr.writeback += stat.nr_writeback;</span><br><span class="line">	sc-&gt;nr.immediate += stat.nr_immediate;</span><br><span class="line">	sc-&gt;nr.taken += nr_taken;</span><br><span class="line">	<span class="keyword">if</span> (file)</span><br><span class="line">		sc-&gt;nr.file_taken += nr_taken;</span><br><span class="line"></span><br><span class="line">	trace_mm_vmscan_lru_shrink_inactive(pgdat-&gt;node_id,</span><br><span class="line">			nr_scanned, nr_reclaimed, &amp;stat, sc-&gt;priority, file);</span><br><span class="line">	<span class="keyword">return</span> nr_reclaimed;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>shrink_page_list处理的情况比较复杂, 这里直接摘抄参考文章中的注释.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"> <span class="comment">/* 1.此页是否在进行回写(两种情况会导致回写，之前进行内存回收时导致此页进行了回写；此页为脏页，系统自动将其回写)，这种情况同步回收和异步回收有不同的处理</span></span><br><span class="line"><span class="comment">     * 2.此次回收时非强制进行回收，那要先判断此页能不能进行回收</span></span><br><span class="line"><span class="comment">     *         如果是匿名页，只要最近此页被进程访问过，则将此页移动到活动lru链表头部，否则回收</span></span><br><span class="line"><span class="comment">     *         如果是映射可执行文件的文件页，只要最近被进程访问过，就放到活动lru链表，否则回收</span></span><br><span class="line"><span class="comment">     *         如果是其他的文件页，如果最近被多个进程访问过，移动到活动lru链表，如果只被1个进程访问过，但是PG_referenced置位了，也放入活动lru链表，其他情况回收</span></span><br><span class="line"><span class="comment">     * 3.如果遍历到的page为匿名页，但是又不处于swapcache中，这里会尝试将其加入到swapcache中并把页标记为脏页，这个swapcache作为swap缓冲区，是一个address_space</span></span><br><span class="line"><span class="comment">     * 4.对所有映射了此页的进程的页表进行此页的unmap操作</span></span><br><span class="line"><span class="comment">     * 5.如果页为脏页，则进行回写，分同步和异步，同步情况是回写完成才返回，异步情况是加入块层的写入队列，标记页的PG_writeback表示正在回写就返回，此页将会被放到非活动lru链表头部</span></span><br><span class="line"><span class="comment">     * 6.检查页的PG_writeback标志，如果此标志位0，则说明此页的回写完成(两种情况: 1.同步回收 2.之前异步回收对此页进行的回写已完成)，则从此页对应的address_space中的基树移除此页的结点，加入到free_pages链表</span></span><br><span class="line"><span class="comment">     *        对于PG_writeback标志位1的，将其重新加入到page_list链表，这个链表之后会将里面的页放回到非活动lru链表末尾，下次进行回收时，如果页回写完成了就会被释放</span></span><br><span class="line"><span class="comment">     * 7.对free_pages链表的页释放</span></span><br><span class="line"><span class="comment"> * shrink_page_list() returns the number of reclaimed pages</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">shrink_page_list</span><span class="params">(<span class="keyword">struct</span> list_head *page_list,</span></span><br><span class="line"><span class="params">				      <span class="keyword">struct</span> pglist_data *pgdat,</span></span><br><span class="line"><span class="params">				      <span class="keyword">struct</span> scan_control *sc,</span></span><br><span class="line"><span class="params">				      <span class="keyword">enum</span> ttu_flags ttu_flags,</span></span><br><span class="line"><span class="params">				      <span class="keyword">struct</span> reclaim_stat *stat,</span></span><br><span class="line"><span class="params">				      <span class="type">bool</span> force_reclaim)</span></span><br></pre></td></tr></tbody></table></figure>
+
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20240927200016.png"></p>
+<p>其中涉及到一个二次机会的概念, 对于文件页来说, 由于初始化时会被引用一次, 为了防止大量文件页留在ACTIVE中, 使用PG_referenced标志位来计数, 让该页面在INACTIVE链表中再循环一轮. </p>
+<p>该标志同样用于ACTIVE的文件页, 刚从ACTIVE链表中移除但仍被使用的文件页可以快速恢复.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">enum</span> page_references <span class="title function_">page_check_references</span><span class="params">(<span class="keyword">struct</span> page *page,</span></span><br><span class="line"><span class="params">						  <span class="keyword">struct</span> scan_control *sc)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">int</span> referenced_ptes, referenced_page;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> vm_flags;</span><br><span class="line"></span><br><span class="line">	referenced_ptes = page_referenced(page, <span class="number">1</span>, sc-&gt;target_mem_cgroup,</span><br><span class="line">					  &amp;vm_flags);</span><br><span class="line">	referenced_page = TestClearPageReferenced(page);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Mlock lost the isolation race with us.  Let try_to_unmap()</span></span><br><span class="line"><span class="comment">	 * move the page to the unevictable list.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (vm_flags &amp; VM_LOCKED)</span><br><span class="line">		<span class="keyword">return</span> PAGEREF_RECLAIM;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (referenced_ptes) {</span><br><span class="line">		<span class="keyword">if</span> (PageSwapBacked(page))</span><br><span class="line">			<span class="keyword">return</span> PAGEREF_ACTIVATE;</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * All mapped pages start out with page table</span></span><br><span class="line"><span class="comment">		 * references from the instantiating fault, so we need</span></span><br><span class="line"><span class="comment">		 * to look twice if a mapped file page is used more</span></span><br><span class="line"><span class="comment">		 * than once.</span></span><br><span class="line"><span class="comment">		 *</span></span><br><span class="line"><span class="comment">		 * Mark it and spare it for another trip around the</span></span><br><span class="line"><span class="comment">		 * inactive list.  Another page table reference will</span></span><br><span class="line"><span class="comment">		 * lead to its activation.</span></span><br><span class="line"><span class="comment">		 *</span></span><br><span class="line"><span class="comment">		 * Note: the mark is set for activated pages as well</span></span><br><span class="line"><span class="comment">		 * so that recently deactivated but used pages are</span></span><br><span class="line"><span class="comment">		 * quickly recovered.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		SetPageReferenced(page);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (referenced_page || referenced_ptes &gt; <span class="number">1</span>)</span><br><span class="line">			<span class="keyword">return</span> PAGEREF_ACTIVATE;</span><br><span class="line"></span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * Activate file-backed executable pages after first usage.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		<span class="keyword">if</span> (vm_flags &amp; VM_EXEC)</span><br><span class="line">			<span class="keyword">return</span> PAGEREF_ACTIVATE;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">return</span> PAGEREF_KEEP;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Reclaim if clean, defer dirty pages to writeback */</span></span><br><span class="line">	<span class="keyword">if</span> (referenced_page &amp;&amp; !PageSwapBacked(page))</span><br><span class="line">		<span class="keyword">return</span> PAGEREF_RECLAIM_CLEAN;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> PAGEREF_RECLAIM;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="快速内存回收"><a href="#快速内存回收" class="headerlink" title="快速内存回收"></a>快速内存回收</h3><p>快速内存回收的入口点在node_reclaim. 进行一些检查后转入__node_reclaim.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">node_reclaim</span><span class="params">(<span class="keyword">struct</span> pglist_data *pgdat, <span class="type">gfp_t</span> gfp_mask, <span class="type">unsigned</span> <span class="type">int</span> order)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">int</span> ret;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Node reclaim reclaims unmapped file backed pages and</span></span><br><span class="line"><span class="comment">	 * slab pages if we are over the defined limits.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * A small portion of unmapped file backed pages is needed for</span></span><br><span class="line"><span class="comment">	 * file I/O otherwise pages read by file I/O will be immediately</span></span><br><span class="line"><span class="comment">	 * thrown out if the node is overallocated. So we do not reclaim</span></span><br><span class="line"><span class="comment">	 * if less than a specified percentage of the node is used by</span></span><br><span class="line"><span class="comment">	 * unmapped file backed pages.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (node_pagecache_reclaimable(pgdat) &lt;= pgdat-&gt;min_unmapped_pages &amp;&amp;</span><br><span class="line">	    node_page_state(pgdat, NR_SLAB_RECLAIMABLE) &lt;= pgdat-&gt;min_slab_pages)</span><br><span class="line">		<span class="keyword">return</span> NODE_RECLAIM_FULL;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Do not scan if the allocation should not be delayed.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (!gfpflags_allow_blocking(gfp_mask) || (current-&gt;flags &amp; PF_MEMALLOC))</span><br><span class="line">		<span class="keyword">return</span> NODE_RECLAIM_NOSCAN;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Only run node reclaim on the local node or on nodes that do not</span></span><br><span class="line"><span class="comment">	 * have associated processors. This will favor the local processor</span></span><br><span class="line"><span class="comment">	 * over remote processors and spread off node memory allocations</span></span><br><span class="line"><span class="comment">	 * as wide as possible.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (node_state(pgdat-&gt;node_id, N_CPU) &amp;&amp; pgdat-&gt;node_id != numa_node_id())</span><br><span class="line">		<span class="keyword">return</span> NODE_RECLAIM_NOSCAN;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (test_and_set_bit(PGDAT_RECLAIM_LOCKED, &amp;pgdat-&gt;flags))</span><br><span class="line">		<span class="keyword">return</span> NODE_RECLAIM_NOSCAN;</span><br><span class="line"></span><br><span class="line">	ret = __node_reclaim(pgdat, gfp_mask, order);</span><br><span class="line">	clear_bit(PGDAT_RECLAIM_LOCKED, &amp;pgdat-&gt;flags);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!ret)</span><br><span class="line">		count_vm_event(PGSCAN_ZONE_RECLAIM_FAILED);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> ret;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>node_pagecache_reclaimable计算当前node_reclaim_mode下节点中能回收的文件页面缓存数量.</p>
+<ul>
+<li>如果设置了RECLAIM_UNMAP<ul>
+<li>可回收页面数 += 文件页总数</li>
+</ul>
+</li>
+<li>否则<ul>
+<li>可回收页面数 += 未映射的文件页数量</li>
+</ul>
+</li>
+<li>如果未设置RECLAIM_WRITE(将脏页写回存储设备)<ul>
+<li>可映射页面数 -= 脏页数量<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/* Work out how many page cache pages we can reclaim in this reclaim_mode */</span></span><br><span class="line"><span class="type">static</span> <span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">node_pagecache_reclaimable</span><span class="params">(<span class="keyword">struct</span> pglist_data *pgdat)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> nr_pagecache_reclaimable;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> delta = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * If RECLAIM_UNMAP is set, then all file pages are considered</span></span><br><span class="line"><span class="comment">	 * potentially reclaimable. Otherwise, we have to worry about</span></span><br><span class="line"><span class="comment">	 * pages like swapcache and node_unmapped_file_pages() provides</span></span><br><span class="line"><span class="comment">	 * a better estimate</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (node_reclaim_mode &amp; RECLAIM_UNMAP)</span><br><span class="line">		nr_pagecache_reclaimable = node_page_state(pgdat, NR_FILE_PAGES);</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		nr_pagecache_reclaimable = node_unmapped_file_pages(pgdat);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* If we can't clean pages, remove dirty pages from consideration */</span></span><br><span class="line">	<span class="keyword">if</span> (!(node_reclaim_mode &amp; RECLAIM_WRITE))</span><br><span class="line">		delta += node_page_state(pgdat, NR_FILE_DIRTY);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Watch for any possible underflows due to delta */</span></span><br><span class="line">	<span class="keyword">if</span> (unlikely(delta &gt; nr_pagecache_reclaimable))</span><br><span class="line">		delta = nr_pagecache_reclaimable;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> nr_pagecache_reclaimable - delta;</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure></li>
+</ul>
+</li>
+</ul>
+<p>__node_reclaim设置scan_control, 然后循环调用shrink_node尝试回收至少nr_pages张页面.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Try to free up some pages from this node through reclaim.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __node_reclaim(<span class="keyword">struct</span> pglist_data *pgdat, <span class="type">gfp_t</span> gfp_mask, <span class="type">unsigned</span> <span class="type">int</span> order)</span><br><span class="line">{</span><br><span class="line">	<span class="comment">/* Minimum pages needed in order to stay on node */</span></span><br><span class="line">	<span class="type">const</span> <span class="type">unsigned</span> <span class="type">long</span> nr_pages = <span class="number">1</span> &lt;&lt; order;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">p</span> =</span> current;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">reclaim_state</span> <span class="title">reclaim_state</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> noreclaim_flag;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">scan_control</span> <span class="title">sc</span> =</span> {</span><br><span class="line">		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),</span><br><span class="line">		.gfp_mask = current_gfp_context(gfp_mask),</span><br><span class="line">		.order = order,</span><br><span class="line">		.priority = NODE_RECLAIM_PRIORITY,</span><br><span class="line">		.may_writepage = !!(node_reclaim_mode &amp; RECLAIM_WRITE),</span><br><span class="line">		.may_unmap = !!(node_reclaim_mode &amp; RECLAIM_UNMAP),</span><br><span class="line">		.may_swap = <span class="number">1</span>,</span><br><span class="line">		.reclaim_idx = gfp_zone(gfp_mask),</span><br><span class="line">	};</span><br><span class="line"></span><br><span class="line">	cond_resched();</span><br><span class="line">	fs_reclaim_acquire(sc.gfp_mask);</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * We need to be able to allocate from the reserves for RECLAIM_UNMAP</span></span><br><span class="line"><span class="comment">	 * and we also need to be able to write out pages for RECLAIM_WRITE</span></span><br><span class="line"><span class="comment">	 * and RECLAIM_UNMAP.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	noreclaim_flag = memalloc_noreclaim_save();</span><br><span class="line">	p-&gt;flags |= PF_SWAPWRITE;</span><br><span class="line">	reclaim_state.reclaimed_slab = <span class="number">0</span>;</span><br><span class="line">	p-&gt;reclaim_state = &amp;reclaim_state;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (node_pagecache_reclaimable(pgdat) &gt; pgdat-&gt;min_unmapped_pages) {</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * Free memory by calling shrink node with increasing</span></span><br><span class="line"><span class="comment">		 * priorities until we have enough memory freed.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		<span class="keyword">do</span> {</span><br><span class="line">			shrink_node(pgdat, &amp;sc);</span><br><span class="line">		} <span class="keyword">while</span> (sc.nr_reclaimed &lt; nr_pages &amp;&amp; --sc.priority &gt;= <span class="number">0</span>);</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	p-&gt;reclaim_state = <span class="literal">NULL</span>;</span><br><span class="line">	current-&gt;flags &amp;= ~PF_SWAPWRITE;</span><br><span class="line">	memalloc_noreclaim_restore(noreclaim_flag);</span><br><span class="line">	fs_reclaim_release(sc.gfp_mask);</span><br><span class="line">	<span class="keyword">return</span> sc.nr_reclaimed &gt;= nr_pages;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<h3 id="直接内存回收"><a href="#直接内存回收" class="headerlink" title="直接内存回收"></a>直接内存回收</h3><p>入口点在do_try_to_free_pages, 对zonlist中的各zone-&gt;pgdat调用shrink_node.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * This is the main entry point to direct page reclaim.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * If a full scan of the inactive list fails to free enough memory then we</span></span><br><span class="line"><span class="comment"> * are "out of memory" and something needs to be killed.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * If the caller is !__GFP_FS then the probability of a failure is reasonably</span></span><br><span class="line"><span class="comment"> * high - the zone may be full of dirty or under-writeback pages, which this</span></span><br><span class="line"><span class="comment"> * caller can't do much about.  We kick the writeback threads and take explicit</span></span><br><span class="line"><span class="comment"> * naps in the hope that some of these pages can be written.  But if the</span></span><br><span class="line"><span class="comment"> * allocating task holds filesystem locks which prevent writeout this might not</span></span><br><span class="line"><span class="comment"> * work, and the allocation attempt will fail.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * returns:	0, if no pages reclaimed</span></span><br><span class="line"><span class="comment"> * 		else, the number of pages reclaimed</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">do_try_to_free_pages</span><span class="params">(<span class="keyword">struct</span> zonelist *zonelist,</span></span><br><span class="line"><span class="params">					  <span class="keyword">struct</span> scan_control *sc)</span></span><br></pre></td></tr></tbody></table></figure>
+
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * This is the direct reclaim path, for page-allocating processes.  We only</span></span><br><span class="line"><span class="comment"> * try to reclaim pages from zones which will satisfy the caller's allocation</span></span><br><span class="line"><span class="comment"> * request.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * If a zone is deemed to be full of pinned pages then just give it a light</span></span><br><span class="line"><span class="comment"> * scan then give up on it.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">shrink_zones</span><span class="params">(<span class="keyword">struct</span> zonelist *zonelist, <span class="keyword">struct</span> scan_control *sc)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">zoneref</span> *<span class="title">z</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">zone</span> *<span class="title">zone</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> nr_soft_reclaimed;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> nr_soft_scanned;</span><br><span class="line">	<span class="type">gfp_t</span> orig_mask;</span><br><span class="line">	<span class="type">pg_data_t</span> *last_pgdat = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * If the number of buffer_heads in the machine exceeds the maximum</span></span><br><span class="line"><span class="comment">	 * allowed level, force direct reclaim to scan the highmem zone as</span></span><br><span class="line"><span class="comment">	 * highmem pages could be pinning lowmem pages storing buffer_heads</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	orig_mask = sc-&gt;gfp_mask;</span><br><span class="line">	<span class="keyword">if</span> (buffer_heads_over_limit) {</span><br><span class="line">		sc-&gt;gfp_mask |= __GFP_HIGHMEM;</span><br><span class="line">		sc-&gt;reclaim_idx = gfp_zone(sc-&gt;gfp_mask);</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	for_each_zone_zonelist_nodemask(zone, z, zonelist,</span><br><span class="line">					sc-&gt;reclaim_idx, sc-&gt;nodemask) {</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * Take care memory controller reclaiming has small influence</span></span><br><span class="line"><span class="comment">		 * to global LRU.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		<span class="keyword">if</span> (global_reclaim(sc)) {</span><br><span class="line">			<span class="keyword">if</span> (!cpuset_zone_allowed(zone,</span><br><span class="line">						 GFP_KERNEL | __GFP_HARDWALL))</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">			<span class="comment">/*</span></span><br><span class="line"><span class="comment">			 * If we already have plenty of memory free for</span></span><br><span class="line"><span class="comment">			 * compaction in this zone, don't free any more.</span></span><br><span class="line"><span class="comment">			 * Even though compaction is invoked for any</span></span><br><span class="line"><span class="comment">			 * non-zero order, only frequent costly order</span></span><br><span class="line"><span class="comment">			 * reclamation is disruptive enough to become a</span></span><br><span class="line"><span class="comment">			 * noticeable problem, like transparent huge</span></span><br><span class="line"><span class="comment">			 * page allocations.</span></span><br><span class="line"><span class="comment">			 */</span></span><br><span class="line">			<span class="keyword">if</span> (IS_ENABLED(CONFIG_COMPACTION) &amp;&amp;</span><br><span class="line">			    sc-&gt;order &gt; PAGE_ALLOC_COSTLY_ORDER &amp;&amp;</span><br><span class="line">			    compaction_ready(zone, sc)) {</span><br><span class="line">				sc-&gt;compaction_ready = <span class="literal">true</span>;</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			}</span><br><span class="line"></span><br><span class="line">			<span class="comment">/*</span></span><br><span class="line"><span class="comment">			 * Shrink each node in the zonelist once. If the</span></span><br><span class="line"><span class="comment">			 * zonelist is ordered by zone (not the default) then a</span></span><br><span class="line"><span class="comment">			 * node may be shrunk multiple times but in that case</span></span><br><span class="line"><span class="comment">			 * the user prefers lower zones being preserved.</span></span><br><span class="line"><span class="comment">			 */</span></span><br><span class="line">			<span class="keyword">if</span> (zone-&gt;zone_pgdat == last_pgdat)</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">			<span class="comment">/*</span></span><br><span class="line"><span class="comment">			 * This steals pages from memory cgroups over softlimit</span></span><br><span class="line"><span class="comment">			 * and returns the number of reclaimed pages and</span></span><br><span class="line"><span class="comment">			 * scanned pages. This works for global memory pressure</span></span><br><span class="line"><span class="comment">			 * and balancing, not for a memcg's limit.</span></span><br><span class="line"><span class="comment">			 */</span></span><br><span class="line">			nr_soft_scanned = <span class="number">0</span>;</span><br><span class="line">			nr_soft_reclaimed = mem_cgroup_soft_limit_reclaim(zone-&gt;zone_pgdat,</span><br><span class="line">						sc-&gt;order, sc-&gt;gfp_mask,</span><br><span class="line">						&amp;nr_soft_scanned);</span><br><span class="line">			sc-&gt;nr_reclaimed += nr_soft_reclaimed;</span><br><span class="line">			sc-&gt;nr_scanned += nr_soft_scanned;</span><br><span class="line">			<span class="comment">/* need some check for avoid more shrink_zone() */</span></span><br><span class="line">		}</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* See comment about same check for global reclaim above */</span></span><br><span class="line">		<span class="keyword">if</span> (zone-&gt;zone_pgdat == last_pgdat)</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line">		last_pgdat = zone-&gt;zone_pgdat;</span><br><span class="line">		shrink_node(zone-&gt;zone_pgdat, sc);</span><br><span class="line">	}</span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="异步内存回收"><a href="#异步内存回收" class="headerlink" title="异步内存回收"></a>异步内存回收</h3><p>每个节点有一个由init进程启动的内存回收进程, kswapd.<br>当满足条件时被唤醒, 进行异步的内存回收工作.<br>经由以下路径转入shrink_node: balance_pgdat-&gt;kswapd_shrink_node-&gt;shrink_node.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * The background pageout daemon, started as a kernel thread</span></span><br><span class="line"><span class="comment"> * from the init process.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This basically trickles out pages so that we have _some_</span></span><br><span class="line"><span class="comment"> * free memory available even if there is no other activity</span></span><br><span class="line"><span class="comment"> * that frees anything up. This is needed for things like routing</span></span><br><span class="line"><span class="comment"> * etc, where we otherwise might have all activity going on in</span></span><br><span class="line"><span class="comment"> * asynchronous contexts that cannot page things out.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * If there are applications that are active memory-allocators</span></span><br><span class="line"><span class="comment"> * (most normal use), this basically shouldn't matter.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">kswapd</span><span class="params">(<span class="type">void</span> *p)</span></span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/tolimit/p/5447448.html">https://www.cnblogs.com/tolimit/p/5447448.html</a><br><a target="_blank" rel="noopener" href="https://www.cnblogs.com/tolimit/p/5435068.html">https://www.cnblogs.com/tolimit/p/5435068.html</a></p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2024/Linux%20-%20memory%20reclaim%20--%20ARM64%20v5.0/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/" rel="tag">Linux</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Memory-Management/" rel="tag">Memory_Management</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/2024/Linux%20-%20memory%20compact%20--%20ARM64%20v5.0/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Linux内核 内存规整 -- ARM64 v5.0
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2024/Linux%20-%20%20BuddySystem%20--%20ARM64%20v5.0/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Linux内核 BuddySystem -- ARM64 v5.0</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2024
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2022/About">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>
