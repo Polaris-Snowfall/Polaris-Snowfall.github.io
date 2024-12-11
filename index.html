@@ -111,6 +111,241 @@
     
     
     <article
+  id="post-Dig into Netfilter (4)"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2024/Dig%20into%20Netfilter%20(4)/"
+    >Dig into Netfilter (四) —— CVE-2022-34918</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/Dig%20into%20Netfilter%20(4)/" class="article-date">
+  <time datetime="2024-12-09T16:00:00.000Z" itemprop="datePublished">2024-12-10</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h3 id="CVE-2022-34918"><a href="#CVE-2022-34918" class="headerlink" title="CVE-2022-34918"></a>CVE-2022-34918</h3><h4 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h4><p>在nft_set_elem_init函数中, 有几处使用memcpy的地方让人眼前一亮.<br>众所周知审溢出就是审读写时使用的大小是否小于等于分配内存时使用的大小.</p>
+<p>但这几处分配空间使用的是tmpl-&gt;len, 而写入的长度是(set-&gt;klen + set-&gt;klen + set-&gt;dlen) (对应属性都存在的情况下), 这促使我们向上回溯看看这些值之间是否存在上述小于等于的关系.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> *<span class="title function_">nft_set_elem_init</span><span class="params">(<span class="type">const</span> <span class="keyword">struct</span> nft_set *<span class="built_in">set</span>,</span></span><br><span class="line"><span class="params">			<span class="type">const</span> <span class="keyword">struct</span> nft_set_ext_tmpl *tmpl,</span></span><br><span class="line"><span class="params">			<span class="type">const</span> u32 *key, <span class="type">const</span> u32 *key_end,</span></span><br><span class="line"><span class="params">			<span class="type">const</span> u32 *data, u64 timeout, u64 expiration, <span class="type">gfp_t</span> gfp)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nft_set_ext</span> *<span class="title">ext</span>;</span></span><br><span class="line">	<span class="type">void</span> *elem;</span><br><span class="line"></span><br><span class="line">	elem = kzalloc(<span class="built_in">set</span>-&gt;ops-&gt;elemsize + tmpl-&gt;len, gfp);</span><br><span class="line">	<span class="keyword">if</span> (elem == <span class="literal">NULL</span>)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	ext = nft_set_elem_ext(<span class="built_in">set</span>, elem);</span><br><span class="line">	nft_set_ext_init(ext, tmpl);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (nft_set_ext_exists(ext, NFT_SET_EXT_KEY))</span><br><span class="line">		<span class="built_in">memcpy</span>(nft_set_ext_key(ext), key, <span class="built_in">set</span>-&gt;klen);</span><br><span class="line">	<span class="keyword">if</span> (nft_set_ext_exists(ext, NFT_SET_EXT_KEY_END))</span><br><span class="line">		<span class="built_in">memcpy</span>(nft_set_ext_key_end(ext), key_end, <span class="built_in">set</span>-&gt;klen);</span><br><span class="line">	<span class="keyword">if</span> (nft_set_ext_exists(ext, NFT_SET_EXT_DATA))</span><br><span class="line">		<span class="built_in">memcpy</span>(nft_set_ext_data(ext), data, <span class="built_in">set</span>-&gt;dlen);</span><br><span class="line">	<span class="keyword">if</span> (nft_set_ext_exists(ext, NFT_SET_EXT_EXPIRATION)) {</span><br><span class="line">		*nft_set_ext_expiration(ext) = get_jiffies_64() + expiration;</span><br><span class="line">		<span class="keyword">if</span> (expiration == <span class="number">0</span>)</span><br><span class="line">			*nft_set_ext_expiration(ext) += timeout;</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">if</span> (nft_set_ext_exists(ext, NFT_SET_EXT_TIMEOUT))</span><br><span class="line">		*nft_set_ext_timeout(ext) = timeout;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> elem;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure> 
+      <a class="article-more-link" href="/2024/Dig%20into%20Netfilter%20(4)/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Netfilter/" rel="tag">Netfilter</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
+  id="post-Dig into Netfilter (3)"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2024/Dig%20into%20Netfilter%20(3)/"
+    >Dig into Netfilter (三) —— CVE-2022-1972 / CVE-2022-2078</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/Dig%20into%20Netfilter%20(3)/" class="article-date">
+  <time datetime="2024-12-05T16:00:00.000Z" itemprop="datePublished">2024-12-06</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h3 id="新增集合"><a href="#新增集合" class="headerlink" title="新增集合"></a>新增集合</h3><p>在nf_tables中, 还有一个set的概念. 虽然nf_tables没有使用iptables的match-action的概念, 但作为filter就少不了match的过程. set充当一个数据库, 而nft_lookup等指令用来在数据库中进行查找.</p>
+<p>比如想要拦截192.168.1.4, 192.168.1.5等ip的包, 则可以通过如下方式创建命名集合(当然就有匿名集合)blackhole, 并向其中添加ip, 之后的rule即可直接使用这个set.</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nft add set filter blackhole { type ipv4_addr\;}</span><br><span class="line">nft add element filter blackhole { 192.168.1.4, 192.168.1.5 }</span><br><span class="line">nft add rule ip input ip saddr @blackhole drop</span><br></pre></td></tr></tbody></table></figure> 
+      <a class="article-more-link" href="/2024/Dig%20into%20Netfilter%20(3)/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Netfilter/" rel="tag">Netfilter</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
+  id="post-Dig into Netfilter (2)"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2024/Dig%20into%20Netfilter%20(2)/"
+    >Dig into Netfilter (二) —— CVE-2022-1015 / CVE-2022-1016</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/Dig%20into%20Netfilter%20(2)/" class="article-date">
+  <time datetime="2024-12-01T16:00:00.000Z" itemprop="datePublished">2024-12-02</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h3 id="CVE-2022-1016"><a href="#CVE-2022-1016" class="headerlink" title="CVE-2022-1016"></a>CVE-2022-1016</h3><p> 源码版本为v5.17-rc7.</p>
+<p>非常明显且诡异地存在了8年的一个漏洞: 状态机的regs没有初始化.攻击者可以通过该漏洞泄露内核基址.<br>作者的评价:</p>
+<blockquote>
+<p>I have no idea how this survived for eight and a half years, because to me it stuck out like a sore thumb.</p>
+</blockquote>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">unsigned</span> <span class="type">int</span></span><br><span class="line"><span class="title function_">nft_do_chain</span><span class="params">(<span class="keyword">struct</span> nft_pktinfo *pkt, <span class="type">void</span> *priv)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">nft_chain</span> *<span class="title">chain</span> =</span> priv, *basechain = chain;</span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">nft_rule_dp</span> *<span class="title">rule</span>, *<span class="title">last_rule</span>;</span></span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">net</span> *<span class="title">net</span> =</span> nft_net(pkt);</span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">nft_expr</span> *<span class="title">expr</span>, *<span class="title">last</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nft_regs</span> <span class="title">regs</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> stackptr = <span class="number">0</span>;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nft_jumpstack</span> <span class="title">jumpstack</span>[<span class="title">NFT_JUMP_STACK_SIZE</span>];</span></span><br><span class="line">	<span class="type">bool</span> genbit = READ_ONCE(net-&gt;nft.gencursor);</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nft_rule_blob</span> *<span class="title">blob</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nft_traceinfo</span> <span class="title">info</span>;</span></span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure> 
+      <a class="article-more-link" href="/2024/Dig%20into%20Netfilter%20(2)/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Netfilter/" rel="tag">Netfilter</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
+  id="post-Dig into Netfilter (1)"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2024/Dig%20into%20Netfilter%20(1)/"
+    >Dig into Netfilter (一)  —— nf_tables核心概念</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/Dig%20into%20Netfilter%20(1)/" class="article-date">
+  <time datetime="2024-11-27T16:00:00.000Z" itemprop="datePublished">2024-11-28</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>xtables? iptables? nf_tables !</p>
+<h2 id="nf-tables核心概念"><a href="#nf-tables核心概念" class="headerlink" title="nf_tables核心概念"></a>nf_tables核心概念</h2><p> 源码版本为v5.8或v5.11</p>
+<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>根据作用及协议族, 在netfilter中分成不同的table., 每个table只能看到自己所属协议族的包.<br>每个table在其有的每一个hook点上有一条chain. 用户也可以添加自定义的chain, 但由于没有对应的hook点, 只能从内置的chain的rule中跳转到(其实从自定义的chain跳转到也行, 前提是前者能被触发).  实际上之前内置chain的说法并不准确, 不同于iptables, nft并不存在预定义的chain, 需要创建nft_base_chain并将其注册到hook点上.<br>多条rule可能在同一个hook点触发, 即属于同一条chain.<br>处理一条rule的过程实际是对rule中包含的expr求值(eval).</p> 
+      <a class="article-more-link" href="/2024/Dig%20into%20Netfilter%20(1)/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Netfilter/" rel="tag">Netfilter</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
   id="post-Linux - KSM -- ARM64 v5.0"
   class="article article-type-post"
   itemscope
@@ -580,232 +815,6 @@
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
-  id="post-m0leConFinals 2023 Keasy CrossCache UAF + DirtyPagetable"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2024/m0leConFinals%202023%20Keasy%20CrossCache%20UAF%20+%20DirtyPagetable/"
-    >m0leConFinals 2023 Keasy CrossCache UAF + DirtyPagetable</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2024/m0leConFinals%202023%20Keasy%20CrossCache%20UAF%20+%20DirtyPagetable/" class="article-date">
-  <time datetime="2024-08-07T16:00:00.000Z" itemprop="datePublished">2024-08-08</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>传说中的dirty_pagetable.</p>
-<p>漏洞在于copy_to_user失败后, 会fput释放file, 但用户态仍能通过fd访问到该file, 造成file结构体的UAF.</p> 
-      <a class="article-more-link" href="/2024/m0leConFinals%202023%20Keasy%20CrossCache%20UAF%20+%20DirtyPagetable/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
-  id="post-Hitcon2023 WallRose"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2024/Hitcon2023%20WallRose/"
-    >Hitcon2023 WallRose学习记录 CrossCache UAF + DirtyCred</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2024/Hitcon2023%20WallRose/" class="article-date">
-  <time datetime="2024-08-06T16:00:00.000Z" itemprop="datePublished">2024-08-07</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>0x400大小对象的UAF, 没开memcg, 开了FG-KASLR.</p>
-<p>主要是学习手法, 下次遇到了再写exp……</p> 
-      <a class="article-more-link" href="/2024/Hitcon2023%20WallRose/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
-  id="post-AFL - genetic analysis"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2024/AFL%20-%20genetic%20analysis/"
-    >AFL 遗传思想分析</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2024/AFL%20-%20genetic%20analysis/" class="article-date">
-  <time datetime="2024-07-25T16:00:00.000Z" itemprop="datePublished">2024-07-26</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%A8%A1%E7%B3%8A%E6%B5%8B%E8%AF%95/">模糊测试</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>Fuzz的中间结果是如何影响变异过程.<br>主要内容摘抄自<a target="_blank" rel="noopener" href="https://hanqi-blogs.cn/2024/AFL%20Analysis/">AFL 源码分析 </a></p> 
-      <a class="article-more-link" href="/2024/AFL%20-%20genetic%20analysis/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/fuzz/" rel="tag">fuzz</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
-  id="post-AVSS2024 - MTE"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2024/AVSS2024%20-%20MTE/"
-    >AVSS2024 初赛 MTE 复现</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2024/AVSS2024%20-%20MTE/" class="article-date">
-  <time datetime="2024-05-30T16:00:00.000Z" itemprop="datePublished">2024-05-31</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/%E5%BA%94%E7%94%A8%E5%B1%82/">应用层</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>MTE机制的学习.感觉目前的实现还是有很多利用空间.<br>快进到”再见了,所有的内存漏洞”</p> 
-      <a class="article-more-link" href="/2024/AVSS2024%20-%20MTE/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">#Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MTE/" rel="tag">MTE</a></li></ul>
 
     </footer>
   </div>

