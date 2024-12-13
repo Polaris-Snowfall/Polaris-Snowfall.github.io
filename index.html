@@ -111,6 +111,64 @@
     
     
     <article
+  id="post-Dig into Netfilter (5)"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2024/Dig%20into%20Netfilter%20(5)/"
+    >Dig into Netfilter (五) —— CVE-2022-32250</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/Dig%20into%20Netfilter%20(5)/" class="article-date">
+  <time datetime="2024-12-13T16:00:00.000Z" itemprop="datePublished">2024-12-14</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h3 id="CVE-2022-32250"><a href="#CVE-2022-32250" class="headerlink" title="CVE-2022-32250"></a>CVE-2022-32250</h3><h4 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h4><h5 id="完整的表达式析构过程-nft-set-binding"><a href="#完整的表达式析构过程-nft-set-binding" class="headerlink" title="完整的表达式析构过程 / nft_set_binding"></a>完整的表达式析构过程 / nft_set_binding</h5><p>一些规则可以与集合绑定, 但其实真正绑定的是表达式和集合, 这类表达式有nft_lookup, nft_dynset, nft_objref.</p>
+<p>代表这一关系的结构是nft_set_binding. </p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> *	struct nft_set_binding - nf_tables set binding</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *	@list: set bindings list node</span></span><br><span class="line"><span class="comment"> *	@chain: chain containing the rule bound to the set</span></span><br><span class="line"><span class="comment"> *	@flags: set action flags</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *	A set binding contains all information necessary for validation</span></span><br><span class="line"><span class="comment"> *	of new elements added to a bound set.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">nft_set_binding</span> {</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>		<span class="title">list</span>;</span></span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">nft_chain</span>		*<span class="title">chain</span>;</span></span><br><span class="line">	u32				flags;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure> 
+      <a class="article-more-link" href="/2024/Dig%20into%20Netfilter%20(5)/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Netfilter/" rel="tag">Netfilter</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
   id="post-Dig into Netfilter (4)"
   class="article article-type-post"
   itemscope
@@ -768,69 +826,13 @@
 </article>
 
     
-    <article
-  id="post-KalmarCTF2024 Beautify_Me"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2024/KalmarCTF2024%20Beautify_Me/"
-    >KalmarCTF2024 Beautify_Me</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2024/KalmarCTF2024%20Beautify_Me/" class="article-date">
-  <time datetime="2024-08-20T16:00:00.000Z" itemprop="datePublished">2024-08-21</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/ctf%E5%A4%8D%E7%8E%B0/">ctf复现</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>厌倦国内比赛一上来给一个裸的洞或者说一些极端情形的利用.<br>Pwn还是要建立在应用下才有意思啊.</p> 
-      <a class="article-more-link" href="/2024/KalmarCTF2024%20Beautify_Me/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
   </article>
   
 
   
   <nav class="page-nav">
     
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/2/">下一页</a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/2/">下一页</a>
   </nav>
   
 </section>
