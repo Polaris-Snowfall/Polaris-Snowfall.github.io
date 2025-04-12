@@ -111,6 +111,67 @@
     
     
     <article
+  id="post-Linux - pagetable mapping establishment -- ARM64 v5.0"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2024/Linux%20-%20pagetable%20mapping%20establishment%20--%20ARM64%20v5.0/"
+    >Linux内核  页表映射建立过程 -- ARM64 v5.0</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/Linux%20-%20pagetable%20mapping%20establishment%20--%20ARM64%20v5.0/" class="article-date">
+  <time datetime="2024-09-04T16:00:00.000Z" itemprop="datePublished">2024-09-05</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux%E5%86%85%E6%A0%B8/">Linux内核</a> / <a class="article-category-link" href="/categories/Linux%E5%86%85%E6%A0%B8/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">内存管理</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>以Linux v5.0分析.</p>
+<p>注意参数或变量中的pgd,pud指的是表项, 为表示区分, 在分析过程中使用大写表示表, 小写表示表项.(如PGD表示全局页目录表.pgd表示全局目录表中的表项)<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20240901191657.png"></p>
+<h2 id="Question"><a href="#Question" class="headerlink" title="Question"></a>Question</h2><ol>
+<li>内核如何适应MMU开启前后的访存机制差异?</li>
+<li>MMU开启之后, 虚拟地址到物理地址的映射是什么样的?</li>
+</ol> 
+      <a class="article-more-link" href="/2024/Linux%20-%20pagetable%20mapping%20establishment%20--%20ARM64%20v5.0/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/" rel="tag">Linux</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Memory-Management/" rel="tag">Memory_Management</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
   id="post-KalmarCTF2024 Beautify_Me"
   class="article article-type-post"
   itemscope
@@ -729,62 +790,6 @@
 </article>
 
     
-    <article
-  id="post-AliyunCTF2024 Exploit Netatalk v3.1.12 by CVE-2022-23121"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2024/AliyunCTF2024%20Exploit%20Netatalk%20v3.1.12%20by%20CVE-2022-23121/"
-    >AliyunCTF2024 Netatalk v3.1.12 越界读写利用</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2024/AliyunCTF2024%20Exploit%20Netatalk%20v3.1.12%20by%20CVE-2022-23121/" class="article-date">
-  <time datetime="2024-03-24T16:00:00.000Z" itemprop="datePublished">2024-03-25</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/%E5%BA%94%E7%94%A8%E5%B1%82/">应用层</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>House of AppleDouble(x<br>大部分时间用在理解AFP协议以及AD文件格式上了…</p> 
-      <a class="article-more-link" href="/2024/AliyunCTF2024%20Exploit%20Netatalk%20v3.1.12%20by%20CVE-2022-23121/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CVE/" rel="tag">CVE</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
   </article>
   
 
@@ -802,7 +807,7 @@
     <ul>
       <li>
         Copyrights &copy;
-        2022-2024
+        2022-2025
         <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
       </li>
     </ul>

