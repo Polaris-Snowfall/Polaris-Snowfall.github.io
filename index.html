@@ -111,6 +111,65 @@
     
     
     <article
+  id="post-AliyunCTF2025 Alimem"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2025/AliyunCTF2025%20Alimem/"
+    >AliyunCTF2025 Alimem</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2025/AliyunCTF2025%20Alimem/" class="article-date">
+  <time datetime="2025-04-12T16:00:00.000Z" itemprop="datePublished">2025-04-13</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>(<del>这题比赛时竟然只有三解……</del></p>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>给了一个菜单堆的模块, 问题在于mmap时是先获取page的reference, 然后映射到用户空间, 最后才增加page-&gt;refcount.</p>
+<p>这就导致在多线程下, 一个线程正进行remap_pfn_range将页面映射到用户空间,此时page引用未增加, 但另一个进程减少一次page引用, page引用归零被释放.</p>
+<p>此时用户可以在mmap的地址上直接读写这个UAF的页面.</p> 
+      <a class="article-more-link" href="/2025/AliyunCTF2025%20Alimem/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
   id="post-Dig into ebpf(1)"
   class="article article-type-post"
   itemscope
@@ -739,67 +798,6 @@
 <li>BuddySystem如何完成一次释放?</li>
 </ol> 
       <a class="article-more-link" href="/2024/Linux%20-%20%20BuddySystem%20--%20ARM64%20v5.0/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/" rel="tag">Linux</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Memory-Management/" rel="tag">Memory_Management</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
-  id="post-Linux - physical memory initialization -- ARM64 v5.0"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2024/Linux%20-%20physical%20memory%20initialization%20--%20ARM64%20v5.0/"
-    >Linux内核  物理内存初始化过程 -- ARM64 v5.0</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2024/Linux%20-%20physical%20memory%20initialization%20--%20ARM64%20v5.0/" class="article-date">
-  <time datetime="2024-09-15T16:00:00.000Z" itemprop="datePublished">2024-09-16</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Linux%E5%86%85%E6%A0%B8/">Linux内核</a> / <a class="article-category-link" href="/categories/Linux%E5%86%85%E6%A0%B8/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">内存管理</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h1 id="Question"><a href="#Question" class="headerlink" title="Question"></a>Question</h1><ol>
-<li>内核如何获取物理内存相关信息?</li>
-<li>sparse模型中,mem_section, page的关系是怎么建立的? pfn_to_page和page_to_pfn的实现?</li>
-<li>node, zone, page的关系是怎么建立的?</li>
-</ol>
-<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/20240915154202.png"></p> 
-      <a class="article-more-link" href="/2024/Linux%20-%20physical%20memory%20initialization%20--%20ARM64%20v5.0/"
         >阅读更多...</a
       >
        
