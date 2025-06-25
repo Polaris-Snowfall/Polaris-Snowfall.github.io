@@ -111,6 +111,118 @@
     
     
     <article
+  id="post-Linux Kernel Exploit Basic--Notes"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2024/Linux%20Kernel%20Exploit%20Basic--Notes/"
+    >Linux Kernel Exploit 入门笔记</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/Linux%20Kernel%20Exploit%20Basic--Notes/" class="article-date">
+  <time datetime="2023-12-31T16:00:00.000Z" itemprop="datePublished">2024-01-01</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>笔者kernel pwn入门时的笔记,由于笔者接触kernel时间较短,难免出现错误….</p> 
+      <a class="article-more-link" href="/2024/Linux%20Kernel%20Exploit%20Basic--Notes/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
+  id="post-ldt_struct-arb_rw &amp;&amp; 0CTF2021-kernote"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/ldt_struct-arb_rw%20&&%200CTF2021-kernote/"
+    >ldt_struct 任意地址读写&amp;&amp;0CTF2021-kernote</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/ldt_struct-arb_rw%20&&%200CTF2021-kernote/" class="article-date">
+  <time datetime="2023-12-26T16:00:00.000Z" itemprop="datePublished">2023-12-27</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>稳定的任意读和不稳定的任意写</p> 
+      <a class="article-more-link" href="/2023/ldt_struct-arb_rw%20&&%200CTF2021-kernote/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
   id="post-CSCD70-Assignment2"
   class="article article-type-post"
   itemscope
@@ -660,126 +772,6 @@
   <h2 id="Lab-6-Network-Driver"><a href="#Lab-6-Network-Driver" class="headerlink" title="Lab 6: Network Driver"></a>Lab 6: Network Driver</h2><h3 id="Part-A-Initialization-and-transmitting-packets"><a href="#Part-A-Initialization-and-transmitting-packets" class="headerlink" title="Part A: Initialization and transmitting packets"></a>Part A: Initialization and transmitting packets</h3><h4 id="time"><a href="#time" class="headerlink" title="time"></a>time</h4><p>在之前的时钟中断调度前加一个对time_tick函数的调用,注意时钟中断每个CPU都会收到,而我们的目的是计时,所以选择固定选择一个CPU来处理就好,bootcpu当然是最合适的.</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> IRQ_OFFSET+IRQ_TIMER:</span><br><span class="line">	lapic_eoi();</span><br><span class="line">	<span class="keyword">if</span>(thiscpu==bootcpu)</span><br><span class="line">		time_tick();</span><br><span class="line">	sched_yield();</span><br><span class="line">	<span class="keyword">return</span>;</span><br></pre></td></tr></tbody></table></figure> 
       <a class="article-more-link" href="/2023/6.828-Lab6/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/6%C2%B7828/" rel="tag">6·828</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
-  id="post-Syntax-Analysis"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2023/Syntax-Analysis/"
-    >语法分析</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2023/Syntax-Analysis/" class="article-date">
-  <time datetime="2023-11-02T16:00:00.000Z" itemprop="datePublished">2023-11-03</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86/">编译原理</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h1 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h1><h2 id="语法分析"><a href="#语法分析" class="headerlink" title="语法分析"></a>语法分析</h2><p>语法分析器接收词法分析器提供的记号串,检查它们是否能由源程序语言的文法产生.</p>
-<p>语法分析器的输出是对词法分析器产生的记号流的分析树的某种表示.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310201353760.png"></p> 
-      <a class="article-more-link" href="/2023/Syntax-Analysis/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Syntax-Analysis/" rel="tag">Syntax-Analysis</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
-    
-    <article
-  id="post-6.828-Lab5"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2023/6.828-Lab5/"
-    >MIT6.828 Lab5</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2023/6.828-Lab5/" class="article-date">
-  <time datetime="2023-10-24T16:00:00.000Z" itemprop="datePublished">2023-10-25</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/">操作系统</a> / <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/6-828/">6.828</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>最崩溃的一集…Lab倒是很简单,只是文件系统一启用,之前代码的好多问题都显现出来了,然后就是debugggg.</p>
-<h2 id="Lab-5-File-system-Spawn-and-Shell"><a href="#Lab-5-File-system-Spawn-and-Shell" class="headerlink" title="Lab 5: File system, Spawn and Shell"></a>Lab 5: File system, Spawn and Shell</h2><h3 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h3><p>切换分支之后编译有点问题,改一改:</p>
-<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310241258348.png"><br>在GNUmakefile中加上-Wno-address-of-packed-member</p>
-<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202310241423170.png"></p>
-<p>将fs.h中定义的全局变量改为外部变量,并在fs.c中定义.</p>
-<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="class"><span class="keyword">struct</span> <span class="title">Super</span> *<span class="title">super</span>;</span>		<span class="comment">// superblock</span></span><br><span class="line"><span class="keyword">extern</span> <span class="type">uint32_t</span> *bitmap;		<span class="comment">// bitmap blocks mapped in memory</span></span><br></pre></td></tr></tbody></table></figure>
-<p>改下输出,lab4满分通过.</p>
-<h3 id="File-system-preliminaries"><a href="#File-system-preliminaries" class="headerlink" title="File system preliminaries"></a>File system preliminaries</h3><p>文件系统的设计就不在这里说了,详见《HQOS 设计与实现》.</p> 
-      <a class="article-more-link" href="/2023/6.828-Lab5/"
         >阅读更多...</a
       >
        
