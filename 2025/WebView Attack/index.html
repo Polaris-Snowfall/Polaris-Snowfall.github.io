@@ -123,13 +123,13 @@
 <p>注意这里侧重的是限制资源的加载而不是访问, 比如通过http外带的时候, 请求是能发出去的, 只是不能通过http加载资源, 本质上是防XSS.</p>
 <span id="more"></span>
 <h2 id="任意url加载"><a href="#任意url加载" class="headerlink" title="任意url加载"></a>任意url加载</h2><h3 id="1-应用克隆"><a href="#1-应用克隆" class="headerlink" title="1. 应用克隆"></a>1. 应用克隆</h3><p>条件 <code>setAllowFileAccess(true) &amp;&amp; (setAllowFileAccessFromFileURLs(true) || setAllowUniversalAccessFromFileURLs(true))</code> </p>
-<p>首先操作webview加载attack.html, 通过js中的file://直接读取出cookie, 再通过<img>之类的label将cookie传出来.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_FCN2RC8HD86PTQT.webp" alt="236762_FCN2RC8HD86PTQT.webp"></p>
+<p>首先操作webview加载attack.html, 通过js中的file://直接读取出cookie, 再通过<img>之类的label将cookie传出来.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_FCN2RC8HD86PTQT.webp"></p>
 <h3 id="2-移花接木"><a href="#2-移花接木" class="headerlink" title="2. 移花接木"></a>2. 移花接木</h3><p>条件 <code>setAllowFileAccess(true)</code>  , 仅限Android7以下.</p>
 <p>首先操纵webview去加载attack.html, attack.html中js的效果是延迟一段时间读取自身(正是因为这里是读取自身, 所以只需要<code>setAllowFileAccess</code>), 此时攻击app将attack.html替换为指向目标cookie文件的软链接, 再次读取时就会以受害app的权限读取出cookie文件. 最后传出.</p>
 <p>(但这个延迟读取自身的方法似乎在新版chrome中不太行了, 测了一下即使是完全相同的file://路径也会被认为是不同源. 因为file://时origin直接设为了null). </p>
-<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_TJ2P9UQ5CKW39HJ.webp" alt="236762_TJ2P9UQ5CKW39HJ.webp"></p>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_TJ2P9UQ5CKW39HJ.webp"></p>
 <h3 id="3-含沙射影"><a href="#3-含沙射影" class="headerlink" title="3. 含沙射影"></a>3. 含沙射影</h3><p>条件 <code>setAllowFileAccess(true)</code><br>首先操纵webview访问setCookie.html, 里面的js将该站点的cookie设置为一段嵌入的恶意payload, 然后再次操纵webview访问attack.html, 它是一个指向cookie文件的软链接,这一步是为了伪造.html的后缀.在加载cookie文件时, 刚刚嵌入的恶意代码执行, 读取cookie并传出. 这里的读取Cookie可以直接获取document的内容而不走file://协议, 所以不会有跨域的问题.</p>
-<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_SV7T862FH8ZPNW9.webp" alt="236762_SV7T862FH8ZPNW9.webp"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202506251139857.webp" alt="image.webp"></p>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_SV7T862FH8ZPNW9.webp"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202506251139857.webp"></p>
 <h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>为什么不能直接通过file://读取cookie? 其实是可以的, 但关键在于读取+传出的连续动作.</p>
 <p>如果要布置读取+传出的连续动作, 那么就需要将访问file://的js嵌在html里, 那么就会受到setAllowFileAccessFromFileURLs和setAllowUniversalAccessFromFileURLs的限制. 而方法2,3就是对限制的绕过.</p>
 <h1 id="loadDataWithBaseURL"><a href="#loadDataWithBaseURL" class="headerlink" title="loadDataWithBaseURL"></a>loadDataWithBaseURL</h1><p><a target="_blank" rel="noopener" href="https://developer.android.google.cn/develop/ui/views/layout/webapps/load-local-content#loadDataWithBaseUrl">https://developer.android.google.cn/develop/ui/views/layout/webapps/load-local-content#loadDataWithBaseUrl</a></p>
@@ -137,9 +137,9 @@
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">val html = <span class="string">"&lt;html&gt;&lt;body&gt;&lt;p&gt;Hello world&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;"</span></span><br><span class="line">val baseUrl = <span class="string">"https://example.com/"</span></span><br><span class="line"></span><br><span class="line">webView.loadDataWithBaseURL(baseUrl, html, <span class="string">"text/html"</span>, null, baseUrl)</span><br></pre></td></tr></tbody></table></figure>
 
 <h1 id="URL-校验"><a href="#URL-校验" class="headerlink" title="URL 校验"></a>URL 校验</h1><p>很多APP的开发者会把自己的域名作为白名单域名，然后对这个域名进行检查，如果检查通过才会打开高敏感权限的JsInterface接口，或者说让WebView去加载。这就导致有很多误用URL进行检查的案例。</p>
-<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_ZNS2K69AYUABR99.webp" alt="236762_ZNS2K69AYUABR99.webp"></p>
-<p>以及loadUrl和Uri.parse的解析差异, android 8.1及之前有效.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_ZX8MPYA5KVQHV2V.webp" alt="236762_ZX8MPYA5KVQHV2V.webp"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_6AC6S6YR3V37Q9Z.webp" alt="236762_6AC6S6YR3V37Q9Z.webp"></p>
-<p>如果直接从外部取uri而没有经过Uri.parse, 可以通过反射构造herachical Uri绕过.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_WXQYSJHMQ3JVFV8.webp" alt="236762_WXQYSJHMQ3JVFV8.webp"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_SQWZGUYVNQ6YDTA.webp" alt="236762_SQWZGUYVNQ6YDTA.webp"></p>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_ZNS2K69AYUABR99.webp"></p>
+<p>以及loadUrl和Uri.parse的解析差异, android 8.1及之前有效.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_ZX8MPYA5KVQHV2V.webp"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_6AC6S6YR3V37Q9Z.webp"></p>
+<p>如果直接从外部取uri而没有经过Uri.parse, 可以通过反射构造herachical Uri绕过.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_WXQYSJHMQ3JVFV8.webp"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_SQWZGUYVNQ6YDTA.webp"></p>
  
       <!-- reward -->
       
