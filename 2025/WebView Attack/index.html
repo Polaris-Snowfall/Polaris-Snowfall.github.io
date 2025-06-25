@@ -129,7 +129,7 @@
 <p>(但这个延迟读取自身的方法似乎在新版chrome中不太行了, 测了一下即使是完全相同的file://路径也会被认为是不同源. 因为file://时origin直接设为了null). </p>
 <p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_TJ2P9UQ5CKW39HJ.webp" alt="236762_TJ2P9UQ5CKW39HJ.webp"></p>
 <h3 id="3-含沙射影"><a href="#3-含沙射影" class="headerlink" title="3. 含沙射影"></a>3. 含沙射影</h3><p>首先操纵webview访问setCookie.html, 里面的js将该站点的cookie设置为一段嵌入的恶意payload, 然后再次操纵webview访问attack.html, 它是一个指向cookie文件的软链接,这一步是为了伪造.html的后缀.在加载cookie文件时, 刚刚嵌入的恶意代码执行, 读取cookie并传出. 这里的读取Cookie可以直接获取document的内容而不走file://协议, 所以不会有跨域的问题.</p>
-<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_SV7T862FH8ZPNW9.webp" alt="236762_SV7T862FH8ZPNW9.webp"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/image.webp" alt="image.webp"></p>
+<p><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/236762_SV7T862FH8ZPNW9.webp" alt="236762_SV7T862FH8ZPNW9.webp"><br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202506251139857.webp" alt="image.webp"></p>
 <h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>为什么不能直接通过file://读取cookie? 其实是可以的, 但关键在于读取+传出的连续动作.</p>
 <p>如果要布置读取+传出的连续动作, 那么就需要将访问file://的js嵌在html里, 那么就会受到setAllowFileAccessFromFileURLs和setAllowUniversalAccessFromFileURLs的限制. 而方法2,3就是对限制的绕过.</p>
 <h1 id="loadDataWithBaseURL"><a href="#loadDataWithBaseURL" class="headerlink" title="loadDataWithBaseURL"></a>loadDataWithBaseURL</h1><p><a target="_blank" rel="noopener" href="https://developer.android.google.cn/develop/ui/views/layout/webapps/load-local-content#loadDataWithBaseUrl">https://developer.android.google.cn/develop/ui/views/layout/webapps/load-local-content#loadDataWithBaseUrl</a></p>
