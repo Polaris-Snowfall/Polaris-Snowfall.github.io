@@ -44,8 +44,8 @@
         }
       </style>
     
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
-<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end --></head>
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
   </html>
 </html>
 
@@ -109,66 +109,6 @@
     
     
     
-    
-    <article
-  id="post-Linux - memory reclaim -- ARM64 v5.0"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2024/Linux%20-%20memory%20reclaim%20--%20ARM64%20v5.0/"
-    >Linux内核 页面回收 -- ARM64 v5.0</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2024/Linux%20-%20memory%20reclaim%20--%20ARM64%20v5.0/" class="article-date">
-  <time datetime="2024-09-26T16:00:00.000Z" itemprop="datePublished">2024-09-27</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Linux%E5%86%85%E6%A0%B8/">Linux内核</a> / <a class="article-category-link" href="/categories/Linux%E5%86%85%E6%A0%B8/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">内存管理</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>文中引文均来自文末参考文章.</p>
-<h2 id="Question"><a href="#Question" class="headerlink" title="Question"></a>Question</h2><ol>
-<li>PG_ACTIVE,PG_REFERENCE的作用和区别?.</li>
-<li>LRU+二次机会的实现?</li>
-</ol> 
-      <a class="article-more-link" href="/2024/Linux%20-%20memory%20reclaim%20--%20ARM64%20v5.0/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/" rel="tag">Linux</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Memory-Management/" rel="tag">Memory_Management</a></li></ul>
-
-    </footer>
-  </div>
-
-   
-    
-</article>
-
     
     <article
   id="post-Linux -  BuddySystem -- ARM64 v5.0"
@@ -667,7 +607,7 @@
       
     <div class="article-entry" itemprop="articleBody">
        
-  Here's something encrypted, password is required to continue reading. 
+  <p>第一天AK,第二天拉跨.</p> 
       <a class="article-more-link" href="/2024/CISCN2024%20-%20preliminary%20round/"
         >阅读更多...</a
       >
@@ -795,6 +735,62 @@
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+    
+</article>
+
+    
+    <article
+  id="post-CVE-2022-0847 DirtyPipe"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2024/CVE-2022-0847%20DirtyPipe/"
+    >内核审计笔记 pipe.c, splice.c &amp;&amp; CVE-2022-0847 DirtyPipe分析</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/CVE-2022-0847%20DirtyPipe/" class="article-date">
+  <time datetime="2024-05-09T16:00:00.000Z" itemprop="datePublished">2024-05-10</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Pwn/">Pwn</a> / <a class="article-category-link" href="/categories/Pwn/Kernel/">Kernel</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>只是阅读源码时的笔记..顺道复现了拖了很久的DirtyPipe.</p> 
+      <a class="article-more-link" href="/2024/CVE-2022-0847%20DirtyPipe/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CVE/" rel="tag">CVE</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kernel/" rel="tag">Kernel</a></li></ul>
 
     </footer>
   </div>
