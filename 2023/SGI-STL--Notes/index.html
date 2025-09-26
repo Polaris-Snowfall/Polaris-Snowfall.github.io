@@ -44,8 +44,8 @@
         }
       </style>
     
-<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style><!-- hexo-inject:begin --><!-- hexo-inject:end -->
-<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"></head>
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css"><!-- hexo-inject:begin --><!-- hexo-inject:end --></head>
   </html>
 </html>
 
@@ -169,6 +169,7 @@
 </blockquote>
 <h3 id="漏洞1"><a href="#漏洞1" class="headerlink" title="漏洞1"></a>漏洞1</h3><p>这个其实不能算是容器的增删操作导致的,而是所有类中指针的通病.<br>在没有重载复制(构造)函数情况下,默认的复制(构造)函数会直接复制指针的值(浅拷贝),当其中一个对象销毁时释放掉指针内存而另一个对象还保留着已释放内存的指针.<br>如图,vec和vec2使用同一块内存,若vec被销毁,vec2中仍存有该内存指针造成uaf.<br>(由于STL二级空间置配器并未真正释放内存给操作系统,所以asan并未检测到double free)<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202304162312107.png"><br>改用一级空间置配器检测到double free.<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202304162322079.png"></p>
 <p>重载拷贝构造函数后正常:<br><img src="https://obsidian-1314737433.cos.ap-beijing.myqcloud.com/202309141856874.png"></p>
+<p>(后记: 其实现在来看当时这里理解错了, 原意是指vector.push()或erase()之类的操作导致的指针失效)</p>
 <h2 id="思考题2"><a href="#思考题2" class="headerlink" title="思考题2"></a>思考题2</h2><blockquote>
 <p>为什么实现了uninitialized_xxx和copy/fill这样两组不同的函数</p>
 </blockquote>
